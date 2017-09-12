@@ -1,0 +1,8 @@
+node_modules
+.group
+.idea
+.location
+.prefix
+.product
+target
+.vscode

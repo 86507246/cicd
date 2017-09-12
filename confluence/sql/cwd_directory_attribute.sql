@@ -1,0 +1,1 @@
+INSERT INTO confluence5.dbo.cwd_directory_attribute (directory_id, attribute_name, attribute_value) VALUES (131073, 'user_encryption_method', 'atlassian-security');

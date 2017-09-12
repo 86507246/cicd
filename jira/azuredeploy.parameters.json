@@ -1,0 +1,48 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "baseUrl": {
+            "value": "https://jiradcresources.blob.core.windows.net/master/"
+        },
+        "provisioningStorageToken": {
+            "value": "?sv=2016-05-31&si=public-access&sr=c&sig=BhOK2kKpnkDnLhcT%2B9IYLcsQpUD%2Frf6N6nhiJX9zWrE%3D"
+        },
+        "jiraVmSize": {
+            "value": "Standard_DS3_v2"
+        },
+        "natVmSize": {
+            "value": "Standard_DS2_v2"
+        },
+        "clusterSize": {
+            "value": 2
+        },
+        "jumpboxSshKey": {
+            "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC3CNLotlCeajpQygaiVLgkdFqqEdzbbpi72JhgA8baWv8flu3mEXPq4sbUrlv04tP0Fgi5EAfgFbwWmN/23pQR0t1lEU7TB9uU+IrhhKHuCoDikkqa//gxnAYxrY3ze6p+Ib0FTSpIrIsY1D2t1z6S/33kBz59Iz5tX6XtijGUQj5lyttfek8O2pZbGL5qHHJzyl67JfCOB8eAWhVBbL96SJgK3XlZE1rEwlA0CPa+mNLSdTd9jxBpml42RR4JEMJOtalzRXLCKubSWjfDqK5XPIhJ2vhWI2c2qgoVe/tkj6OWyXxCRImjhhSX1AMSuYKdUsimsPnOziIWm2aoE4jD aermolenko@CLI-24467"
+        },
+        "dbUsername": {
+            "value": "jira"
+        },
+        "dbPassword": {
+            "value": ".JkvjxaD;K)LKA*7YpbLyWJLPmocWxrcn69"
+        },
+        "userName": {
+            "value": "admin"
+        },
+        "userFullname": {
+            "value": "Admin Admin"
+        },
+        "userEmail": {
+            "value": "admin@example.com"
+        },
+        "userCredential": {
+            "value": "admin"
+        },
+        "applicationTitle": {
+            "value": "Atlassian Jira"
+        },
+        "nodeSshPassword": {
+            "value": "JIRA@dmin"
+        }
+    }
+}

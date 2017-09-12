@@ -1,0 +1,60 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "baseUrl": {
+            "value": "https://confluencedcresources.blob.core.windows.net/installfiles"
+        },
+        "confluenceVmSize": {
+            "value": "Standard_DS2_v2"
+        },
+        "synchronyVmSize": {
+            "value": "Standard_F1s"
+        },
+        "synchronyVmOption": {
+            "value": "manual"
+        },
+        "natVmSize": {
+            "value": "Standard_DS3_v2"
+        },
+        "clusterSize": {
+            "value": 2
+        },
+        "synchronyClusterSize": {
+            "value": 3
+        },
+        "jumpboxSshKey": {
+            "value": "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA1KKu1t+Ti8rA+DgQ5A/KrLqcEG/mbz3Fp0I4B+4uChv18rmZZJPeDbVpk+aoidSX8awn2CBiFSdtVztrLg5+J/413skvFSwOEvlt1vx0iGhNOHOqAVWiisrEW83WkuSEpN12ipy4oajvo8cJfpdqg7YaUGNgWPV2FNNh5wpD5FQysw/WhkG/q4sTaEG2GCv3oTYF7FLirZMDJmAuBN63FE4DE2aY6385BBPQzTr14dvD3m0vuObC5c473b758KLpyp6iROh23Vun7AELsK/8GLCdRnpdU2zv536wkuo4Nmq2nrzSk6mnLBhrUUtiHL2Ks7mFJsuKEDARWGMV/fauqw== jxie@chii.sydney.atlassian.com"
+        },
+        "nodeSshPassword": {
+            "value": "CONFLUENCE@dmin"
+        },
+        "dbPassword": {
+            "value": ".Jkv435jxaDKL2345KA7YpbLyWJLPmocWx43rcn69"
+        },
+        "userName": {
+            "value": "admin"
+        },
+        "userFullname": {
+            "value": "Admin Admin"
+        },
+        "userEmail": {
+            "value": "admin@example.com"
+        },
+        "userCredential": {
+            "value": "admin"
+        },
+        "applicationGatewaySize": {
+            "value": "Standard_Small"
+        },
+        "dbTierOption": {
+            "value": "manual"
+        },
+        "dbTier": {
+            "value": "S3"
+        },
+        "dbEdition": {
+            "value": "Standard"
+        }
+    }
+}

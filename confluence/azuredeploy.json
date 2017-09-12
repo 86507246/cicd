@@ -1,0 +1,1658 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "baseUrl": {
+            "type": "string",
+            "defaultValue": "https://confluencedcresources.blob.core.windows.net/installfiles",
+            "metadata": {
+                "description": "Base URL for Marketplace",
+                "artifactsBaseUrl": ""
+            }
+        },
+        "provisioningStorageToken": {
+            "type": "secureString",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Scripts storage access token"
+            }
+        },
+        "confluenceVmSize": {
+            "type": "string",
+            "defaultValue": "Standard_DS3_v2",
+            "metadata": {
+                "description": "The size of the virtual machine used for each Confluence node."
+            }
+        },
+        "synchronyVmSize": {
+            "type": "string",
+            "defaultValue": "Standard_DS3_v2",
+            "metadata": {
+                "description": "The size of the virtual machine used for each Synchrony node. Ignored if 'synchronyVmOption' is set to 'auto'."
+            }
+        },
+        "synchronyVmOption": {
+            "type": "string",
+            "defaultValue": "auto",
+            "metadata": {
+                "description": "Set to 'auto' to automatically determine the Synchrony vm size and node size."
+            },
+            "allowedValues": [
+                "auto",
+                "manual"
+            ]
+        },
+        "natVmSize": {
+            "type": "string",
+            "defaultValue": "Standard_DS3_v2",
+            "allowedValues" : [
+                "Standard_D8s_v3",
+                "Standard_D16s_v3",
+                "Standard_D8_v3",
+                "Standard_D16_v3",
+                "Standard_DS3_v2",
+                "Standard_DS4_v2",
+                "Standard_DS5_v2",
+                "Standard_D3_v2",
+                "Standard_D4_v2",
+                "Standard_D5_v2",
+                "Standard_DS3",
+                "Standard_DS4",
+                "Standard_D3",
+                "Standard_D4",
+                "Standard_A4_v2",
+                "Standard_A8_v2",
+                "Standard_A4m_v2",
+                "Standard_A8m_v2",
+                "Standard_A4",
+                "Standard_A7",
+                "Standard_F4s",
+                "Standard_F8s",
+                "Standard_F16s",
+                "Standard_F4",
+                "Standard_F8",
+                "Standard_F16"
+            ],
+            "metadata": {
+                "description": "The size of the virtual machine used for the NAT box."
+            }
+        },
+        "cname": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "An existing CNAME that will be used to access the Confluence instance."
+            }
+        },
+        "jumpboxSshUser": {
+            "type": "string",
+            "defaultValue": "confluenceadmin",
+            "metadata": {
+                "description": "The username used to SSH into the jumpbox."
+            }
+        },
+        "jumpboxSshKey": {
+            "type": "string",
+            "metadata": {
+                "description": "The public key for the jumpbox SSH user"
+            }
+        },
+        "nodeSshUser": {
+            "type": "string",
+            "defaultValue": "confluenceadmin",
+            "metadata": {
+                "description": "The username used to SSH into each Confluence node from the jumpbox."
+            }
+        },
+        "nodeSshPassword": {
+            "type": "secureString",
+            "metadata": {
+                "description": "The password used to SSH into each Confluence node from the jumpbox."
+            }
+        },
+        "dbUsername": {
+            "type": "string",
+            "defaultValue": "confluencedbuser",
+            "metadata": {
+                "description": "Database username"
+            }
+        },
+        "dbPassword": {
+            "type": "secureString",
+            "metadata": {
+                "description": "Database password"
+            }
+        },
+        "dbTierOption" : {
+            "type": "string",
+            "defaultValue": "auto",
+            "metadata": {
+                "description": "Choose whether the database tier is selected automatically"
+            },
+            "allowedValues": [
+                "auto",
+                "manual"
+            ]
+        },
+        "dbTier": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "The database tier. Leave empty to automatically choose the best tier for the cluster size."
+            },
+            "allowedValues": [
+                "",
+                "S2",
+                "S3",
+                "P1",
+                "P2",
+                "P4",
+                "P6",
+                "P11",
+                "P15",
+                "PRS1",
+                "PRS2",
+                "PRS3",
+                "PRS4",
+                "PRS5",
+                "PRS6"
+            ]
+        },
+        "dbEdition": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "The database edition. Leave empty to automatically choose the best tier for the cluster size."
+            },
+            "allowedValues": [
+                "",
+                "Standard",
+                "Premium",
+                "PremiumRS"
+            ]
+        },
+        "userName": {
+            "type": "string",
+            "defaultValue": "admin",
+            "metadata": {
+                "description": "Username of the Confluence administrator."
+            }
+        },
+        "userCredential": {
+            "type": "secureString",
+            "metadata": {
+                "description": "Password for the Confluence administrator."
+            }
+        },
+        "userFullname": {
+            "type": "string",
+            "defaultValue": "Admin Admin"
+        },
+        "userEmail": {
+            "type": "string",
+            "defaultValue": "admin@example.com"
+        },
+        "confluenceLicense": {
+            "type": "secureString",
+            "defaultValue": "AAABHQ0ODAoPeNpdUE1rwkAQvfsrFnqOaBqpFRYaY2jFxNiagvQ23U50IdmE2d2g/fWNWcHq9b2Z9/WQHywL7Z75ARtPZsHz7HHKwnibM380fhqIWhXDqFYGhIlTkCWHn0qqFzxC1ZQ4FHXlbjpetsgNWXTABsgopDVUyB2yAAMRKoP07yyRApXG/NRgfxplaRp/RMswcXxGe1BSg5G14qEpQWsJynFxC6V1zFWwC9lZKFAC42Mj6dTZIt/4wdtgi9QiLRd8nuxW3nqV7bz5ezDxwtevyD2vbfWNlBWfGklzb3ypYkkcQGOvdJ7FG009P7gpcO/lGqMWJJs+4TUsK90LK2pi51GYW4V1VPhrCW9W71fpR7/AhL3KfZg/SDCcNDAsAhRKqZj5WOUF8qChUIvOzfpfd1sRjgIUGOZYp9w9akoKxTePn9Mv+1yyCeM=X02ee",
+            "metadata": {
+                "description": "The license to be used for the instance. This license MUST be a Confluence Data Center license. Ignored if 'licenseOption' is set to 'evaluation'."
+            }
+        },
+        "licenseOption": {
+            "type": "string",
+            "defaultValue": "evaluation",
+            "metadata": {
+                "description": "Set to 'evaluation' to use the evaluation license. Leave empty or set to any other value to use the license passed in via 'confluenceLicense'."
+            }
+        },
+        "applicationTitle": {
+            "type": "string",
+            "defaultValue": "Atlassian Confluence",
+            "metadata": {
+                "description": "The site title for Confluence."
+            }
+        },
+        "applicationGatewaySize": {
+            "type": "string",
+            "allowedValues": [
+                "Standard_Small",
+                "Standard_Medium",
+                "Standard_Large"
+            ],
+            "defaultValue": "Standard_Medium",
+            "metadata": {
+                "description": "The application gateway size. If using 5 nodes or more, Standard_Large is recommended."
+            }
+        },
+        "clusterSize": {
+            "type": "int",
+            "allowedValues": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+            ],
+            "defaultValue": 3,
+            "metadata": {
+                "description": "The number of Confluence nodes in the cluster. Maximum is 6 nodes."
+            }
+        },
+        "synchronyClusterSize": {
+            "type": "int",
+            "allowedValues": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+            ],
+            "defaultValue": 2,
+            "metadata": {
+                "description": "The number of Synchrony nodes in the cluster. Maximum is 6 nodes. Ignored if 'synchronyVmOption' is set to 'auto'."
+            }
+        },
+        "confluenceVersion" : {
+            "type":"string",
+            "defaultValue": "6.4.0",
+            "metadata": {
+                "description": "The Confluence version to use. Must be 6.4.0 or later."
+            }
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]"
+        }
+    },
+    "variables": {
+        "namespace": "conf",
+        "tags": {
+            "vendor": "Atlassian",
+            "product": "Confluence"
+        },
+        "diskSize": {
+            "P10": 128,
+            "P20": 512,
+            "P30": 1024
+        },
+        "azureApi": {
+            "compute": {
+                "version": "2017-03-30",
+                "vmExtensions": {
+                    "version": "2017-03-30"
+                }
+            },
+            "network": {
+                "version": "2017-06-01"
+            },
+            "storage": {
+                "version": "2016-01-01"
+            },
+            "sql": {
+                "version": "2014-04-01"
+            },
+            "routeTables" : {
+                "version" : "2017-03-01"
+            }
+        },
+        "confluence": {
+            "storage": {
+                "name": "[concat(variables('namespace'), 'storage', uniqueString(resourceGroup().id))]"
+            },
+            "resources": {
+                "templates": "[concat(if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/')), 'templates', '/')]",
+                "scripts": "[concat(if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/')), 'scripts', '/')]",
+                "libs": "[concat(if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/')), 'libs', '/')]",
+                "token": "[parameters('provisioningStorageToken')]"
+            },
+            "vnet": {
+                "name": "[concat(variables('namespace'), 'vnet')]",
+                "prefix": "10.0.0.0/16"
+            },
+            "cluster": {
+                "name": "[concat(variables('namespace'), 'cluster')]",
+                "tier": "Standard",
+                "capacity": "[parameters('clusterSize')]",
+                "subnet": {
+                    "name": "[concat(variables('namespace'), 'cluster', 'subnet')]",
+                    "prefix": "10.0.2.0/24"
+                },
+                "nsg": {
+                    "name": "[concat(variables('namespace'), 'cluster', 'nsg')]"
+                },
+                "vm": {
+                    "size": "[parameters('confluenceVmSize')]",
+                    "user": "[parameters('nodeSshUser')]",
+                    "pass": "[parameters('nodeSshPassword')]",
+                    "image": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "17.04",
+                        "version": "latest"
+                    },
+                    "osdisk": {
+                        "name": "[concat(variables('namespace'), 'cluster', 'disk')]",
+                        "type": "Premium_LRS",
+                        "size": "100"
+                    },
+                    "datadisk": {
+                        "type": "Premium_LRS",
+                        "caching": "ReadWrite",
+                        "size": "100"
+                    }
+                }
+            },
+            "synchronycluster": {
+                "name": "[concat(variables('namespace'), 'synchronycluster')]",
+                "tier": "Standard",
+                "capacity": "[if(equals(parameters('synchronyVmOption'), 'auto'), add(div(parameters('clusterSize'), 4), 2), parameters('synchronyClusterSize'))]",
+                "subnet": {
+                    "name": "[concat(variables('namespace'), 'synchrony', 'subnet')]",
+                    "prefix": "10.0.4.0/24"
+                },
+                "nsg": {
+                    "name": "[concat(variables('namespace'), 'synchrony', 'nsg')]"
+                },
+                "vm": {
+                    "size": "[if(equals(parameters('synchronyVmOption'), 'auto'), parameters('confluenceVmSize'), parameters('synchronyVmSize'))]",
+                    "user": "[parameters('nodeSshUser')]",
+                    "pass": "[parameters('nodeSshPassword')]",
+                    "image": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "17.04",
+                        "version": "latest"
+                    },
+                    "osdisk": {
+                        "name": "[concat(variables('namespace'), 'synchrony', 'disk')]",
+                        "type": "Standard_LRS",
+                        "size": "30"
+                    }
+                }
+            },
+            "license" : "[if(not(equals(parameters('licenseOption'), 'evaluation')), parameters('confluenceLicense'), 'AAABHQ0ODAoPeNpdUE1rwkAQvfsrFnqOaBqpFRYaY2jFxNiagvQ23U50IdmE2d2g/fWNWcHq9b2Z9/WQHywL7Z75ARtPZsHz7HHKwnibM380fhqIWhXDqFYGhIlTkCWHn0qqFzxC1ZQ4FHXlbjpetsgNWXTABsgopDVUyB2yAAMRKoP07yyRApXG/NRgfxplaRp/RMswcXxGe1BSg5G14qEpQWsJynFxC6V1zFWwC9lZKFAC42Mj6dTZIt/4wdtgi9QiLRd8nuxW3nqV7bz5ezDxwtevyD2vbfWNlBWfGklzb3ypYkkcQGOvdJ7FG009P7gpcO/lGqMWJJs+4TUsK90LK2pi51GYW4V1VPhrCW9W71fpR7/AhL3KfZg/SDCcNDAsAhRKqZj5WOUF8qChUIvOzfpfd1sRjgIUGOZYp9w9akoKxTePn9Mv+1yyCeM=X02ee')]"
+        },
+        "sql": {
+            "server": {
+                "name": "[concat(variables('namespace'), 'sqlserver', uniqueString(resourceGroup().id))]",
+                "username": "[parameters('dbUsername')]",
+                "password": "[parameters('dbPassword')]"
+            },
+            "database": {
+                "name": "[concat(variables('namespace'), 'db')]",
+                "edition": "[if(equals(parameters('dbTierOption'), 'auto'), variables('lookup').dbTierToDbEdition[variables('lookup').clusterSizeToDbTier[string(parameters('clusterSize'))]], parameters('dbEdition'))]",
+                "collation": "SQL_Latin1_General_CP1_CS_AS",
+                "maxSizeBytes": "107374182400",
+                "schema": "[concat(variables('namespace'), 'schema')]"
+            },
+            "tier": "[if(equals(parameters('dbTierOption'), 'auto'), variables('lookup').clusterSizeToDbTier[string(parameters('clusterSize'))], parameters('dbTier'))]"
+        },
+        "applicationGateway": {
+            "name": "[concat(variables('namespace'), 'appgw')]",
+            "capacity": "[add(div(parameters('clusterSize'), 3), 1)]",
+            "urlpathmap" :"[concat(variables('namespace'), 'urlpathmap')]",
+            "frontend": {
+                "subnet": {
+                    "name": "[concat(variables('namespace'), 'appgwsubnet')]",
+                    "prefix": "10.0.1.0/24"
+                },
+                "ipConfiguration": {
+                    "name": "[concat(variables('namespace'), 'appgwfeipconfig')]",
+                    "address": "10.0.1.99"
+                },
+                "portConfiguration": {
+                    "name": "[concat(variables('namespace'), 'appgwfeports')]",
+                    "value": "80"
+                },
+                "httpListener": {
+                    "name": "[concat(variables('namespace'), 'appgwlistener')]"
+                }
+            },
+            "backend": {
+                "addressPool": {
+                    "name": "[concat(variables('namespace'), 'appgwaddrpool')]"
+                },
+                "httpConfiguration": {
+                    "name": "[concat(variables('namespace'), 'appgwhttpconfig')]",
+                    "probe": {
+                        "name": "[concat(variables('namespace'), 'backendprobe')]",
+                        "interval" : "60",
+                        "timeout" : "5",
+                        "path" : "/status"
+                    }
+                },
+                "pathrule" : {
+                    "path": "/*",
+                    "name" : "[concat(variables('namespace'), 'pathrule')]"
+                },
+                "port": "8080"
+            },
+            "synchronybackend": {
+                "addressPool": {
+                    "name": "[concat(variables('namespace'), 'synchronyappgwaddrpool')]"
+                },
+                "httpConfiguration": {
+                    "name": "[concat(variables('namespace'), 'synchronyappgwhttpconfig')]",
+                    "probe": {
+                        "name": "[concat(variables('namespace'), 'synchronybackendprobe')]",
+                        "interval" : "60",
+                        "timeout" : "5",
+                        "path" : "/synchrony/heartbeat"
+                    }
+                },
+                "pathrule" : {
+                    "path": "/synchrony/*",
+                    "name" : "[concat(variables('namespace'), 'synchronypathrule')]"
+                },
+                "port": "8091"
+            }
+        },
+        "nat": {
+            "name": "[concat(variables('namespace'), 'nat')]",
+            "nsg": {
+                "name": "[concat(variables('namespace'), 'nat', 'nsg')]"
+            },
+            "vm": {
+                "size": "[parameters('natVmSize')]",
+                "user": "[parameters('jumpboxSshUser')]",
+                "key": "[parameters('jumpboxSshKey')]",
+                "image": {
+                    "publisher": "Canonical",
+                    "offer": "UbuntuServer",
+                    "sku": "17.04",
+                    "version": "latest"
+                },
+                "disk": {
+                    "name": "[concat(variables('namespace'), 'nat', 'osdisk')]",
+                    "type": "Standard_LRS"
+                }
+            },
+            "ip": {
+                "name": "[concat(variables('namespace'), 'natip')]",
+                "confluencesubnetaddress": "10.0.2.99",
+                "synchronysubnetaddress": "10.0.4.99",
+                "dns": "[concat(variables('namespace'), 'nat', uniqueString(resourceGroup().id))]"
+            },
+            "subnet": {
+                "name": "[concat(variables('namespace'), 'natsubnet')]",
+                "prefix": "10.0.3.0/24"
+            },
+            "nics": {
+                "public": "[concat(variables('namespace'), 'nat', 'nic', 'public')]",
+                "private": "[concat(variables('namespace'), 'nat', 'nic', 'private')]",
+                "privatesynchrony": "[concat(variables('namespace'), 'nat', 'nic', 'privatesynchrony')]"
+            }
+        },
+        "routing": {
+            "confluenceoutbound": {
+                "name": "[concat(variables('namespace'), 'routes', 'confluence')]"
+            },
+            "synchronyoutbound": {
+                "name": "[concat(variables('namespace'), 'routes', 'synchrony')]"
+            }
+        },
+        "lookup": {
+            "clusterSizeToDbTier": {
+                "1": "PRS2",
+                "2": "PRS2",
+                "3": "PRS2",
+                "4": "PRS4",
+                "5": "PRS4",
+                "6": "PRS4"
+            },
+            "dbTierToDbEdition": {
+                "PRS2": "PremiumRS",
+                "PRS4": "PremiumRS",
+                "PRS6": "PremiumRS",
+                "P2": "Premium",
+                "P4": "Premium",
+                "P6": "Premium"
+            }
+        },
+        "env": {
+            "storage": [
+                {
+                    "name": "STORAGE_BASE_URL",
+                    "value": "[if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/'))]"
+                },
+                {
+                    "name": "STORAGE_TOKEN",
+                    "value": "[parameters('provisioningStorageToken')]"
+                },
+                {
+                    "name": "STORAGE_ACCOUNT",
+                    "value": "[variables('confluence').storage.name]"
+                }
+            ],
+            "server": [
+                {
+                    "name": "SERVER_APP_PORT",
+                    "value": "[variables('applicationGateway').backend.port]"
+                },
+                {
+                    "name": "SERVER_SYNCHRONY_INTERNAL_PORT",
+                    "value": "[variables('applicationGateway').synchronybackend.port]"
+                },
+                {
+                    "name": "SERVER_CNAME",
+                    "value": "[parameters('cname')]"
+                },
+                {
+                    "name": "SERVER_PROXY_PORT",
+                    "value": "[variables('applicationGateway').frontend.portConfiguration.value]"
+                },
+                {
+                    "name": "SERVER_APP_SCHEME",
+                    "value": "http"
+                },
+                {
+                    "name": "SERVER_CLUSTER_NAME",
+                    "value": "confluencecluster"
+                },
+                {
+                    "name": "SERVER_CATALINA_HOME",
+                    "value": "/catalina/home/placeholder"
+                },
+                {
+                    "name": "SERVER_SECURE_FLAG",
+                    "value": "false"
+                },
+                {
+                    "name": "CONFLUENCE_CLUSTER_INTERFACE_NAME",
+                    "value": "eth0"
+                },
+                {
+                    "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_HEADER_SIZE",
+                    "value": "16384"
+                },
+                {
+                    "name": "CONFLUENCE_HTTP_CONNECTOR_DISABLE_UPLOAD_TIMEOUT",
+                    "value": "true"
+                },
+                {
+                    "name": "CONFLUENCE_HTTP_CONNECTOR_CONNECTION_TIMEOUT",
+                    "value": "60000"
+                },
+                {
+                    "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_THREADS",
+                    "value": "48"
+                },
+                {
+                    "name": "CONFLUENCE_HTTP_CONNECTOR_MIN_THREADS",
+                    "value": "10"
+                },
+                {
+                    "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_ACCEPT_COUNT",
+                    "value": "10"
+                },
+                {
+                    "name": "CONFLUENCE_C3P0_MAX_SIZE",
+                    "value": "60"
+                },
+                {
+                    "name": "CONFLUENCE_C3P0_MIN_SIZE",
+                    "value": "10"
+                },
+                {
+                    "name": "CONFLUENCE_PRELOAD_DARKFEATURES",
+                    "value": "site-wide.shared-drafts,site-wide.synchrony"
+                },
+                {
+                    "name": "EXTRA_CONFLUENCE_JAVA_OPTS",
+                    "value": "-Dconfluence.cluster.index.recovery.num.attempts=0 -Dsynchrony.proxy.enabled=false -Dconfluence.upgrade.recovery.file.enabled=false"
+                },
+                {
+                    "name": "CONFLUENCE_GC_OPTS",
+                    "value": "-XX:G1ReservePercent=20 -XX:+UseG1GC"
+                }
+            ],
+            "db": [
+                {
+                    "name": "DB_USER",
+                    "value": "[variables('sql').server.username]"
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "value": "[variables('sql').server.password]"
+                },
+                {
+                    "name": "DB_NAME",
+                    "value": "[variables('sql').database.name]"
+                },
+                {
+                    "name": "DB_SCHEMA",
+                    "value": "[variables('sql').database.schema]"
+                },
+                {
+                    "name": "CONFLUENCE_SQLSERVER_DATABASE_COMPATIBILITY_LEVEL",
+                    "value": "100"
+                },
+                {
+                    "name": "CONFLUENCE_SQLSERVER_DRIVER_VERSION",
+                    "value": "6.3.0.jre8-preview"
+                }
+            ],
+            "sql": [
+                {
+                    "name": "USER_NAME",
+                    "value": "[parameters('userName')]"
+                },
+                {
+                    "name": "USER_NAME_LOWERCASE",
+                    "value": "[toLower(parameters('userName'))]"
+                },
+                {
+                    "name": "USER_FULLNAME",
+                    "value": "[parameters('userFullname')]"
+                },
+                {
+                    "name": "USER_FULLNAME_LOWERCASE",
+                    "value": "[toLower(parameters('userFullname'))]"
+                },
+                {
+                    "name": "USER_EMAIL",
+                    "value": "[parameters('userEmail')]"
+                },
+                {
+                    "name": "USER_EMAIL_LOWERCASE",
+
+                    "value": "[toLower(parameters('userEmail'))]"
+                },
+                {
+                    "name": "USER_CREDENTIAL",
+                    "value": "[parameters('userCredential')]"
+                },
+                {
+                    "name": "CONFLUENCE_LICENSE",
+                    "value": "[variables('confluence').license]"
+                },
+                {
+                    "name": "APPLICATION_TITLE",
+                    "value": "[parameters('applicationTitle')]"
+                },
+                {
+                    "name": "BASEURL",
+                    "value": "[variables('nat').ip.dns]"
+                }
+            ],
+            "settings": [
+                {
+                    "name": "ATL_CONFLUENCE_HOME",
+                    "value": "/var/atlassian/application-data/confluence"
+                },
+                {
+                    "name": "ATL_CONFLUENCE_SHARED_HOME",
+                    "value": "/media/atl/confluence/shared"
+                },
+                {
+                    "name": "ATL_CONFLUENCE_INSTALL_DIR",
+                    "value": "/opt/atlassian/confluence"
+                },
+                {
+                    "name": "ATL_CONFLUENCE_SHARED_HOME_NAME",
+                    "value": "confluence-shared-home"
+                },
+                {
+                    "name": "ATL_CONFLUENCE_RELEASES_BASE_URL",
+                    "value": "https://downloads.atlassian.com/software/confluence/downloads"
+                },
+                {
+                    "name": "ATL_CONFLUENCE_PRODUCT",
+                    "value": "atlassian-confluence"
+                },
+                {
+                    "name": "ATL_CONFLUENCE_VERSION",
+                    "value": "[parameters('confluenceVersion')]"
+                },
+                {
+                    "name": "ATL_CLUSTER_SIZE",
+                    "value": "[concat('', parameters('clusterSize'), '')]"
+                },
+                {
+                    "name": "ATL_SYNCHRONY_CLUSTER_SIZE",
+                    "value": "[concat('', variables('confluence').synchronycluster.capacity, '')]"
+                },
+                {
+                    "name": "APP_GATEWAY_INTERNAL_IP",
+                    "value": "[variables('applicationGateway').frontend.ipConfiguration.address]"
+                },
+                {
+                    "name": "NAT_INTERNAL_IP",
+                    "value": "[variables('nat').ip.confluencesubnetaddress]"
+                },
+                {
+                    "name": "NAT_SYNCHRONY_INTERNAL_IP",
+                    "value": "[variables('nat').ip.synchronysubnetaddress]"
+                }
+            ]
+        },
+        "data": {
+            "storage": "[concat(' STORAGE_ATL_ENV_DATA=\"', base64(string(variables('env').storage)), '\" ')]",
+            "server": "[concat(' SERVER_ATL_ENV_DATA=\"', base64(string(variables('env').server)), '\" ')]",
+            "db": "[concat(' DB_ATL_ENV_DATA=\"', base64(string(variables('env').db)), '\" ')]",
+            "sql": "[concat(' SQL_ATL_ENV_DATA=\"', base64(string(variables('env').sql)), '\" ')]",
+            "settings": "[concat(' SETTINGS_ATL_ENV_DATA=\"', base64(string(variables('env').settings)), '\" ')]"
+        },
+        "scripts": {
+            "url": "[concat(if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/')), 'scripts', '/')]",
+            "token": "[parameters('provisioningStorageToken')]",
+            "prepare": {
+                "name": "prepare_install.sh",
+                "env": "[concat(variables('data').storage, variables('data').server, variables('data').db, variables('data').sql, variables('data').settings)]"
+            },
+            "disk": {
+                "name": "vm-disk-utils-0.1.sh"
+            },
+            "hydrate": {
+                "name": "hydrate_confluence_config.py"
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "[variables('azureApi').storage.version]",
+            "name": "[variables('confluence').storage.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "Storage",
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "[variables('azureApi').network.version]",
+            "name": "[variables('nat').ip.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('nat').ip.dns]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/routeTables",
+            "apiVersion": "[variables('azureApi').routeTables.version]",
+            "name": "[variables('routing').confluenceoutbound.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "resources": [
+                {
+                    "type": "routes",
+                    "apiVersion": "[variables('azureApi').routeTables.version]",
+                    "name": "nat",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/routeTables', variables('routing').confluenceoutbound.name)]"
+                    ],
+                    "properties": {
+                        "addressPrefix": "0.0.0.0/0",
+                        "nextHopType": "VirtualAppliance",
+                        "nextHopIpAddress": "[variables('nat').ip.confluencesubnetaddress]"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Network/routeTables",
+            "apiVersion": "[variables('azureApi').routeTables.version]",
+            "name": "[variables('routing').synchronyoutbound.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "resources": [
+                {
+                    "type": "routes",
+                    "apiVersion": "[variables('azureApi').routeTables.version]",
+                    "name": "nat",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/routeTables', variables('routing').synchronyoutbound.name)]"
+                    ],
+                    "properties": {
+                        "addressPrefix": "0.0.0.0/0",
+                        "nextHopType": "VirtualAppliance",
+                        "nextHopIpAddress": "[variables('nat').ip.synchronysubnetaddress]"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "[variables('azureApi').network.version]",
+            "name": "[variables('confluence').cluster.nsg.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses', '/', variables('nat').ip.name)]"
+            ],
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allow_conf_http",
+                        "properties": {
+                            "description": "Allow http traffic.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "[variables('applicationGateway').backend.port]",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 101,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "allow_ssh_from_jumpbox",
+                        "properties": {
+                            "description": "Allow ssh trafic from single node in internal subnet",
+                            "protocol": "TCP",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "[reference(variables('nat').ip.name).ipAddress]",
+                            "destinationPortRange": "22",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 102,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "[variables('azureApi').network.version]",
+            "name": "[variables('confluence').synchronycluster.nsg.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses', '/', variables('nat').ip.name)]"
+            ],
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allow_synchrony_http",
+                        "properties": {
+                            "description": "Allow http traffic.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "[variables('applicationGateway').synchronybackend.port]",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 101,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "allow_ssh_from_jumpbox",
+                        "properties": {
+                            "description": "Allow ssh trafic from single node in internal subnet",
+                            "protocol": "TCP",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "[reference(variables('nat').ip.name).ipAddress]",
+                            "destinationPortRange": "22",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 102,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "[variables('azureApi').network.version]",
+            "name": "[variables('confluence').vnet.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkSecurityGroups/', variables('confluence').cluster.nsg.name)]",
+                "[concat('Microsoft.Network/networkSecurityGroups/', variables('confluence').synchronycluster.nsg.name)]",
+                "[resourceId('Microsoft.Network/routeTables', variables('routing').confluenceoutbound.name)]",
+                "[resourceId('Microsoft.Network/routeTables', variables('routing').synchronyoutbound.name)]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('confluence').vnet.prefix]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.subnet.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('applicationGateway').frontend.subnet.prefix]"
+                        }
+                    },
+                    {
+                        "name": "[variables('confluence').cluster.subnet.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('confluence').cluster.subnet.prefix]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('confluence').cluster.nsg.name)]"
+                            },
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables', variables('routing').confluenceoutbound.name)]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "[variables('confluence').synchronycluster.subnet.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('confluence').synchronycluster.subnet.prefix]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('confluence').synchronycluster.nsg.name)]"
+                            },
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables', variables('routing').synchronyoutbound.name)]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "[variables('nat').subnet.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('nat').subnet.prefix]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "[variables('azureApi').network.version]",
+            "name": "[variables('nat').nics.public]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('nat').ip.name)]",
+                "[concat('Microsoft.Network/virtualNetworks/', variables('confluence').vnet.name)]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "public-access",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses/', variables('nat').ip.name)]"
+                            },
+                            "subnet": {
+                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('confluence').vnet.name), '/subnets/', variables('nat').subnet.name)]"
+                            }
+                        }
+                    }
+                ],
+                "enableIPForwarding": true
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "[variables('azureApi').network.version]",
+            "name": "[variables('nat').nics.private]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('nat').ip.name)]",
+                "[concat('Microsoft.Network/virtualNetworks/', variables('confluence').vnet.name)]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "public-access",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "[variables('nat').ip.confluencesubnetaddress]",
+                            "subnet": {
+                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('confluence').vnet.name), '/subnets/', variables('confluence').cluster.subnet.name)]"
+                            }
+                        }
+                    }
+                ],
+                "enableIPForwarding": true
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "[variables('azureApi').network.version]",
+            "name": "[variables('nat').nics.privatesynchrony]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('nat').ip.name)]",
+                "[concat('Microsoft.Network/virtualNetworks/', variables('confluence').vnet.name)]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "public-access",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "[variables('nat').ip.synchronysubnetaddress]",
+                            "subnet": {
+                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('confluence').vnet.name), '/subnets/', variables('confluence').synchronycluster.subnet.name)]"
+                            }
+                        }
+                    }
+                ],
+                "enableIPForwarding": true
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "[variables('azureApi').compute.version]",
+            "name": "[variables('nat').name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', variables('nat').nics.public)]",
+                "[concat('Microsoft.Network/networkInterfaces/', variables('nat').nics.private)]",
+                "[concat('Microsoft.Network/networkInterfaces/', variables('nat').nics.privatesynchrony)]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('nat').vm.size]"
+                },
+                "osProfile": {
+                    "computerName": "[variables('nat').ip.dns]",
+                    "adminUsername": "[variables('nat').vm.user]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": true,
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "path": "[concat('/home/', variables('nat').vm.user, '/.ssh/authorized_keys')]",
+                                    "keyData": "[variables('nat').vm.key]"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[variables('nat').vm.image.publisher]",
+                        "offer": "[variables('nat').vm.image.offer]",
+                        "sku": "[variables('nat').vm.image.sku]",
+                        "version": "[variables('nat').vm.image.version]"
+                    },
+                    "osDisk": {
+                        "name": "[variables('nat').vm.disk.name]",
+                        "managedDisk": {
+                            "storageAccountType": "[variables('nat').vm.disk.type]"
+                        },
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces/', variables('nat').nics.public)]",
+                            "properties": {
+                                "primary": true
+                            }
+                        },
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces/', variables('nat').nics.private)]",
+                            "properties": {
+                                "primary": false
+                            }
+                        },
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces/', variables('nat').nics.privatesynchrony)]",
+                            "properties": {
+                                "primary": false
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers",
+            "apiVersion": "[variables('azureApi').sql.version]",
+            "name": "[variables('sql').server.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "properties": {
+                "version": "12.0",
+                "administratorLogin": "[variables('sql').server.username]",
+                "administratorLoginPassword": "[variables('sql').server.password]"
+            },
+            "resources": [
+                {
+                    "type": "databases",
+                    "apiVersion": "[variables('azureApi').sql.version]",
+                    "name": "[variables('sql').database.name]",
+                    "location": "[parameters('location')]",
+                    "tags": "[variables('tags')]",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', variables('sql').server.name)]"
+                    ],
+                    "properties": {
+                        "edition": "[variables('sql').database.edition]",
+                        "collation": "[variables('sql').database.collation]",
+                        "maxSizeBytes": "[variables('sql').database.maxSizeBytes]",
+                        "requestedServiceObjectiveName": "[variables('sql').tier]"
+                    }
+                },
+                {
+                    "type": "firewallrules",
+                    "apiVersion": "[variables('azureApi').sql.version]",
+                    "name": "AllowAccessToSetupVMPublicIP",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', variables('sql').server.name)]",
+                        "[concat('Microsoft.Network/publicIPAddresses/', variables('nat').ip.name)]"
+                    ],
+                    "properties": {
+                        "startIpAddress": "[reference(variables('nat').ip.name).ipAddress]",
+                        "endIpAddress": "[reference(variables('nat').ip.name).ipAddress]"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "apiVersion": "[variables('azureApi').compute.vmExtensions.version]",
+            "name": "[concat(variables('nat').name, '/prepare-install-script')]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/', variables('nat').name)]",
+                "[concat('Microsoft.Storage/storageAccounts/', variables('confluence').storage.name)]",
+                "[concat('Microsoft.Sql/servers/', variables('sql').server.name, '/databases/', variables('sql').database.name)]"
+            ],
+            "properties": {
+                "publisher": "Microsoft.Azure.Extensions",
+                "type": "CustomScript",
+                "typeHandlerVersion": "2.0",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "fileUris": [
+                        "[concat(variables('confluence').resources.scripts, 'prepare_install.sh', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.scripts, 'hydrate_confluence_config.py', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.libs, 'atlassian-extras-3.2.jar', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.libs, 'atlassian-password-encoder-3.2.3.jar', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.libs, 'bcprov-jdk15on-1.50.jar', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.libs, 'commons-codec-1.9.jar', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.libs, 'commons-lang-2.6.jar', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.libs, 'liquibase-core-3.5.3.jar', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.libs, 'mssql-jdbc-6.3.0.jre8-preview.jar', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.templates, 'home-confluence.cfg.xml.template', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.templates, 'shared-confluence.cfg.xml.template', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.templates, 'server.xml.template', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.templates, 'configuredb.sql.template', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.templates, 'constraints.sql.template', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.templates, 'data.sql.template', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.templates, 'tables.sql.template', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.templates, 'index.sql.template', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.templates, 'install_synchrony_service.sh.template', variables('confluence').resources.token)]",
+                        "[concat(variables('confluence').resources.templates, 'setenv.sh.template', variables('confluence').resources.token)]"
+                    ]
+                },
+                "protectedSettings": {
+                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('confluence').storage.name), '2017-06-01').keys[0].value, ' prepare ', reference(variables('nat').ip.name).dnsSettings.fqdn, ' ', reference(variables('sql').server.name).fullyQualifiedDomainName, ' 2>&1 > ./confluence.prepare.log')]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/applicationGateways",
+            "apiVersion": "[variables('azureApi').network.version]",
+            "name": "[variables('applicationGateway').name]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', variables('confluence').vnet.name)]"
+            ],
+            "properties": {
+                "sku": {
+                    "name": "[parameters('applicationGatewaySize')]",
+                    "tier": "Standard",
+                    "capacity": "[variables('applicationGateway').capacity]"
+                },
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "[concat(variables('namespace'), 'appgwipconfig')]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('confluence').vnet.name), '/subnets/', variables('applicationGateway').frontend.subnet.name)]"
+                            }
+                        }
+                    }
+                ],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.ipConfiguration.name]",
+                        "properties": {
+                            "privateIPAddress": "[variables('applicationGateway').frontend.ipConfiguration.address]",
+                            "privateIPAllocationMethod": "Static",
+                            "subnet": {
+                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('confluence').vnet.name), '/subnets/', variables('applicationGateway').frontend.subnet.name)]"
+                            }
+                        }
+                    }
+                ],
+                "frontendPorts": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.portConfiguration.name]",
+                        "properties": {
+                            "Port": "[variables('applicationGateway').frontend.portConfiguration.value]"
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "[variables('applicationGateway').backend.addressPool.name]"
+                    },
+                    {
+                        "name": "[variables('applicationGateway').synchronybackend.addressPool.name]"
+                    }
+                ],
+                "probes": [
+                    {
+                        "name": "[variables('applicationGateway').backend.httpConfiguration.probe.name]",
+                        "properties": {
+                            "protocol": "Http",
+                            "path": "[variables('applicationGateway').backend.httpConfiguration.probe.path]",
+                            "interval": "[variables('applicationGateway').backend.httpConfiguration.probe.interval]",
+                            "timeout": "[variables('applicationGateway').backend.httpConfiguration.probe.timeout]",
+                            "pickHostNameFromBackendHttpSettings" : true,
+                            "unhealthyThreshold": "3"
+                        }
+                    },
+                    {
+                        "name": "[variables('applicationGateway').synchronybackend.httpConfiguration.probe.name]",
+                        "properties": {
+                            "protocol": "Http",
+                            "path": "[variables('applicationGateway').synchronybackend.httpConfiguration.probe.path]",
+                            "interval": "[variables('applicationGateway').synchronybackend.httpConfiguration.probe.interval]",
+                            "timeout": "[variables('applicationGateway').synchronybackend.httpConfiguration.probe.timeout]",
+                            "pickHostNameFromBackendHttpSettings" : true,
+                            "unhealthyThreshold": "3"
+                        }
+                    }
+                ],
+                "backendHttpSettingsCollection": [
+                    {
+                        "name": "[variables('applicationGateway').backend.httpConfiguration.name]",
+                        "properties": {
+                            "Port": "[variables('applicationGateway').backend.port]",
+                            "Protocol": "Http",
+                            "CookieBasedAffinity": "Enabled",
+                            "PickHostNameFromBackendAddress":true,
+                            "probe": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/probes/', variables('applicationGateway').backend.httpConfiguration.probe.name)]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "[variables('applicationGateway').synchronybackend.httpConfiguration.name]",
+                        "properties": {
+                            "Port": "[variables('applicationGateway').synchronybackend.port]",
+                            "Protocol": "Http",
+                            "CookieBasedAffinity": "Disabled",
+                            "PickHostNameFromBackendAddress":true,
+                            "probe" : {
+                                "id" : "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/probes/', variables('applicationGateway').synchronybackend.httpConfiguration.probe.name)]"
+                            }
+                        }
+                    }
+                ],
+                "httpListeners": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.httpListener.name]",
+                        "properties": {
+                            "FrontendIPConfiguration": {
+                                "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendIPConfigurations/', variables('applicationGateway').frontend.ipConfiguration.name)]"
+                            },
+                            "FrontendPort": {
+                                "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendPorts/', variables('applicationGateway').frontend.portConfiguration.name)]"
+                            },
+                            "Protocol": "Http",
+                            "SslCertificate": null
+                        }
+                    }
+                ],
+                "requestRoutingRules": [
+                    {
+                        "Name": "[concat(variables('namespace'), 'appgwroutes')]",
+                        "properties": {
+                            "RuleType": "PathBasedRouting",
+                            "httpListener": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/httpListeners/', variables('applicationGateway').frontend.httpListener.name)]"
+                            },
+                            "urlPathMap": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/urlPathMaps/', variables('applicationGateway').urlpathmap)]"
+                            }
+                        }
+                    }
+                ],
+                "urlPathMaps": [
+                    {
+                        "name": "[variables('applicationGateway').urlpathmap]",
+                        "properties": {
+                            "defaultBackendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
+                            },
+                            "defaultBackendHttpSettings": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendHttpSettingsCollection/', variables('applicationGateway').backend.httpConfiguration.name)]"
+                            },
+                            "pathRules": [
+                                {
+                                    "name": "[variables('applicationGateway').synchronybackend.pathrule.name]",
+                                    "properties": {
+                                        "paths": [
+                                            "[variables('applicationGateway').synchronybackend.pathrule.path]"
+                                        ],
+                                        "backendAddressPool": {
+                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').synchronybackend.addressPool.name)]"
+                                        },
+                                        "backendHttpSettings": {
+                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendHttpSettingsCollection/', variables('applicationGateway').synchronybackend.httpConfiguration.name)]"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "[variables('applicationGateway').backend.pathrule.name]",
+                                    "properties": {
+                                        "paths": [
+                                            "[variables('applicationGateway').backend.pathrule.path]"
+                                        ],
+                                        "backendAddressPool": {
+                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
+                                        },
+                                        "backendHttpSettings": {
+                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendHttpSettingsCollection/', variables('applicationGateway').backend.httpConfiguration.name)]"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "name": "[variables('confluence').cluster.name]",
+            "location": "[parameters('location')]",
+            "apiVersion": "[variables('azureApi').compute.version]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', variables('confluence').vnet.name)]",
+                "[concat('Microsoft.Network/applicationGateways/', variables('applicationGateway').name)]",
+                "[concat('Microsoft.Compute/virtualMachineScaleSets/', variables('confluence').synchronycluster.name)]"
+            ],
+            "sku": {
+                "name": "[variables('confluence').cluster.vm.size]",
+                "tier": "[variables('confluence').cluster.tier]",
+                "capacity": "[variables('confluence').cluster.capacity]"
+            },
+            "properties": {
+                "overprovision": "false",
+                "singlePlacementGroup": "false",
+                "upgradePolicy": {
+                    "mode": "Manual"
+                },
+                "virtualMachineProfile": {
+                    "osProfile": {
+                        "computerNamePrefix": "confluencenode-",
+                        "adminUsername": "[variables('confluence').cluster.vm.user]",
+                        "adminPassword": "[variables('confluence').cluster.vm.pass]",
+                        "linuxConfiguration": {
+                            "disablePasswordAuthentication": false
+                        }
+                    },
+                    "storageProfile": {
+                        "imageReference": {
+                            "publisher": "[variables('confluence').cluster.vm.image.publisher]",
+                            "offer": "[variables('confluence').cluster.vm.image.offer]",
+                            "sku": "[variables('confluence').cluster.vm.image.sku]",
+                            "version": "[variables('confluence').cluster.vm.image.version]"
+                        },
+                        "osDisk": {
+                            "managedDisk": {
+                                "storageAccountType": "[variables('confluence').cluster.vm.osdisk.type]"
+                            },
+                            "diskSizeGB": "[variables('confluence').cluster.vm.osdisk.size]",
+                            "createOption": "FromImage"
+                        },
+                        "dataDisks": [
+                            {
+                                "lun": 0,
+                                "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
+                                }
+                            },
+                            {
+                                "lun": 1,
+                                "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
+                                }
+                            },
+                            {
+                                "lun": 2,
+                                "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
+                                }
+                            },
+                            {
+                                "lun": 3,
+                                "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
+                                }
+                            },
+                            {
+                                "lun": 4,
+                                "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
+                                }
+                            },
+                            {
+                                "lun": 5,
+                                "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
+                                }
+                            },
+                            {
+                                "lun": 6,
+                                "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
+                                }
+                            },
+                            {
+                                "lun": 7,
+                                "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
+                                }
+                            }
+                        ]
+                    },
+                    "networkProfile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "[concat(variables('namespace'), 'scaleset-nic')]",
+                                "properties": {
+                                    "primary": "true",
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "[concat(variables('namespace'), 'scalset-ipconfig')]",
+                                            "properties": {
+                                                "subnet": {
+                                                    "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('confluence').vnet.name), '/subnets/', variables('confluence').cluster.subnet.name)]"
+                                                },
+                                                "ApplicationGatewayBackendAddressPools": [
+                                                    {
+                                                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    "extensionProfile": {
+                        "extensions": [
+                            {
+                                "name": "confluence-install-script",
+                                "properties": {
+                                    "publisher": "Microsoft.Azure.Extensions",
+                                    "type": "CustomScript",
+                                    "typeHandlerVersion": "2.0",
+                                    "autoUpgradeMinorVersion": true,
+                                    "settings": {
+                                        "fileUris": [
+                                            "[concat(uri(variables('scripts').url, variables('scripts').prepare.name), variables('scripts').token)]",
+                                            "[concat(uri(variables('scripts').url, variables('scripts').disk.name), variables('scripts').token)]",
+                                            "[concat(uri(variables('scripts').url, variables('scripts').hydrate.name), variables('scripts').token)]"
+                                        ]
+                                    },
+                                    "protectedSettings": {
+                                        "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('confluence').storage.name), '2017-06-01').keys[0].value, ' install ' , reference(variables('nat').ip.name).dnsSettings.fqdn, ' 2>&1 > ./confluence.install.log')]"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "name": "[variables('confluence').synchronycluster.name]",
+            "location": "[parameters('location')]",
+            "apiVersion": "[variables('azureApi').compute.version]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', variables('confluence').vnet.name)]",
+                "[concat('Microsoft.Network/applicationGateways/', variables('applicationGateway').name)]"
+            ],
+            "sku": {
+                "name": "[variables('confluence').synchronycluster.vm.size]",
+                "tier": "[variables('confluence').synchronycluster.tier]",
+                "capacity": "[variables('confluence').synchronycluster.capacity]"
+            },
+            "properties": {
+                "overprovision": "false",
+                "singlePlacementGroup": "false",
+                "upgradePolicy": {
+                    "mode": "Manual"
+                },
+                "virtualMachineProfile": {
+                    "osProfile": {
+                        "computerNamePrefix": "synchronynode-",
+                        "adminUsername": "[variables('confluence').synchronycluster.vm.user]",
+                        "adminPassword": "[variables('confluence').synchronycluster.vm.pass]",
+                        "linuxConfiguration": {
+                            "disablePasswordAuthentication": false
+                        }
+                    },
+                    "storageProfile": {
+                        "imageReference": {
+                            "publisher": "[variables('confluence').synchronycluster.vm.image.publisher]",
+                            "offer": "[variables('confluence').synchronycluster.vm.image.offer]",
+                            "sku": "[variables('confluence').synchronycluster.vm.image.sku]",
+                            "version": "[variables('confluence').synchronycluster.vm.image.version]"
+                        },
+                        "osDisk": {
+                            "managedDisk": {
+                                "storageAccountType": "[variables('confluence').synchronycluster.vm.osdisk.type]"
+                            },
+                            "diskSizeGB": "[variables('confluence').synchronycluster.vm.osdisk.size]",
+                            "createOption": "FromImage"
+                        }
+                    },
+                    "networkProfile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "[concat(variables('namespace'), 'synch-scaleset-nic')]",
+                                "properties": {
+                                    "primary": "true",
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "[concat(variables('namespace'), 'sync-scalset-ipconfig')]",
+                                            "properties": {
+                                                "subnet": {
+                                                    "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('confluence').vnet.name), '/subnets/', variables('confluence').synchronycluster.subnet.name)]"
+                                                },
+                                                "ApplicationGatewayBackendAddressPools": [
+                                                    {
+                                                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').synchronybackend.addressPool.name)]"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    "extensionProfile": {
+                        "extensions": [
+                            {
+                                "name": "synchrony-install-script",
+                                "properties": {
+                                    "publisher": "Microsoft.Azure.Extensions",
+                                    "type": "CustomScript",
+                                    "typeHandlerVersion": "2.0",
+                                    "autoUpgradeMinorVersion": true,
+                                    "settings": {
+                                        "fileUris": [
+                                            "[concat(uri(variables('scripts').url, variables('scripts').prepare.name), variables('scripts').token)]",
+                                            "[concat(uri(variables('scripts').url, variables('scripts').disk.name), variables('scripts').token)]",
+                                            "[concat(uri(variables('scripts').url, variables('scripts').hydrate.name), variables('scripts').token)]"
+                                        ]
+                                    },
+                                    "protectedSettings": {
+                                        "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('confluence').storage.name), '2017-06-01').keys[0].value, ' synchrony ' , reference(variables('nat').ip.name).dnsSettings.fqdn, ' 2>&1 > ./synchrony.install.log')]"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "confluence": {
+            "type": "string",
+            "value": "[reference(variables('nat').ip.name).dnsSettings.fqdn]"
+        },
+        "ssh": {
+            "type": "string",
+            "value": "[concat('ssh ', variables('nat').vm.user, '@', reference(variables('nat').ip.name).dnsSettings.fqdn)]"
+        },
+        "jdbc": {
+            "type": "string",
+            "value": "[concat('jdbc:sqlserver://', reference(variables('sql').server.name).fullyQualifiedDomainName, ':1433;database=', variables('sql').database.name, ';user=', variables('sql').server.username, '@', variables('sql').server.name, ';password=', variables('sql').server.password)]"
+        }
+    }
+}

@@ -1,0 +1,1 @@
+INSERT INTO confluence5.dbo.hibernate_unique_key (next_hi) VALUES (16);

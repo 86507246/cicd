@@ -1,0 +1,2 @@
+INSERT INTO confluence5.dbo.cwd_membership (id, parent_id, child_group_id, child_user_id) VALUES (327682, 196609, null, 262145);
+INSERT INTO confluence5.dbo.cwd_membership (id, parent_id, child_group_id, child_user_id) VALUES (327681, 196610, null, 262145);

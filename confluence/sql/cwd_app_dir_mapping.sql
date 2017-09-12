@@ -1,0 +1,1 @@
+INSERT INTO confluence5.dbo.cwd_app_dir_mapping (id, application_id, directory_id, allow_all, list_index) VALUES (163841, 98305, 131073, 'T', 0);

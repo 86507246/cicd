@@ -1,0 +1,1049 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "baseUrl": {
+            "type": "string",
+            "metadata": {
+                "description": "Base URL for Marketplace",
+                "artifactsBaseUrl": ""
+            }
+        },
+        "provisioningStorageToken": {
+            "type": "secureString",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Scripts storage access token"
+            }
+        },
+        "jiraVmSize": {
+            "type": "string",
+            "defaultValue": "Standard_DS3_v2",
+            "metadata": {
+                "description": "The size of the virtual machine used for each JIRA node."
+            }
+        },
+        "natVmSize": {
+            "type": "string",
+            "defaultValue": "Standard_DS2_v2",
+            "metadata": {
+                "description": "The size of the virtual machine used for the NAT box."
+            }
+        },
+        "cname": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "An existing CNAME that will be used to access the JIRA instance."
+            }
+        },
+        "jumpboxSshUser": {
+            "type": "string",
+            "defaultValue": "jiraadmin",
+            "metadata": {
+                "description": "The username used to SSH into the jumpbox."
+            }
+        },
+        "jumpboxSshKey": {
+            "type": "string",
+            "metadata": {
+                "description": "The public key for the jumpbox SSH user"
+            }
+        },
+        "nodeSshUser": {
+            "type": "string",
+            "defaultValue": "jiraadmin",
+            "metadata": {
+                "description": "The username used to SSH into each JIRA node from the jumpbox."
+            }
+        },
+        "nodeSshPassword": {
+            "type": "secureString",
+            "metadata": {
+                "description": "The password used to SSH into each JIRA node from the jumpbox."
+            }
+        },
+        "dbUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Database username"
+            }
+        },
+        "dbPassword": {
+            "type": "secureString",
+            "metadata": {
+                "description": "Database password"
+            }
+        },
+        "userName": {
+            "type": "string",
+            "defaultValue": "admin"
+        },
+        "userCredential": {
+            "type": "secureString"
+        },
+        "userFullname": {
+            "type": "string",
+            "defaultValue": "Admin Admin"
+        },
+        "userEmail": {
+            "type": "string",
+            "defaultValue": "admin@example.com"
+        },
+        "applicationTitle": {
+            "type": "string",
+            "defaultValue": "Atlassian Jira"
+        },
+        "applicationGatewaySize": {
+            "type": "string",
+            "allowedValues": [
+                "Standard_Small",
+                "Standard_Medium",
+                "Standard_Large"
+            ],
+            "defaultValue": "Standard_Medium",
+            "metadata": {
+                "description": "The application gateway size"
+            }
+        },
+        "clusterSize": {
+            "type": "int",
+            "allowedValues": [
+                2,
+                3,
+                4,
+                5,
+                6
+            ],
+            "defaultValue": 2,
+            "metadata": {
+                "description": "The number of JIRA nodes in the cluster"
+            }
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]"
+        }
+    },
+    "variables": {
+        "namespace": "jira",
+        "tags": {
+            "vendor": "Atlassian",
+            "product": "JIRA"
+        },
+        "diskSize": {
+            "P10": 128,
+            "P20": 512,
+            "P30": 1024
+        },
+        "azureApi": {
+            "compute": {
+                "version": "2017-03-30",
+                "vmExtensions": {
+                    "version": "2017-03-30"
+                }
+            },
+            "network": {
+                "version": "2017-03-01"
+            },
+            "storage": {
+                "version": "2016-01-01"
+            },
+            "sql": {
+                "version": "2014-04-01"
+            }
+        },
+        "jira": {
+            "storage": {
+                "name": "[concat(variables('namespace'), 'storage', uniqueString(resourceGroup().id))]"
+            },
+            "resources": {
+                "url": "[if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/'))]",
+                "token": "[parameters('provisioningStorageToken')]"
+            },
+            "vnet": {
+                "name": "[concat(variables('namespace'), 'vnet')]",
+                "prefix": "10.0.0.0/16"
+            },
+            "cluster": {
+                "name": "[concat(variables('namespace'), 'cluster')]",
+                "tier": "Standard",
+                "subnet": {
+                    "name": "[concat(variables('namespace'), 'cluster', 'subnet')]",
+                    "prefix": "10.0.2.0/24"
+                },
+                "nsg": {
+                    "name": "[concat(variables('namespace'), 'cluster', 'nsg')]"
+                },
+                "vm": {
+                    "size": "[parameters('jiraVmSize')]",
+                    "user": "[parameters('nodeSshUser')]",
+                    "pass": "[parameters('nodeSshPassword')]",
+                    "image": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "17.04",
+                        "version": "latest"
+                    },
+                    "osdisk": {
+                        "type": "Premium_LRS",
+                        "size": "100"
+                    },
+                    "datadisk": {
+                        "type": "Premium_LRS",
+                        "caching": "ReadWrite",
+                        "size": "100"
+                    }
+                }
+            },
+            "license": "AAAB8A0ODAoPeNp9Ul1vmzAUfedXWNrLFgmSknaVIiEtA2/L1EAEZB9a9+CYm8QtsS3btMt+/Yyh6gddEDyY63PuueeeN9+hQgVIFF6iSTg7n87OL9DnZYnCydmlt1MAfC+kBBVcMQpcA66YYYJHOC1xvsoXBfbS5rABlW3XGpSOwgsvFtwQalJygEg3UgplPhBTE60Z4QEVB++GKRIMcKtG0T3RkBADUSvAn5zZ1+tbl0cJjjPOlkucx4v51UMJ/5FMHR1uNZ2+//IgAS8Jq09pkEpUDTVBe/C12Jp7oiCwSHYHkVENnLpm+5EYuAHVXS2ajaaKSWeQ+/OKga9N4Xr83+DRaJRmpf8py/1VniXruFxkqb8usC1EsQI7doU2R2T2gHoWhDkVFShkld8ANejX3hh5PRuPdyJ45sO47hA+dIjfAUoE4sKgimmj2KYxYJmZRkYg2mgjDnZdgWedtZNzwunQfasrzvG8xIn/8WcrkoA6iBr4rXixhF7uIonW/JaLe37K70Fg3N3BFnAa2c//4Z5TfIUhqoVtSa3By9SOcKaJc7+ypD51rD752yjwnM+29DKcvX3frKQWGD7buSOQiuk+TAk8BuTrIp+joteC3rZjoG6Od9czhO9I3biG3QSDSJ6I01MFT3GPnN35Hw9baBMwLAIUarbD2ZcwPRpegxJGdSMJtiQjn/QCFGulFcz4pDzNWDZGR6RTwSNU/ARaX02nf"
+        },
+        "sql": {
+            "server": {
+                "name": "[concat(variables('namespace'), 'sqlserver', uniqueString(resourceGroup().id))]",
+                "username": "[parameters('dbUsername')]",
+                "password": "[parameters('dbPassword')]"
+            },
+            "database": {
+                "name": "[concat(variables('namespace'), 'sqldatabase')]",
+                "edition": "[variables('lookup').dbTierToDbEdition[variables('lookup').clusterSizeToDbTier[string(parameters('clusterSize'))]]]",
+                "collation": "SQL_Latin1_General_CP437_CI_AI",
+                "maxSizeBytes": "107374182400",
+                "schema": "jiraschema"
+            },
+            "tier": "[variables('lookup').clusterSizeToDbTier[string(parameters('clusterSize'))]]"
+        },
+        "applicationGateway": {
+            "name": "[concat(variables('namespace'), 'appgateway')]",
+            "frontend": {
+                "subnet": {
+                    "name": "[concat(variables('namespace'), 'appgwsubnet')]",
+                    "prefix": "10.0.1.0/24"
+                },
+                "ipConfiguration": {
+                    "name": "[concat(variables('namespace'), 'appgwfeipconfig')]",
+                    "address": "10.0.1.99"
+                },
+                "portConfiguration": {
+                    "name": "[concat(variables('namespace'), 'appgwfeports')]",
+                    "value": "80"
+                },
+                "httpListener": {
+                    "name": "[concat(variables('namespace'), 'appgwlistener')]"
+                }
+            },
+            "backend": {
+                "addressPool": {
+                    "name": "[concat(variables('namespace'), 'appgwaddrpool')]"
+                },
+                "httpConfiguration": {
+                    "name": "[concat(variables('namespace'), 'appgwhttpconfig')]"
+                },
+                "port": "8080"
+            }
+        },
+        "nat": {
+            "name": "[concat(variables('namespace'), 'nat')]",
+            "nsg": {
+                "name": "[concat(variables('namespace'), 'nat', 'nsg')]"
+            },
+            "vm": {
+                "size": "[parameters('natVmSize')]",
+                "user": "[parameters('jumpboxSshUser')]",
+                "key": "[parameters('jumpboxSshKey')]",
+                "image": {
+                    "publisher": "Canonical",
+                    "offer": "UbuntuServer",
+                    "sku": "17.04",
+                    "version": "latest"
+                },
+                "disk": {
+                    "name": "[concat(variables('namespace'), 'nat', 'osdisk')]",
+                    "type": "Standard_LRS"
+                }
+            },
+            "ip": {
+                "name": "[concat(variables('namespace'), 'natip')]",
+                "address": "10.0.2.99",
+                "dns": "[concat(variables('namespace'), 'nat', uniqueString(resourceGroup().id))]"
+            },
+            "subnet": {
+                "name": "[concat(variables('namespace'), 'natsubnet')]",
+                "prefix": "10.0.3.0/24"
+            },
+            "nics": {
+                "public": "[concat(variables('namespace'), 'nat', 'nic', 'public')]",
+                "private": "[concat(variables('namespace'), 'nat', 'nic', 'private')]"
+            }
+        },
+        "routing": {
+            "outbound": {
+                "name": "[concat(variables('namespace'), 'routes', 'outbound')]"
+            }
+        },
+        "lookup": {
+            "clusterSizeToDbTier": {
+                "1": "PRS2",
+                "2": "PRS2",
+                "3": "PRS2",
+                "4": "PRS4",
+                "5": "PRS4",
+                "6": "PRS4"
+            },
+            "dbTierToDbEdition": {
+                "PRS2": "PremiumRS",
+                "PRS4": "PremiumRS",
+                "PRS6": "PremiumRS",
+                "P2": "Premium",
+                "P4": "Premium",
+                "P6": "Premium"
+            }
+        },
+        "env": {
+            "storage": [
+                {
+                    "name": "STORAGE_BASE_URL",
+                    "value": "[if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/'))]"
+                },
+                {
+                    "name": "STORAGE_TOKEN",
+                    "value": "[parameters('provisioningStorageToken')]"
+                },
+                {
+                    "name": "STORAGE_ACCOUNT",
+                    "value": "[variables('jira').storage.name]"
+                }
+            ],
+            "server": [
+                {
+                    "name": "SERVER_APP_PORT",
+                    "value": "8080"
+                },
+                {
+                    "name": "SERVER_CNAME",
+                    "value": "[parameters('cname')]"
+                },
+                {
+                    "name": "SERVER_PROXY_PORT",
+
+                    "value": "80"
+                },
+                {
+                    "name": "SERVER_APP_SCHEME",
+                    "value": "http"
+                },
+                {
+                    "name": "SERVER_CLUSTER_NAME",
+                    "value": "jiracluster"
+                },
+                {
+                    "name": "SERVER_CATALINA_HOME",
+                    "value": "/catalina/home/placeholder"
+                },
+                {
+                    "name": "SERVER_SECURE_FLAG",
+                    "value": false
+                }
+            ],
+            "db": [
+                {
+                    "name": "DB_USER",
+                    "value": "[variables('sql').server.username]"
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "value": "[variables('sql').server.password]"
+                },
+                {
+                    "name": "DB_NAME",
+                    "value": "[variables('sql').database.name]"
+                }
+            ],
+            "sql": [
+                {
+                    "name": "USER_NAME",
+                    "value": "[parameters('userName')]"
+                },
+                {
+                    "name": "USER_NAME_LOWERCASE",
+                    "value": "[toLower(parameters('userName'))]"
+                },
+                {
+                    "name": "USER_FULLNAME",
+                    "value": "[parameters('userFullname')]"
+                },
+                {
+                    "name": "USER_FULLNAME_LOWERCASE",
+                    "value": "[toLower(parameters('userFullname'))]"
+                },
+                {
+                    "name": "USER_EMAIL",
+                    "value": "[parameters('userEmail')]"
+                },
+                {
+                    "name": "USER_EMAIL_LOWERCASE",
+                    "value": "[toLower(parameters('userEmail'))]"
+                },
+                {
+                    "name": "USER_CREDENTIAL",
+                    "value": "[parameters('userCredential')]"
+                },
+                {
+                    "name": "JIRA_LICENSE",
+                    "value": "[variables('jira').license]"
+                },
+                {
+                    "name": "APPLICATION_TITLE",
+                    "value": "[parameters('applicationTitle')]"
+                },
+                {
+                    "name": "BASEURL",
+                    "value": "[variables('nat').ip.dns]"
+                }
+            ],
+            "settings": [
+                {
+                    "name": "ATL_JIRA_HOME",
+                    "value": "/var/atlassian/application-data/jira"
+                },
+                {
+                    "name": "ATL_JIRA_SHARED_HOME",
+                    "value": "/media/atl/jira/shared"
+                },
+                {
+                    "name": "ATL_JIRA_INSTALL_DIR",
+                    "value": "/opt/atlassian/jira"
+                },
+                {
+                    "name": "ATL_JIRA_SHARED_HOME_NAME",
+                    "value": "jira-shared-home"
+                },
+                {
+                    "name": "ATL_JIRA_RELEASES_BASE_URL",
+                    "value": "https://s3.amazonaws.com/atlassian-software/releases"
+                },
+                {
+                    "name": "ATL_JIRA_PRODUCT",
+                    "value": "jira-software"
+                }
+            ]
+        },
+        "data": {
+            "storage": "[concat(' STORAGE_ATL_ENV_DATA=\"', base64(string(variables('env').storage)), '\" ')]",
+            "server": "[concat(' SERVER_ATL_ENV_DATA=\"', base64(string(variables('env').server)), '\" ')]",
+            "db": "[concat(' DB_ATL_ENV_DATA=\"', base64(string(variables('env').db)), '\" ')]",
+            "sql": "[concat(' SQL_ATL_ENV_DATA=\"', base64(string(variables('env').sql)), '\" ')]",
+            "settings": "[concat(' SETTINGS_ATL_ENV_DATA=\"', base64(string(variables('env').settings)), '\" ')]"
+        },
+        "scripts": {
+            "url": "[if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/'))]",
+            "token": "[parameters('provisioningStorageToken')]",
+            "prepare": {
+                "name": "prepare_install.sh",
+                "env": "[concat(variables('data').storage, variables('data').server, variables('data').db, variables('data').sql, variables('data').settings)]"
+            },
+            "disk": {
+                "name": "vm-disk-utils-0.1.sh"
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "[variables('azureApi').storage.version]",
+            "name": "[variables('jira').storage.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "Storage",
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "[variables('azureApi').network.version]",
+            "name": "[variables('nat').ip.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('nat').ip.dns]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/routeTables",
+            "apiVersion": "2017-03-01",
+            "name": "[variables('routing').outbound.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "resources": [
+                {
+                    "type": "routes",
+                    "apiVersion": "2017-03-01",
+                    "name": "nat",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/routeTables', variables('routing').outbound.name)]"
+                    ],
+                    "properties": {
+                        "addressPrefix": "0.0.0.0/0",
+                        "nextHopType": "VirtualAppliance",
+                        "nextHopIpAddress": "[variables('nat').ip.address]"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "[variables('azureApi').network.version]",
+            "name": "[variables('jira').cluster.nsg.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses', '/', variables('nat').ip.name)]"
+            ],
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allow_http",
+                        "properties": {
+                            "description": "Allow http traffic.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "[variables('applicationGateway').backend.port]",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 101,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "allow_ssh_from_jumpbox",
+                        "properties": {
+                            "description": "Allow ssh trafic from single node in internal subnet",
+                            "protocol": "TCP",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "[reference(variables('nat').ip.name).ipAddress]",
+                            "destinationPortRange": "22",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 102,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "[variables('azureApi').network.version]",
+            "name": "[variables('jira').vnet.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkSecurityGroups/', variables('jira').cluster.nsg.name)]",
+                "[resourceId('Microsoft.Network/routeTables', variables('routing').outbound.name)]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('jira').vnet.prefix]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.subnet.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('applicationGateway').frontend.subnet.prefix]"
+                        }
+                    },
+                    {
+                        "name": "[variables('jira').cluster.subnet.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('jira').cluster.subnet.prefix]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('jira').cluster.nsg.name)]"
+                            },
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables', variables('routing').outbound.name)]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "[variables('nat').subnet.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('nat').subnet.prefix]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "[variables('azureApi').network.version]",
+            "name": "[variables('nat').nics.public]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('nat').ip.name)]",
+                "[concat('Microsoft.Network/virtualNetworks/', variables('jira').vnet.name)]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "public-access",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses/', variables('nat').ip.name)]"
+                            },
+                            "subnet": {
+                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('jira').vnet.name), '/subnets/', variables('nat').subnet.name)]"
+                            }
+                        }
+                    }
+                ],
+                "enableIPForwarding": true
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "[variables('azureApi').network.version]",
+            "name": "[variables('nat').nics.private]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('nat').ip.name)]",
+                "[concat('Microsoft.Network/virtualNetworks/', variables('jira').vnet.name)]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "public-access",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "[variables('nat').ip.address]",
+                            "subnet": {
+                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('jira').vnet.name), '/subnets/', variables('jira').cluster.subnet.name)]"
+                            }
+                        }
+                    }
+                ],
+                "enableIPForwarding": true
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "[variables('azureApi').compute.version]",
+            "name": "[variables('nat').name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', variables('nat').nics.public)]",
+                "[concat('Microsoft.Network/networkInterfaces/', variables('nat').nics.private)]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('nat').vm.size]"
+                },
+                "osProfile": {
+                    "computerName": "[variables('nat').ip.dns]",
+                    "adminUsername": "[variables('nat').vm.user]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": true,
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "path": "[concat('/home/', variables('nat').vm.user, '/.ssh/authorized_keys')]",
+                                    "keyData": "[variables('nat').vm.key]"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[variables('nat').vm.image.publisher]",
+                        "offer": "[variables('nat').vm.image.offer]",
+                        "sku": "[variables('nat').vm.image.sku]",
+                        "version": "[variables('nat').vm.image.version]"
+                    },
+                    "osDisk": {
+                        "name": "[variables('nat').vm.disk.name]",
+                        "managedDisk": {
+                            "storageAccountType": "[variables('nat').vm.disk.type]"
+                        },
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces/', variables('nat').nics.public)]",
+                            "properties": {
+                                "primary": true
+                            }
+                        },
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces/', variables('nat').nics.private)]",
+                            "properties": {
+                                "primary": false
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers",
+            "apiVersion": "[variables('azureApi').sql.version]",
+            "name": "[variables('sql').server.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "properties": {
+                "version": "12.0",
+                "administratorLogin": "[variables('sql').server.username]",
+                "administratorLoginPassword": "[variables('sql').server.password]"
+            },
+            "resources": [
+                {
+                    "type": "databases",
+                    "apiVersion": "[variables('azureApi').sql.version]",
+                    "name": "[variables('sql').database.name]",
+                    "location": "[parameters('location')]",
+                    "tags": "[variables('tags')]",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', variables('sql').server.name)]"
+                    ],
+                    "properties": {
+                        "edition": "[variables('sql').database.edition]",
+                        "collation": "[variables('sql').database.collation]",
+                        "maxSizeBytes": "[variables('sql').database.maxSizeBytes]",
+                        "requestedServiceObjectiveName": "[variables('sql').tier]"
+                    }
+                },
+                {
+                    "type": "firewallrules",
+                    "apiVersion": "[variables('azureApi').sql.version]",
+                    "name": "AllowAccessToSetupVMPublicIP",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', variables('sql').server.name)]",
+                        "[concat('Microsoft.Network/publicIPAddresses/', variables('nat').ip.name)]"
+                    ],
+                    "properties": {
+                        "startIpAddress": "[reference(variables('nat').ip.name).ipAddress]",
+                        "endIpAddress": "[reference(variables('nat').ip.name).ipAddress]"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "apiVersion": "[variables('azureApi').compute.vmExtensions.version]",
+            "name": "[concat(variables('nat').name, '/prepare-install-script')]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/', variables('nat').name)]",
+                "[concat('Microsoft.Storage/storageAccounts/', variables('jira').storage.name)]",
+                "[concat('Microsoft.Sql/servers/', variables('sql').server.name, '/databases/', variables('sql').database.name)]"
+            ],
+            "properties": {
+                "publisher": "Microsoft.Azure.Extensions",
+                "type": "CustomScript",
+                "typeHandlerVersion": "2.0",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "fileUris": [
+                        "[concat(variables('jira').resources.url, 'prepare_install.sh', variables('jira').resources.token)]",
+                        "[concat(variables('jira').resources.url, 'hydrate_jira_config.py', variables('jira').resources.token)]",
+                        "[concat(variables('jira').resources.url, 'dbconfig.xml.template', variables('jira').resources.token)]",
+                        "[concat(variables('jira').resources.url, 'jira_db.sql.template', variables('jira').resources.token)]",
+                        "[concat(variables('jira').resources.url, 'server.xml.template', variables('jira').resources.token)]"
+                    ]
+                },
+                "protectedSettings": {
+                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', reference(variables('nat').ip.name).dnsSettings.fqdn, ' ', reference(variables('sql').server.name).fullyQualifiedDomainName, ' 2>&1 > ./jira.prepare.log')]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/applicationGateways",
+            "apiVersion": "[variables('azureApi').network.version]",
+            "name": "[variables('applicationGateway').name]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', variables('jira').vnet.name)]"
+            ],
+            "properties": {
+                "sku": {
+                    "name": "[parameters('applicationGatewaySize')]",
+                    "tier": "Standard",
+                    "capacity": "[parameters('clusterSize')]"
+                },
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "[concat(variables('namespace'), 'appgwipconfig')]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('jira').vnet.name), '/subnets/', variables('applicationGateway').frontend.subnet.name)]"
+                            }
+                        }
+                    }
+                ],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.ipConfiguration.name]",
+                        "properties": {
+                            "privateIPAddress": "[variables('applicationGateway').frontend.ipConfiguration.address]",
+                            "privateIPAllocationMethod": "Static",
+                            "subnet": {
+                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('jira').vnet.name), '/subnets/', variables('applicationGateway').frontend.subnet.name)]"
+                            }
+                        }
+                    }
+                ],
+                "frontendPorts": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.portConfiguration.name]",
+                        "properties": {
+                            "Port": "[variables('applicationGateway').frontend.portConfiguration.value]"
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "[variables('applicationGateway').backend.addressPool.name]"
+                    }
+                ],
+                "backendHttpSettingsCollection": [
+                    {
+                        "name": "[variables('applicationGateway').backend.httpConfiguration.name]",
+                        "properties": {
+                            "Port": "[variables('applicationGateway').backend.port]",
+                            "Protocol": "Http",
+                            "CookieBasedAffinity": "Enabled"
+                        }
+                    }
+                ],
+                "httpListeners": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.httpListener.name]",
+                        "properties": {
+                            "FrontendIPConfiguration": {
+                                "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendIPConfigurations/', variables('applicationGateway').frontend.ipConfiguration.name)]"
+                            },
+                            "FrontendPort": {
+                                "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendPorts/', variables('applicationGateway').frontend.portConfiguration.name)]"
+                            },
+                            "Protocol": "Http",
+                            "SslCertificate": null
+                        }
+                    }
+                ],
+                "requestRoutingRules": [
+                    {
+                        "Name": "[concat(variables('namespace'), 'appgwroutes')]",
+                        "properties": {
+                            "RuleType": "Basic",
+                            "httpListener": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/httpListeners/', variables('applicationGateway').frontend.httpListener.name)]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
+                            },
+                            "backendHttpSettings": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendHttpSettingsCollection/', variables('applicationGateway').backend.httpConfiguration.name)]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "name": "[variables('jira').cluster.name]",
+            "location": "[parameters('location')]",
+            "apiVersion": "[variables('azureApi').compute.version]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', variables('jira').vnet.name)]",
+                "[concat('Microsoft.Network/applicationGateways/', variables('applicationGateway').name)]"
+            ],
+            "sku": {
+                "name": "[variables('jira').cluster.vm.size]",
+                "tier": "[variables('jira').cluster.tier]",
+                "capacity": "[parameters('clusterSize')]"
+            },
+            "properties": {
+                "overprovision": "false",
+                "singlePlacementGroup": "false",
+                "upgradePolicy": {
+                    "mode": "Manual"
+                },
+                "virtualMachineProfile": {
+                    "osProfile": {
+                        "computerNamePrefix": "jiranode-",
+                        "adminUsername": "[variables('jira').cluster.vm.user]",
+                        "adminPassword": "[variables('jira').cluster.vm.pass]",
+                        "linuxConfiguration": {
+                            "disablePasswordAuthentication": false
+                        }
+                    },
+                    "storageProfile": {
+                        "imageReference": {
+                            "publisher": "[variables('jira').cluster.vm.image.publisher]",
+                            "offer": "[variables('jira').cluster.vm.image.offer]",
+                            "sku": "[variables('jira').cluster.vm.image.sku]",
+                            "version": "[variables('jira').cluster.vm.image.version]"
+                        },
+                        "osDisk": {
+                            "managedDisk": {
+                                "storageAccountType": "[variables('jira').cluster.vm.osdisk.type]"
+                            },
+                            "diskSizeGB": "[variables('jira').cluster.vm.osdisk.size]",
+                            "createOption": "FromImage"
+                        },
+                        "dataDisks": [
+                            {
+                                "lun": 0,
+                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
+                                }
+                            },
+                            {
+                                "lun": 1,
+                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
+                                }
+                            },
+                            {
+                                "lun": 2,
+                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
+                                }
+                            },
+                            {
+                                "lun": 3,
+                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
+                                }
+                            },
+                            {
+                                "lun": 4,
+                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
+                                }
+                            },
+                            {
+                                "lun": 5,
+                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
+                                }
+                            },
+                            {
+                                "lun": 6,
+                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
+                                }
+                            },
+                            {
+                                "lun": 7,
+                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
+                                "createOption": "Empty",
+                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
+                                }
+                            }
+                        ]
+                    },
+                    "networkProfile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "[concat(variables('namespace'), 'scaleset-nic')]",
+                                "properties": {
+                                    "primary": "true",
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "[concat(variables('namespace'), 'scalset-ipconfig')]",
+                                            "properties": {
+                                                "subnet": {
+                                                    "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('jira').vnet.name), '/subnets/', variables('jira').cluster.subnet.name)]"
+                                                },
+                                                "ApplicationGatewayBackendAddressPools": [
+                                                    {
+                                                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    "extensionProfile": {
+                        "extensions": [
+                            {
+                                "name": "jira-install-script",
+                                "properties": {
+                                    "publisher": "Microsoft.Azure.Extensions",
+                                    "type": "CustomScript",
+                                    "typeHandlerVersion": "2.0",
+                                    "autoUpgradeMinorVersion": true,
+                                    "settings": {
+                                        "fileUris": [
+                                            "[concat(uri(variables('scripts').url, variables('scripts').prepare.name), variables('scripts').token)]",
+                                            "[concat(uri(variables('scripts').url, variables('scripts').disk.name), variables('scripts').token)]"
+                                        ]
+                                    },
+                                    "protectedSettings": {
+                                        "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' install 2>&1 > ./jira.install.log')]"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "jira": {
+            "type": "string",
+            "value": "[reference(variables('nat').ip.name).dnsSettings.fqdn]"
+        },
+        "ssh": {
+            "type": "string",
+            "value": "[concat('ssh ', variables('nat').vm.user, '@', reference(variables('nat').ip.name).dnsSettings.fqdn)]"
+        },
+        "jdbc": {
+            "type": "string",
+            "value": "[concat('jdbc:sqlserver://', reference(variables('sql').server.name).fullyQualifiedDomainName, ':1433;database=', variables('sql').database.name, ';user=', variables('sql').server.username, '@', variables('sql').server.name, ';password=', variables('sql').server.password)]"
+        }
+    }
+}

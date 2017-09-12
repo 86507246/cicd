@@ -1,0 +1,4 @@
+INSERT INTO confluence5.dbo.cwd_user_attribute (id, user_id, directory_id, attribute_name, attribute_value, attribute_lower_value) VALUES (294913, 262145, 131073, 'requiresPasswordChange', 'false', 'false');
+INSERT INTO confluence5.dbo.cwd_user_attribute (id, user_id, directory_id, attribute_name, attribute_value, attribute_lower_value) VALUES (294914, 262145, 131073, 'invalidPasswordAttempts', '0', '0');
+INSERT INTO confluence5.dbo.cwd_user_attribute (id, user_id, directory_id, attribute_name, attribute_value, attribute_lower_value) VALUES (294915, 262145, 131073, 'passwordLastChanged', '1498539759831', '1498539759831');
+INSERT INTO confluence5.dbo.cwd_user_attribute (id, user_id, directory_id, attribute_name, attribute_value, attribute_lower_value) VALUES (294916, 262145, 131073, 'lastAuthenticated', '1498539769430', '1498539769430');
