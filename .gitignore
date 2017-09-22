@@ -6,3 +6,4 @@ node_modules
 .product
 target
 .vscode
+.createDeployResult

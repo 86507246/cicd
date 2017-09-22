@@ -129,12 +129,8 @@
         "namespace": "jira",
         "tags": {
             "vendor": "Atlassian",
-            "product": "JIRA"
-        },
-        "diskSize": {
-            "P10": 128,
-            "P20": 512,
-            "P30": 1024
+            "product": "JIRA",
+            "provider": "2F0AF47A-92C7-413A-9009-C3815BFF7AF6"
         },
         "azureApi": {
             "compute": {
