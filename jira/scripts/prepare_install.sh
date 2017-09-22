@@ -403,7 +403,7 @@ function prepare_env {
   for var in `printenv | grep _ATL_ENV_DATA | cut -d "=" -f 1`; \
     do printf '%s\n' "${!var}" | \
         base64 --decode | \
-        jq -r '.[] | "export " + .name + "=" + "\"" + .value + "\""' \
+        jq -r '[.[] | { name, escaped_value: .value | @sh }] | .[]| "export " + .name + "=" + "$(echo " + .escaped_value + ")"' \
            >> setenv.sh; \
     done
 
