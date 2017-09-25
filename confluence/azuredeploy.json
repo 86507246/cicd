@@ -618,11 +618,11 @@
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_THREADS",
-                    "value": "[sub(variables('confluence').c3p0Settings.maxConnections, 10)]"
+                    "value": "[string(sub(variables('confluence').c3p0Settings.maxConnections, 10))]"
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MIN_THREADS",
-                    "value": "[sub(variables('confluence').c3p0Settings.maxConnections, 10)]"
+                    "value": "[string(sub(variables('confluence').c3p0Settings.maxConnections, 10))]"
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_ACCEPT_COUNT",
@@ -630,11 +630,11 @@
                 },
                 {
                     "name": "CONFLUENCE_C3P0_MAX_SIZE",
-                    "value": "[variables('confluence').c3p0Settings.maxConnections]"
+                    "value": "[string(variables('confluence').c3p0Settings.maxConnections)]"
                 },
                 {
                     "name": "CONFLUENCE_C3P0_MIN_SIZE",
-                    "value": "[variables('confluence').c3p0Settings.minConnections]"
+                    "value": "[string(variables('confluence').c3p0Settings.minConnections)]"
                 },
                 {
                     "name": "CONFLUENCE_PRELOAD_DARKFEATURES",
@@ -753,11 +753,11 @@
                 },
                 {
                     "name": "ATL_CLUSTER_SIZE",
-                    "value": "[concat('', parameters('clusterSize'), '')]"
+                    "value": "[string(parameters('clusterSize'))]"
                 },
                 {
                     "name": "ATL_SYNCHRONY_CLUSTER_SIZE",
-                    "value": "[concat('', variables('confluence').synchronycluster.capacity, '')]"
+                    "value": "[string(variables('confluence').synchronycluster.capacity)]"
                 },
                 {
                     "name": "APP_GATEWAY_INTERNAL_IP",

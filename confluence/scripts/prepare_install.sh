@@ -808,6 +808,11 @@ function install_synchrony_service {
 
   local cluster_members_ips=`cat ${ATL_CONFLUENCE_SHARED_HOME}/synchrony.id.* | tr '\n' ',' | sed 's/,$//'`
 
+  local log4j_configuration_file=""
+  if [[ -f ${ATL_CONFLUENCE_SHARED_HOME}/synchrony.log4j.properties ]] ; then
+    log4j_configuration_file="-Dlog4j.configurationFile=${ATL_CONFLUENCE_SHARED_HOME}/synchrony.log4j.properties"
+  fi
+
   local synchrony_cmd="${java_bin} \
   -classpath "${dbdriver_classpath}:${synchrony_file}" \
   -Xss2048k \
@@ -827,6 +832,8 @@ function install_synchrony_service {
   -Dsynchrony.database.url=\"${hibernate_connection_url}\" \
   -Dsynchrony.service.url=\"${SYNCHRONY_SERVICE_URL},http://${node_ip}:${synchrony_port}${SYNCHRONY_CONTEXT_PATH}\" \
   -Dip.whitelist=${node_ip},127.0.0.1,localhost \
+  -Dc3p0.maxPoolSize=${CONFLUENCE_C3P0_MAX_SIZE} \
+  ${log4j_configuration_file} \
   synchrony.core \
   sql"
 
@@ -836,11 +843,9 @@ if [ -f ${confluence_home_dir}/synchrony.pid ] ; then
   kill -9 \$(cat ${confluence_home_dir}/synchrony.pid)
 fi
 rm -rvf ${confluence_home_dir}/synchrony.pid
-if [ ! -f ${confluence_home_dir}/logs/synchrony.log ] ; then
-  mkdir -p ${confluence_home_dir}/logs
-  touch ${confluence_home_dir}/logs/synchrony.log
-fi
-SYNCHRONY_DATABASE_PASSWORD="${hibernate_connection_password}" JWT_PRIVATE_KEY="${jwt_private_key}" ${synchrony_cmd} >>${confluence_home_dir}/logs/synchrony.log 2>&1 &
+mkdir -p ${confluence_home_dir}/logs
+cd ${confluence_home_dir}/logs
+SYNCHRONY_DATABASE_PASSWORD="${hibernate_connection_password}" JWT_PRIVATE_KEY="${jwt_private_key}" ${synchrony_cmd} >>/dev/null 2>&1 &
 synchrony_pid=\$!
 echo "\${synchrony_pid}" > ${confluence_home_dir}/synchrony.pid
 echo "started synchrony with pid \${synchrony_pid}"
@@ -864,6 +869,8 @@ EOT
   chmod +x ${confluence_install_dir}/bin/install_synchrony_service.sh
   chown -R confluence:confluence "${confluence_install_dir}"
   ${confluence_install_dir}/bin/install_synchrony_service.sh
+  ${confluence_install_dir}/bin/install_linux_service.sh -u >/dev/null 2>&1
+  log "Synchrony service installed"
 }
 
 function wait_until_startup_complete {
@@ -946,7 +953,6 @@ function install_synchrony {
   install_synchrony_service
   remount_share
   log "Done installing Synchrony! Starting..."
-  env -i /etc/init.d/confluence stop
   env -i /etc/init.d/synchrony start
 }
 
