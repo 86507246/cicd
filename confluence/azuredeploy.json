@@ -10,6 +10,20 @@
                 "artifactsBaseUrl": ""
             }
         },
+        "releaseDownloadBaseUrl": {
+            "type": "string",
+            "defaultValue": "https://downloads.atlassian.com/software/confluence/downloads",
+            "metadata": {
+                "description": "Base URL for downloading the confluence artifact."
+            }
+        },
+        "releaseVersionUrl": {
+            "type": "string",
+            "defaultValue": "https://confluencedcresources.blob.core.windows.net/installfiles/version",
+            "metadata": {
+                "description": "URL for obtaining the latest confluence artifact version."
+            }
+        },
         "provisioningStorageToken": {
             "type": "secureString",
             "defaultValue": "",
@@ -257,9 +271,9 @@
         },
         "confluenceVersion" : {
             "type":"string",
-            "defaultValue": "6.4.0",
+            "defaultValue": "latest",
             "metadata": {
-                "description": "The Confluence version to use. Must be 6.4.0 or later."
+                "description": "The Confluence version to use. Must be 6.4.0 or later. Use 'latest' to obtain the latest released version of Confluence automatically."
             }
         },
         "location": {
@@ -318,7 +332,7 @@
                 "capacity": "[parameters('clusterSize')]",
                 "subnet": {
                     "name": "[concat(variables('namespace'), 'cluster', 'subnet')]",
-                    "prefix": "10.0.2.0/24"
+                    "prefix": "10.0.2.0/27"
                 },
                 "nsg": {
                     "name": "[concat(variables('namespace'), 'cluster', 'nsg')]"
@@ -351,7 +365,7 @@
                 "capacity": "[if(equals(parameters('synchronyVmOption'), 'auto'), add(div(parameters('clusterSize'), 4), 2), parameters('synchronyClusterSize'))]",
                 "subnet": {
                     "name": "[concat(variables('namespace'), 'synchrony', 'subnet')]",
-                    "prefix": "10.0.4.0/24"
+                    "prefix": "10.0.4.0/27"
                 },
                 "nsg": {
                     "name": "[concat(variables('namespace'), 'synchrony', 'nsg')]"
@@ -373,7 +387,11 @@
                     }
                 }
             },
-            "license" : "[if(not(equals(parameters('licenseOption'), 'evaluation')), parameters('confluenceLicense'), 'AAABHQ0ODAoPeNpdUE1rwkAQvfsrFnqOaBqpFRYaY2jFxNiagvQ23U50IdmE2d2g/fWNWcHq9b2Z9/WQHywL7Z75ARtPZsHz7HHKwnibM380fhqIWhXDqFYGhIlTkCWHn0qqFzxC1ZQ4FHXlbjpetsgNWXTABsgopDVUyB2yAAMRKoP07yyRApXG/NRgfxplaRp/RMswcXxGe1BSg5G14qEpQWsJynFxC6V1zFWwC9lZKFAC42Mj6dTZIt/4wdtgi9QiLRd8nuxW3nqV7bz5ezDxwtevyD2vbfWNlBWfGklzb3ypYkkcQGOvdJ7FG009P7gpcO/lGqMWJJs+4TUsK90LK2pi51GYW4V1VPhrCW9W71fpR7/AhL3KfZg/SDCcNDAsAhRKqZj5WOUF8qChUIvOzfpfd1sRjgIUGOZYp9w9akoKxTePn9Mv+1yyCeM=X02ee')]"
+            "license": "[if(not(equals(parameters('licenseOption'), 'evaluation')), parameters('confluenceLicense'), 'AAABHQ0ODAoPeNpdUE1rwkAQvfsrFnqOaBqpFRYaY2jFxNiagvQ23U50IdmE2d2g/fWNWcHq9b2Z9/WQHywL7Z75ARtPZsHz7HHKwnibM380fhqIWhXDqFYGhIlTkCWHn0qqFzxC1ZQ4FHXlbjpetsgNWXTABsgopDVUyB2yAAMRKoP07yyRApXG/NRgfxplaRp/RMswcXxGe1BSg5G14qEpQWsJynFxC6V1zFWwC9lZKFAC42Mj6dTZIt/4wdtgi9QiLRd8nuxW3nqV7bz5ezDxwtevyD2vbfWNlBWfGklzb3ypYkkcQGOvdJ7FG009P7gpcO/lGqMWJJs+4TUsK90LK2pi51GYW4V1VPhrCW9W71fpR7/AhL3KfZg/SDCcNDAsAhRKqZj5WOUF8qChUIvOzfpfd1sRjgIUGOZYp9w9akoKxTePn9Mv+1yyCeM=X02ee')]",
+            "c3p0Settings": {
+                "minConnections": "[div(coalesce(variables('lookup').dbTierToMaxConnections[variables('sql').tier], 300), add(parameters('clusterSize'), parameters('synchronyClusterSize')))]",
+                "maxConnections": "[div(coalesce(variables('lookup').dbTierToMaxConnections[variables('sql').tier], 300), add(parameters('clusterSize'), parameters('synchronyClusterSize')))]"
+            }
         },
         "sql": {
             "server": {
@@ -472,8 +490,8 @@
             },
             "ip": {
                 "name": "[concat(variables('namespace'), 'natip')]",
-                "confluencesubnetaddress": "10.0.2.99",
-                "synchronysubnetaddress": "10.0.4.99",
+                "confluencesubnetaddress": "10.0.2.4",
+                "synchronysubnetaddress": "10.0.4.4",
                 "dns": "[concat(variables('namespace'), 'nat', uniqueString(resourceGroup().id))]"
             },
             "subnet": {
@@ -495,6 +513,28 @@
             }
         },
         "lookup": {
+            "dbTierToMaxConnections" : {
+                "Basic" : 300,
+                "S0" : 600,
+                "S1" : 900,
+                "S2" : 1200,
+                "S3" : 2400,
+                "S4" : 4800,
+                "S6" : 9600,
+                "S7" : 19200,
+                "S9" : 30000,
+                "S12" : 30000,
+                "P1" : 30000,
+                "P2" : 30000,
+                "P4" : 30000,
+                "P6" : 30000,
+                "P11" : 30000,
+                "P15" : 30000,
+                "PRS1" : 30000,
+                "PRS2" : 30000,
+                "PRS4" : 30000,
+                "PRS6" : 30000
+            },
             "clusterSizeToDbTier": {
                 "1": "PRS2",
                 "2": "PRS2",
@@ -578,11 +618,11 @@
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_THREADS",
-                    "value": "48"
+                    "value": "[sub(variables('confluence').c3p0Settings.maxConnections, 10)]"
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MIN_THREADS",
-                    "value": "10"
+                    "value": "[sub(variables('confluence').c3p0Settings.maxConnections, 10)]"
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_ACCEPT_COUNT",
@@ -590,11 +630,11 @@
                 },
                 {
                     "name": "CONFLUENCE_C3P0_MAX_SIZE",
-                    "value": "60"
+                    "value": "[variables('confluence').c3p0Settings.maxConnections]"
                 },
                 {
                     "name": "CONFLUENCE_C3P0_MIN_SIZE",
-                    "value": "10"
+                    "value": "[variables('confluence').c3p0Settings.minConnections]"
                 },
                 {
                     "name": "CONFLUENCE_PRELOAD_DARKFEATURES",
@@ -697,7 +737,11 @@
                 },
                 {
                     "name": "ATL_CONFLUENCE_RELEASES_BASE_URL",
-                    "value": "https://downloads.atlassian.com/software/confluence/downloads"
+                    "value": "[parameters('releaseDownloadBaseUrl')]"
+                },
+                {
+                    "name": "LATEST_CONFLUENCE_PRODUCT_VERSION_URL",
+                    "value": "[parameters('releaseVersionUrl')]"
                 },
                 {
                     "name": "ATL_CONFLUENCE_PRODUCT",

@@ -3,13 +3,19 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "baseUrl": {
-            "value": "https://confluencedcresources.blob.core.windows.net/installfiles"
+            "value": "https://installfilesstaging.blob.core.windows.net/installfilesstaging"
+        },
+        "releaseDownloadBaseUrl": {
+            "value": "https://installfilesstaging.blob.core.windows.net/installfilesstaging/downloads"
+        },
+        "releaseVersionUrl": {
+            "value": "https://installfilesstaging.blob.core.windows.net/installfilesstaging/version"
         },
         "confluenceVmSize": {
             "value": "Standard_DS2_v2"
         },
         "synchronyVmSize": {
-            "value": "Standard_F1s"
+            "value": "Standard_F2"
         },
         "synchronyVmOption": {
             "value": "manual"
@@ -21,7 +27,7 @@
             "value": 2
         },
         "synchronyClusterSize": {
-            "value": 3
+            "value": 2
         },
         "jumpboxSshKey": {
             "value": "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA1KKu1t+Ti8rA+DgQ5A/KrLqcEG/mbz3Fp0I4B+4uChv18rmZZJPeDbVpk+aoidSX8awn2CBiFSdtVztrLg5+J/413skvFSwOEvlt1vx0iGhNOHOqAVWiisrEW83WkuSEpN12ipy4oajvo8cJfpdqg7YaUGNgWPV2FNNh5wpD5FQysw/WhkG/q4sTaEG2GCv3oTYF7FLirZMDJmAuBN63FE4DE2aY6385BBPQzTr14dvD3m0vuObC5c473b758KLpyp6iROh23Vun7AELsK/8GLCdRnpdU2zv536wkuo4Nmq2nrzSk6mnLBhrUUtiHL2Ks7mFJsuKEDARWGMV/fauqw== jxie@chii.sydney.atlassian.com"

@@ -70,34 +70,41 @@ function tune_tcp_keepalive_for_azure {
 }
 
 function preserve_installer {
-  local confluence_installer="${ATL_CONFLUENCE_PRODUCT}-${ATL_CONFLUENCE_VERSION}-x64.bin"
+  local confluence_version=$(cat version)
+  local confluence_installer="${ATL_CONFLUENCE_PRODUCT}-${confluence_version}-x64.bin"
 
-  if ! [ -f `pwd`/${confluence_installer} ] ; then
-      error "File not found after download completed at `pwd`/${confluence_installer}. Failing."
-  fi
-  atl_log preserve_installer "preserving installer at `pwd`/${confluence_installer} to ${ATL_CONFLUENCE_SHARED_HOME}/${confluence_installer}"
-  if ! [ -f ${ATL_CONFLUENCE_SHARED_HOME}/${confluence_installer} ] ; then
-    cp -vf `pwd`/${confluence_installer} "${ATL_CONFLUENCE_SHARED_HOME}/${confluence_installer}"
-  else
-    atl_log preserve_installer "Found existing installer at ${ATL_CONFLUENCE_SHARED_HOME}/${confluence_installer}. Not copying"
-  fi
-  atl_log preserve_installer "Finished preserving installer at `pwd`/${confluence_installer} to ${ATL_CONFLUENCE_SHARED_HOME}/${confluence_installer}"
+  log "preserving ${ATL_CONFLUENCE_PRODUCT} installer ${confluence_installer} and metadata"
+  cp installer ${ATL_CONFLUENCE_SHARED_HOME}/${confluence_installer}
+  cp version ${ATL_CONFLUENCE_SHARED_HOME}/$ATL_CONFLUENCE_PRODUCT.version
+  log "${ATL_CONFLUENCE_PRODUCT} installer ${confluence_installer} and metadata has been preserved"
 }
 
 function download_installer {
-  local confluence_installer="${ATL_CONFLUENCE_PRODUCT}-${ATL_CONFLUENCE_VERSION}-x64.bin"
-  local confluence_installer_url="${ATL_CONFLUENCE_RELEASES_BASE_URL}/${confluence_installer}"
-  local current_dir=$(pwd)
-
-  atl_log download_installer "Downloading ${confluence_installer_url} to ${current_dir}/${confluence_installer}"
-
-  if ! curl -O -L -f --silent "${confluence_installer_url}"
+  if [ ${ATL_CONFLUENCE_VERSION} = 'latest' ]
   then
-    error "Could not download installer from ${confluence_installer_url}"
+    log "using the latest version of confluence"
+    local confluence_version_file_url="${LATEST_CONFLUENCE_PRODUCT_VERSION_URL}"
+    log "Downloading installer description from ${confluence_version_file_url}"
+
+    if ! curl -L -f --silent "${confluence_version_file_url}" -o "version" 2>&1
+    then
+        error "Could not download installer description from ${confluence_version_file_url}"
+    fi
+  else
+    log "using version ${ATL_CONFLUENCE_VERSION} of confluence"
+    echo -n "${ATL_CONFLUENCE_VERSION}" > version
   fi
 
-  if ! [ -f ${current_dir}/${confluence_installer} ] ; then
-    error "File not found after download completed: ${current_dir}/${confluence_installer}. Failing."
+
+  local confluence_version=$(cat version)
+  local confluence_installer="${ATL_CONFLUENCE_PRODUCT}-${confluence_version}-x64.bin"
+  local confluence_installer_url="${ATL_CONFLUENCE_RELEASES_BASE_URL}/${confluence_installer}"
+
+  log "Downloading ${ATL_CONFLUENCE_PRODUCT} installer from ${confluence_installer_url}"
+
+  if ! curl -L -f --silent "${confluence_installer_url}" -o "installer" 2>&1
+  then
+    error "Could not download ${ATL_CONFLUENCE_PRODUCT} installer from ${confluence_installer_url}"
   fi
 }
 
@@ -504,22 +511,24 @@ EOT
 # Kinda forward thinking about upgrades and ZDU
 # Also it almost straight copy-paste from our AWS scripts
 function restore_installer {
-  local confluence_installer="${ATL_CONFLUENCE_PRODUCT}-${ATL_CONFLUENCE_VERSION}-x64.bin"
+  local confluence_version=$(cat ${ATL_CONFLUENCE_SHARED_HOME}/${ATL_CONFLUENCE_PRODUCT}.version)
+  local confluence_installer="${ATL_CONFLUENCE_PRODUCT}-${confluence_version}-x64.bin"
 
-  atl_log restore_installer "Using existing installer ${confluence_installer} from ${ATL_CONFLUENCE_SHARED_HOME} mount"
+  log "Using existing installer ${confluence_installer} from ${ATL_CONFLUENCE_SHARED_HOME} mount"
 
   local installer_path="${ATL_CONFLUENCE_SHARED_HOME}/${confluence_installer}"
-  local installer_target="`pwd`/${confluence_installer}"
+  local installer_target="${ATL_TEMP_DIR}/installer"
 
   if [[ -f ${installer_path} ]]; then
     cp ${installer_path} "${installer_target}"
     chmod 0700 "${installer_target}"
   else
-    local msg="${ATL_CONFLUENCE_PRODUCT} installer ${confluence_installer} has been requested but unable to locate it in ${ATL_CONFLUENCE_SHARED_HOME}"
+    local msg="${ATL_CONFLUENCE_PRODUCT} installer ${confluence_installer} ca been requested but unable to locate it in ${ATL_CONFLUENCE_SHARED_HOME}"
+    log "${msg}"
     error "${msg}"
   fi
 
-  atl_log restore_installer "Restoration of ${ATL_CONFLUENCE_PRODUCT} installer ${confluence_installer} has been completed"
+  log "Restoration of ${ATL_CONFLUENCE_PRODUCT} installer ${confluence_installer} has been completed"
 }
 
 function ensure_readable {
@@ -551,9 +560,11 @@ function ensure_readable {
 # Check if we already have installer in shared home and restores it if we do
 # otherwise just downloads the installer and puts it into shared home
 function prepare_installer {
-  log "Checking if installer has been downloaded already"
-  if [[ -f ${ATL_CONFLUENCE_SHARED_HOME}/${ATL_CONFLUENCE_PRODUCT}-${ATL_CONFLUENCE_VERSION}-x64.bin ]]; then
-    log "Detected installer at ${ATL_CONFLUENCE_SHARED_HOME}/${ATL_CONFLUENCE_PRODUCT}-${ATL_CONFLUENCE_VERSION}-x64.bin"
+  log "Checking if installer has been downloaded aready"
+  ensure_readable "${ATL_CONFLUENCE_SHARED_HOME}/${ATL_CONFLUENCE_PRODUCT}.version"
+  if [[ -f ${ATL_CONFLUENCE_SHARED_HOME}/${ATL_CONFLUENCE_PRODUCT}.version ]]; then
+    log "Detected installer, restoring it"
+    restore_installer
   else
     log "No installer has been found, downloading..."
     download_installer
@@ -564,8 +575,6 @@ function prepare_installer {
 }
 
 function perform_install {
-  local confluence_installer="${ATL_CONFLUENCE_PRODUCT}-${ATL_CONFLUENCE_VERSION}-x64.bin"
-
   log "Ready to perform installation"
 
   log "Checking if ${ATL_CONFLUENCE_PRODUCT} has already been installed"
@@ -576,18 +585,17 @@ function perform_install {
 
   log "Creating ${ATL_CONFLUENCE_PRODUCT} install directory"
   mkdir -p "${ATL_CONFLUENCE_INSTALL_DIR}"
-  cp -vf "${ATL_CONFLUENCE_SHARED_HOME}/${confluence_installer}" "${ATL_TEMP_DIR}/${confluence_installer}"
 
-  log "Installing to ${ATL_CONFLUENCE_INSTALL_DIR}"
-  sh "${ATL_TEMP_DIR}/${confluence_installer}" -q -varfile "${ATL_CONFLUENCE_VARFILE}" 2>&1
-  log "Installed to ${ATL_CONFLUENCE_INSTALL_DIR}"
+  log "Installing ${ATL_CONFLUENCE_PRODUCT} to ${ATL_CONFLUENCE_INSTALL_DIR}"
+  sh "${ATL_TEMP_DIR}/installer" -q -varfile "${ATL_CONFLUENCE_VARFILE}" 2>&1
+  log "Installed ${ATL_CONFLUENCE_PRODUCT} to ${ATL_CONFLUENCE_INSTALL_DIR}"
 
   log "Cleaning up..."
-  rm -vrf "${ATL_TEMP_DIR}"/${confluence_installer} 2>&1
+  rm -rf "${ATL_TEMP_DIR}"/installer* 2>&1
 
   chown -R confluence:confluence "${ATL_CONFLUENCE_INSTALL_DIR}"
 
-  log "${ATL_CONFLUENCE_PRODUCT} installation completed"
+  log "${ATL_CONFLUENCE_PDORUCT} installation completed"
 }
 
 function download_mssql_driver {
@@ -609,9 +617,8 @@ function get_unique_id {
 }
 
 function configure_cluster {
-  local _all_possible_cluster_ips=`for n in {4..40}  ; do echo "10.0.2.${n}" ; done | tr '\n' ' ' | sed 's/ $//'`
-  local nat_escaped_ip=$(echo "${NAT_INTERNAL_IP}" | sed "s/\./~./g" | sed "s#~#\\\#g")
-  local _all_possible_nodes_ips=`echo "${_all_possible_cluster_ips}" | sed "s/,${nat_escaped_ip}//" |tr '\n' ' ' | sed 's/ $//'`
+  local _all_possible_cluster_ips=`for n in {5..30}  ; do echo "10.0.2.${n}" ; done | tr '\n' ' ' | sed 's/ $//'`
+  local _all_possible_nodes_ips=`echo "${_all_possible_cluster_ips}"`
   log "Checking all possible ips for existing nodes: ${_all_possible_nodes_ips}"
   declare -a _all_active_ips=($(for ip in ${_all_possible_cluster_ips}; do [[ `curl -o /dev/null -w "%{http_code}" --connect-timeout 1 --silent "http://${ip}:8080/status"` == 200 ]] && echo "${ip}" ; done))
   log "Found the following active nodes: [${_all_active_ips[@]}]"
@@ -772,9 +779,8 @@ function install_synchrony_service {
   local synchrony_unique_node_id=`get_unique_id`
   local wait_time=$((${ATL_SYNCHRONY_CLUSTER_SIZE:-0} * 20))
 
-  local _all_possible_cluster_ips=`for n in {4..40}  ; do echo "10.0.4.${n}" ; done | tr '\n' ' ' | sed 's/ $//'`
-  local nat_escaped_ip=$(echo "${NAT_SYNCHRONY_INTERNAL_IP}" | sed "s/\./~./g" | sed "s#~#\\\#g")
-  local _all_possible_nodes_ips=`echo "${_all_possible_cluster_ips}" | sed "s/,${nat_escaped_ip}//" |tr '\n' ' ' | sed 's/ $//'`
+  local _all_possible_cluster_ips=`for n in {5..30}  ; do echo "10.0.4.${n}" ; done | tr '\n' ' ' | sed 's/ $//'`
+  local _all_possible_nodes_ips=`echo "${_all_possible_cluster_ips}"`
   log "Checking all possible ips for existing nodes: ${_all_possible_nodes_ips}"
   declare -a _all_active_ips=($(for ip in ${_all_possible_cluster_ips}; do [[ `curl -o /dev/null -w "%{http_code}" --connect-timeout 1 --silent "http://${ip}:${SERVER_SYNCHRONY_INTERNAL_PORT}/synchrony/heartbeat"` == 200 ]] && echo "${ip}" ; done))
   log "Found the following active nodes: [${_all_active_ips[@]}]"
@@ -940,6 +946,7 @@ function install_synchrony {
   install_synchrony_service
   remount_share
   log "Done installing Synchrony! Starting..."
+  env -i /etc/init.d/confluence stop
   env -i /etc/init.d/synchrony start
 }
 
