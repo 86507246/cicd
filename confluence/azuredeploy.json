@@ -389,8 +389,8 @@
             },
             "license": "[if(not(equals(parameters('licenseOption'), 'evaluation')), parameters('confluenceLicense'), 'AAABHQ0ODAoPeNpdUE1rwkAQvfsrFnqOaBqpFRYaY2jFxNiagvQ23U50IdmE2d2g/fWNWcHq9b2Z9/WQHywL7Z75ARtPZsHz7HHKwnibM380fhqIWhXDqFYGhIlTkCWHn0qqFzxC1ZQ4FHXlbjpetsgNWXTABsgopDVUyB2yAAMRKoP07yyRApXG/NRgfxplaRp/RMswcXxGe1BSg5G14qEpQWsJynFxC6V1zFWwC9lZKFAC42Mj6dTZIt/4wdtgi9QiLRd8nuxW3nqV7bz5ezDxwtevyD2vbfWNlBWfGklzb3ypYkkcQGOvdJ7FG009P7gpcO/lGqMWJJs+4TUsK90LK2pi51GYW4V1VPhrCW9W71fpR7/AhL3KfZg/SDCcNDAsAhRKqZj5WOUF8qChUIvOzfpfd1sRjgIUGOZYp9w9akoKxTePn9Mv+1yyCeM=X02ee')]",
             "c3p0Settings": {
-                "minConnections": "[div(coalesce(variables('lookup').dbTierToMaxConnections[variables('sql').tier], 300), add(parameters('clusterSize'), parameters('synchronyClusterSize')))]",
-                "maxConnections": "[div(coalesce(variables('lookup').dbTierToMaxConnections[variables('sql').tier], 300), add(parameters('clusterSize'), parameters('synchronyClusterSize')))]"
+                "minConnections": "[min(300, div(coalesce(variables('lookup').dbTierToMaxConnections[variables('sql').tier], 300), add(parameters('clusterSize'), parameters('synchronyClusterSize'))))]",
+                "maxConnections": "[min(300, div(coalesce(variables('lookup').dbTierToMaxConnections[variables('sql').tier], 300), add(parameters('clusterSize'), parameters('synchronyClusterSize'))))]"
             }
         },
         "sql": {
