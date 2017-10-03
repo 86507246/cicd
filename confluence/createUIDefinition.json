@@ -94,43 +94,6 @@
                 }
               }
             ]
-          },
-          {
-            "name": "license",
-            "type": "Microsoft.Common.Section",
-            "label": "Confluence License",
-            "elements": [
-              {
-                "name": "licenseOption",
-                "type": "Microsoft.Common.OptionsGroup",
-                "label": "Choose a license option",
-                "defaultValue": "Evaluation License",
-                "toolTip": "Select 'Custom License' to add your own Confluence Data Center license, or select 'Evaluation License' to automatically preload an evaluation license.",
-                "constraints": {
-                  "allowedValues": [
-                    {
-                      "label": "Evaluation License",
-                      "value": "evaluation"
-                    },
-                    {
-                      "label": "Custom License",
-                      "value": "custom"
-                    }
-                  ]
-                }
-              },
-              {
-                "name": "licenseString",
-                "type": "Microsoft.Common.TextBox",
-                "defaultValue": "",
-                "label": "Your Confluence Data Center License",
-                "toolTip": "You can find your licenses at https://my.atlassian.com",
-                "constraints": {
-                  "required": "[equals('custom', steps('administrator').license.licenseOption)]"
-                },
-                "visible": "[equals('custom', steps('administrator').license.licenseOption)]"
-              }
-            ]
           }
         ]
       },
@@ -156,8 +119,8 @@
                 "toolTip": "Pick how many Confluence nodes to run in the cluster.",
                 "constraints": {
                   "required": true,
-                  "regex": "^[2-6]$",
-                  "validationMessage": "Supported cluster sizes are between 2 and 6 nodes"
+                  "regex": "^[1-6]$",
+                  "validationMessage": "Supported cluster sizes are between 1 and 6 nodes"
                 }
               },
               {
@@ -266,8 +229,8 @@
                 "toolTip": "Pick how many Synchrony nodes to run in the cluster.",
                 "constraints": {
                   "required": true,
-                  "regex": "^[2-6]$",
-                  "validationMessage": "Supported cluster sizes are between 2 and 6 nodes"
+                  "regex": "^[1-6]$",
+                  "validationMessage": "Supported cluster sizes are between 1 and 6 nodes"
                 },
                 "visible": "[equals('manual', steps('infrastructure').synchrony.synchronyVmOption)]"
               },
@@ -328,7 +291,7 @@
             "name": "dbTierOption",
             "type": "Microsoft.Common.OptionsGroup",
             "label": "Database Tier Option",
-            "toolTip": "Choose 'Automatic' to automatically select the best database tier and edition based on your cluster size.",
+            "toolTip": "The Automatic option will use a Premium RS type and Performance Level suitable for the number of Confluence nodes selected. You may also select the Manual option to control your database performance & cost. Consider consulting the Azure Pricing Calculator.",
             "defaultValue": "Automatic",
             "constraints": {
               "allowedValues": [
@@ -541,8 +504,6 @@
       "userFullname": "[steps('administrator').account.fullname]",
       "userEmail": "[steps('administrator').account.email]",
       "userCredential": "[steps('administrator').account.password]",
-      "confluenceLicense": "[steps('administrator').license.licenseString]",
-      "licenseOption": "[steps('administrator').license.licenseOption]",
       "clusterSize": "[int(steps('infrastructure').confluence.confluenceclustersize)]",
       "synchronyClusterSize": "[int(coalesce(steps('infrastructure').synchrony.synchronyclustersize, 2))]"
     }
