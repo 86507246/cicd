@@ -6,9 +6,13 @@ const runSequenceImport = require('run-sequence')
 
 
 const GROUP_FILE = '.group'
+const DEPLOYMENT_FILE = '.deployment'
 const PREFIX_FILE = '.prefix'
 const LOCATION_FILE = '.location'
 const PRODUCT_FILE = '.product'
+
+const MAIN_TEMPLATE_NAME = 'mainTemplate.json'
+const CREATE_UI_DEFINITION_NAME = 'createUiDefinition.json'
 
 const product = function () {
     return shell.test('-f', PRODUCT_FILE) ? shell.cat(PRODUCT_FILE).trim() : "jira"
@@ -32,10 +36,19 @@ const next = function () {
 	return current() + 1
 }
 
+const nextDeployment = function () {
+	return currentDeployment() + 1
+}
+
+const currentDeployment = function () {
+	return shell.test('-f', DEPLOYMENT_FILE) ? parseInt(shell.cat(DEPLOYMENT_FILE)) : 0
+}
+
 async function createDeploymentTask(deployment = getDeploymentPath(), params = getDeploymentParametersPath()) {
 	const group = current()
+	const deploymentNumber = currentDeployment()
 	if (group) {
-		return new Promise((resolve, reject) => shell.exec(`az group deployment create -g ${prefix()}${GROUP_NAME}${group} --template-file ${deployment} --parameters @${params}`, (code, stdout, stderr) => {
+		return new Promise((resolve, reject) => shell.exec(`az group deployment create -n "deployment-${deploymentNumber}" -g ${prefix()}${GROUP_NAME}${group} --template-file ${deployment} --parameters @${params}`, (code, stdout, stderr) => {
 			if (code !== 0) {
 				reject(new Error(stdout + stderr))
 			}
@@ -43,6 +56,8 @@ async function createDeploymentTask(deployment = getDeploymentPath(), params = g
 		})).then(result => {
 			const createDeployResult = JSON.parse(result)
 			fs.writeFileSync('.createDeployResult', result)
+			const nextDeployment = nextDeployment()
+			shell.echo(nextDeployment).to(DEPLOYMENT_FILE)
 			return createDeployResult
 		})
 	}
@@ -113,8 +128,8 @@ function applyTasks (gulp) {
 		const jira = path.resolve(target, 'jira')
 
 		shell.mkdir('-p', jira)
-		shell.cp(path.resolve(source, 'azuredeploy.json'), path.resolve(jira, 'mainTemplate.json'))
-		shell.cp(path.resolve(source, 'createUIDefinition.json'), path.resolve(jira, 'createUiDefinition.json'))
+		shell.cp(path.resolve(source, 'azuredeploy.json'), path.resolve(jira, MAIN_TEMPLATE_NAME))
+		shell.cp(path.resolve(source, 'createUIDefinition.json'), path.resolve(jira, CREATE_UI_DEFINITION_NAME))
 		shell.cp(path.resolve(source, 'scripts', '*'), jira)
 		shell.cp(path.resolve(source, 'templates', '*'), jira)
 		shell.exec([
@@ -134,8 +149,8 @@ function applyTasks (gulp) {
 		resources.forEach(dir => {
 			shell.mkdir('-p', path.resolve(confluence, dir))
 		})
-		shell.cp(path.resolve(source, 'azuredeploy.json'), path.resolve(confluence, 'MainTemplate.json'))
-		shell.cp(path.resolve(source, 'createUIDefinition.json'), confluence)
+		shell.cp(path.resolve(source, 'azuredeploy.json'), path.resolve(confluence, MAIN_TEMPLATE_NAME))
+		shell.cp(path.resolve(source, 'createUIDefinition.json'), path.resolve(confluence, CREATE_UI_DEFINITION_NAME))
 		resources.forEach(dir => {
 			shell.cp(path.resolve(source, dir, '*'), path.resolve(confluence, dir))
 		})
