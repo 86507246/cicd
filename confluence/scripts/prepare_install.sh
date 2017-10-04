@@ -850,9 +850,9 @@ synchrony_pid=\$!
 echo "\${synchrony_pid}" > ${confluence_home_dir}/synchrony.pid
 echo "started synchrony with pid \${synchrony_pid}"
 echo "============================================"
-echo "= ${confluence_home_dir}/logs/synchrony.log "
+echo "${confluence_home_dir}/logs/atlassian-synchrony.log "
 echo "============================================"
-tail -n 200 ${confluence_home_dir}/logs/synchrony.log
+tail -n 200 ${confluence_home_dir}/logs/atlassian-synchrony.log
 EOT
   cat <<EOT > ${confluence_install_dir}/bin/stop-synchrony.sh
 if [ -f ${confluence_home_dir}/synchrony.pid ] ; then
