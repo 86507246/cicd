@@ -198,7 +198,7 @@ function issue_signed_request {
   request_date=$(TZ=GMT date "+%a, %d %h %Y %H:%M:%S %Z")
   storage_service_version="2015-04-05"
   authorization="SharedKey"
-  file_store_url="file.core.windows.net"
+  file_store_url="${FILE_STORE_URL_DOMAIN}"
   full_url="https://${STORAGE_ACCOUNT}.${file_store_url}/${request_url}"
 
   x_ms_date_h="x-ms-date:$request_date"

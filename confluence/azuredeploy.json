@@ -19,9 +19,16 @@
         },
         "releaseVersionUrl": {
             "type": "string",
-            "defaultValue": "https://confluencedcresources.blob.core.windows.net/installfiles/version",
+            "defaultValue": "https://confluencedcversion.blob.core.windows.net/version/latest",
             "metadata": {
                 "description": "URL for obtaining the latest confluence artifact version."
+            }
+        },
+        "fileStoreUrlDomain" : {
+            "type" : "string",
+            "defaultValue": "file.core.windows.net",
+            "metadata" : {
+                "description" : "The domain of the file store for Azure."
             }
         },
         "provisioningStorageToken": {
@@ -62,8 +69,12 @@
             "allowedValues" : [
                 "Standard_D8s_v3",
                 "Standard_D16s_v3",
+                "Standard_D32s_v3",
+                "Standard_D64s_v3",
                 "Standard_D8_v3",
                 "Standard_D16_v3",
+                "Standard_D32_v3",
+                "Standard_D64_v3",
                 "Standard_DS3_v2",
                 "Standard_DS4_v2",
                 "Standard_DS5_v2",
@@ -80,12 +91,47 @@
                 "Standard_A8m_v2",
                 "Standard_A4",
                 "Standard_A7",
+                "Standard_B2s",
+                "Standard_B2ms",
+                "Standard_B4ms",
+                "Standard_B8ms",
                 "Standard_F4s",
                 "Standard_F8s",
                 "Standard_F16s",
                 "Standard_F4",
                 "Standard_F8",
-                "Standard_F16"
+                "Standard_F16",
+                "Standard_E8s_v3",
+                "Standard_E16s_v3",
+                "Standard_E32s_v3",
+                "Standard_E64s_v3",
+                "Standard_E8_v3",
+                "Standard_E16_v3",
+                "Standard_E32_v3",
+                "Standard_E64_v3",
+                "Standard_GS3",
+                "Standard_GS4",
+                "Standard_GS5",
+                "Standard_G3",
+                "Standard_G4",
+                "Standard_G5",
+                "Standard_DS12_v2",
+                "Standard_DS13_v2",
+                "Standard_DS14_v2",
+                "Standard_DS15_v2",
+                "Standard_D12_v2",
+                "Standard_D13_v2",
+                "Standard_D14_v2",
+                "Standard_D15_v2",
+                "Standard_DS12",
+                "Standard_DS13",
+                "Standard_DS14",
+                "Standard_D12",
+                "Standard_D13",
+                "Standard_D14",
+                "Standard_L8s",
+                "Standard_L16s",
+                "Standard_L32s"
             ],
             "metadata": {
                 "description": "The size of the virtual machine used for the NAT box."
@@ -208,7 +254,7 @@
         },
         "confluenceLicense": {
             "type": "secureString",
-            "defaultValue": "AAABHQ0ODAoPeNpdUE1rwkAQvfsrFnqOaBqpFRYaY2jFxNiagvQ23U50IdmE2d2g/fWNWcHq9b2Z9/WQHywL7Z75ARtPZsHz7HHKwnibM380fhqIWhXDqFYGhIlTkCWHn0qqFzxC1ZQ4FHXlbjpetsgNWXTABsgopDVUyB2yAAMRKoP07yyRApXG/NRgfxplaRp/RMswcXxGe1BSg5G14qEpQWsJynFxC6V1zFWwC9lZKFAC42Mj6dTZIt/4wdtgi9QiLRd8nuxW3nqV7bz5ezDxwtevyD2vbfWNlBWfGklzb3ypYkkcQGOvdJ7FG009P7gpcO/lGqMWJJs+4TUsK90LK2pi51GYW4V1VPhrCW9W71fpR7/AhL3KfZg/SDCcNDAsAhRKqZj5WOUF8qChUIvOzfpfd1sRjgIUGOZYp9w9akoKxTePn9Mv+1yyCeM=X02ee",
+            "defaultValue" : "",
             "metadata": {
                 "description": "The license to be used for the instance. This license MUST be a Confluence Data Center license. Ignored if 'licenseOption' is set to 'evaluation'."
             }
@@ -227,6 +273,17 @@
                 "description": "The site title for Confluence."
             }
         },
+        "applicationGatewaySizeOption": {
+            "type": "string",
+            "defaultValue": "auto",
+            "metadata": {
+                "description": "Choose whether the Application Gateway size is selected automatically. Set to manual, and change the 'applicationGatewaySize' parameter."
+            },
+            "allowedValues": [
+                "auto",
+                "manual"
+            ]
+        },
         "applicationGatewaySize": {
             "type": "string",
             "allowedValues": [
@@ -236,7 +293,7 @@
             ],
             "defaultValue": "Standard_Medium",
             "metadata": {
-                "description": "The application gateway size. If using 5 nodes or more, Standard_Large is recommended."
+                "description": "The application gateway size. If using 5 nodes or more, Standard_Large is recommended. Ignored if the parameter 'applicationGatewaySizeOption' is set to auto."
             }
         },
         "clusterSize": {
@@ -317,9 +374,9 @@
                 "name": "[concat(variables('namespace'), 'storage', uniqueString(resourceGroup().id))]"
             },
             "resources": {
-                "templates": "[concat(if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/')), 'templates', '/')]",
-                "scripts": "[concat(if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/')), 'scripts', '/')]",
-                "libs": "[concat(if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/')), 'libs', '/')]",
+                "templates": "[uri(if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/')), 'templates/')]",
+                "scripts": "[uri(if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/')), 'scripts/')]",
+                "libs": "[uri(if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/')), 'libs/')]",
                 "token": "[parameters('provisioningStorageToken')]"
             },
             "vnet": {
@@ -387,7 +444,7 @@
                     }
                 }
             },
-            "license": "[if(not(equals(parameters('licenseOption'), 'evaluation')), parameters('confluenceLicense'), 'AAABHQ0ODAoPeNpdUE1rwkAQvfsrFnqOaBqpFRYaY2jFxNiagvQ23U50IdmE2d2g/fWNWcHq9b2Z9/WQHywL7Z75ARtPZsHz7HHKwnibM380fhqIWhXDqFYGhIlTkCWHn0qqFzxC1ZQ4FHXlbjpetsgNWXTABsgopDVUyB2yAAMRKoP07yyRApXG/NRgfxplaRp/RMswcXxGe1BSg5G14qEpQWsJynFxC6V1zFWwC9lZKFAC42Mj6dTZIt/4wdtgi9QiLRd8nuxW3nqV7bz5ezDxwtevyD2vbfWNlBWfGklzb3ypYkkcQGOvdJ7FG009P7gpcO/lGqMWJJs+4TUsK90LK2pi51GYW4V1VPhrCW9W71fpR7/AhL3KfZg/SDCcNDAsAhRKqZj5WOUF8qChUIvOzfpfd1sRjgIUGOZYp9w9akoKxTePn9Mv+1yyCeM=X02ee')]",
+            "license": "[if(not(equals(parameters('licenseOption'), 'evaluation')), parameters('confluenceLicense'), 'AAABHg0ODAoPeNplUNtKw0AQfe9XLPickotaKSwYk2ALuRTbeHkc14kuJJswuwmtX2+aLdTq6zkz53aVtYoVwrDAZd5ieXO39K5ZmMQ75rveYiZaVc2jVhkQJslA1hw+GqnucQ9NV+NctI29GXk5IDfUowU2QEYh5dAgt0gMBiJUBunXWSoFKo27Q4fTaVRkWfIUrcPU8gV9gpIajGwVD00NWktQlksGqHvLnAXHkKOFAiUw2XeSDqMt8k0Q3K5mW6QBaR3zh8f0zSmf3Rfn1Q9zZ+WXW/ud9807UlGVGklzxzt16Ul8gcZJ6riL47lO4F40+GdmO6MWJLsp4zkuq+0Pq1pix1mY3YWNVPjdE17sPu0yzX6CCSeVv2l+ADS1nIEwLAIUYrE66+LiEoBSjmLEkXQfICx+OWgCFBGV5jXbxAkFBPrUt2XQVCBu7lybX02ee')]",
             "c3p0Settings": {
                 "minConnections": "[min(300, div(coalesce(variables('lookup').dbTierToMaxConnections[variables('sql').tier], 300), add(parameters('clusterSize'), parameters('synchronyClusterSize'))))]",
                 "maxConnections": "[min(300, div(coalesce(variables('lookup').dbTierToMaxConnections[variables('sql').tier], 300), add(parameters('clusterSize'), parameters('synchronyClusterSize'))))]"
@@ -410,6 +467,7 @@
         },
         "applicationGateway": {
             "name": "[concat(variables('namespace'), 'appgw')]",
+            "skuname" : "[if(equals(parameters('applicationGatewaySizeOption'), 'auto'), variables('lookup').clusterSizeToApplicationGatewaySize[string(parameters('clusterSize'))], parameters('applicationGatewaySize'))]",
             "capacity": "[add(div(parameters('clusterSize'), 3), 1)]",
             "urlpathmap" :"[concat(variables('namespace'), 'urlpathmap')]",
             "frontend": {
@@ -550,13 +608,21 @@
                 "P2": "Premium",
                 "P4": "Premium",
                 "P6": "Premium"
+            },
+            "clusterSizeToApplicationGatewaySize" : {
+                "1": "Standard_Small",
+                "2": "Standard_Small",
+                "3": "Standard_Medium",
+                "4": "Standard_Medium",
+                "5": "Standard_Large",
+                "6": "Standard_Large"
             }
         },
         "env": {
             "storage": [
                 {
                     "name": "STORAGE_BASE_URL",
-                    "value": "[if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/'))]"
+                    "value": "[uri(if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/')), '')]"
                 },
                 {
                     "name": "STORAGE_TOKEN",
@@ -565,6 +631,10 @@
                 {
                     "name": "STORAGE_ACCOUNT",
                     "value": "[variables('confluence').storage.name]"
+                },
+                {
+                    "name": "FILE_STORE_URL_DOMAIN",
+                    "value": "[parameters('fileStoreUrlDomain')]"
                 }
             ],
             "server": [
@@ -781,7 +851,7 @@
             "settings": "[concat(' SETTINGS_ATL_ENV_DATA=\"', base64(string(variables('env').settings)), '\" ')]"
         },
         "scripts": {
-            "url": "[concat(if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/')), 'scripts', '/')]",
+            "url": "[uri(if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/')), 'scripts/')]",
             "token": "[parameters('provisioningStorageToken')]",
             "prepare": {
                 "name": "prepare_install.sh",
@@ -1026,7 +1096,7 @@
                                 "id": "[resourceId('Microsoft.Network/publicIPAddresses/', variables('nat').ip.name)]"
                             },
                             "subnet": {
-                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('confluence').vnet.name), '/subnets/', variables('nat').subnet.name)]"
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('confluence').vnet.name, variables('nat').subnet.name)]"
                             }
                         }
                     }
@@ -1052,7 +1122,7 @@
                             "privateIPAllocationMethod": "Static",
                             "privateIPAddress": "[variables('nat').ip.confluencesubnetaddress]",
                             "subnet": {
-                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('confluence').vnet.name), '/subnets/', variables('confluence').cluster.subnet.name)]"
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('confluence').vnet.name, variables('confluence').cluster.subnet.name)]"
                             }
                         }
                     }
@@ -1078,7 +1148,7 @@
                             "privateIPAllocationMethod": "Static",
                             "privateIPAddress": "[variables('nat').ip.synchronysubnetaddress]",
                             "subnet": {
-                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('confluence').vnet.name), '/subnets/', variables('confluence').synchronycluster.subnet.name)]"
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('confluence').vnet.name, variables('confluence').synchronycluster.subnet.name)]"
                             }
                         }
                     }
@@ -1217,25 +1287,25 @@
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "fileUris": [
-                        "[concat(variables('confluence').resources.scripts, 'prepare_install.sh', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.scripts, 'hydrate_confluence_config.py', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.libs, 'atlassian-extras-3.2.jar', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.libs, 'atlassian-password-encoder-3.2.3.jar', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.libs, 'bcprov-jdk15on-1.50.jar', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.libs, 'commons-codec-1.9.jar', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.libs, 'commons-lang-2.6.jar', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.libs, 'liquibase-core-3.5.3.jar', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.libs, 'mssql-jdbc-6.3.0.jre8-preview.jar', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.templates, 'home-confluence.cfg.xml.template', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.templates, 'shared-confluence.cfg.xml.template', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.templates, 'server.xml.template', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.templates, 'configuredb.sql.template', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.templates, 'constraints.sql.template', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.templates, 'data.sql.template', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.templates, 'tables.sql.template', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.templates, 'index.sql.template', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.templates, 'install_synchrony_service.sh.template', variables('confluence').resources.token)]",
-                        "[concat(variables('confluence').resources.templates, 'setenv.sh.template', variables('confluence').resources.token)]"
+                        "[uri(variables('confluence').resources.scripts, concat('prepare_install.sh', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.scripts, concat('hydrate_confluence_config.py', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.libs, concat('atlassian-extras-3.2.jar', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.libs, concat('atlassian-password-encoder-3.2.3.jar', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.libs, concat('bcprov-jdk15on-1.50.jar', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.libs, concat('commons-codec-1.9.jar', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.libs, concat('commons-lang-2.6.jar', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.libs, concat('liquibase-core-3.5.3.jar', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.libs, concat('mssql-jdbc-6.3.0.jre8-preview.jar', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.templates, concat('home-confluence.cfg.xml.template', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.templates, concat('shared-confluence.cfg.xml.template', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.templates, concat('server.xml.template', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.templates, concat('configuredb.sql.template', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.templates, concat('constraints.sql.template', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.templates, concat('data.sql.template', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.templates, concat('tables.sql.template', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.templates, concat('index.sql.template', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.templates, concat('install_synchrony_service.sh.template', variables('confluence').resources.token))]",
+                        "[uri(variables('confluence').resources.templates, concat('setenv.sh.template', variables('confluence').resources.token))]"
                     ]
                 },
                 "protectedSettings": {
@@ -1253,7 +1323,7 @@
             ],
             "properties": {
                 "sku": {
-                    "name": "[parameters('applicationGatewaySize')]",
+                    "name": "[variables('applicationGateway').skuname]",
                     "tier": "Standard",
                     "capacity": "[variables('applicationGateway').capacity]"
                 },
@@ -1262,7 +1332,7 @@
                         "name": "[concat(variables('namespace'), 'appgwipconfig')]",
                         "properties": {
                             "subnet": {
-                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('confluence').vnet.name), '/subnets/', variables('applicationGateway').frontend.subnet.name)]"
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('confluence').vnet.name, variables('applicationGateway').frontend.subnet.name)]"
                             }
                         }
                     }
@@ -1274,7 +1344,7 @@
                             "privateIPAddress": "[variables('applicationGateway').frontend.ipConfiguration.address]",
                             "privateIPAllocationMethod": "Static",
                             "subnet": {
-                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('confluence').vnet.name), '/subnets/', variables('applicationGateway').frontend.subnet.name)]"
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('confluence').vnet.name, variables('applicationGateway').frontend.subnet.name)]"
                             }
                         }
                     }
@@ -1328,7 +1398,7 @@
                             "CookieBasedAffinity": "Enabled",
                             "PickHostNameFromBackendAddress":true,
                             "probe": {
-                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/probes/', variables('applicationGateway').backend.httpConfiguration.probe.name)]"
+                                "id": "[resourceId('Microsoft.Network/applicationGateways/probes', variables('applicationGateway').name, variables('applicationGateway').backend.httpConfiguration.probe.name)]"
                             }
                         }
                     },
@@ -1340,7 +1410,7 @@
                             "CookieBasedAffinity": "Disabled",
                             "PickHostNameFromBackendAddress":true,
                             "probe" : {
-                                "id" : "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/probes/', variables('applicationGateway').synchronybackend.httpConfiguration.probe.name)]"
+                                "id" : "[resourceId('Microsoft.Network/applicationGateways/probes', variables('applicationGateway').name, variables('applicationGateway').synchronybackend.httpConfiguration.probe.name)]"
                             }
                         }
                     }
@@ -1350,10 +1420,10 @@
                         "name": "[variables('applicationGateway').frontend.httpListener.name]",
                         "properties": {
                             "FrontendIPConfiguration": {
-                                "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendIPConfigurations/', variables('applicationGateway').frontend.ipConfiguration.name)]"
+                                "Id": "[resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', variables('applicationGateway').name, variables('applicationGateway').frontend.ipConfiguration.name)]"
                             },
                             "FrontendPort": {
-                                "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendPorts/', variables('applicationGateway').frontend.portConfiguration.name)]"
+                                "Id": "[resourceId('Microsoft.Network/applicationGateways/frontendPorts', variables('applicationGateway').name, variables('applicationGateway').frontend.portConfiguration.name)]"
                             },
                             "Protocol": "Http",
                             "SslCertificate": null
@@ -1366,10 +1436,10 @@
                         "properties": {
                             "RuleType": "PathBasedRouting",
                             "httpListener": {
-                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/httpListeners/', variables('applicationGateway').frontend.httpListener.name)]"
+                                "id": "[resourceId('Microsoft.Network/applicationGateways/httpListeners', variables('applicationGateway').name, variables('applicationGateway').frontend.httpListener.name)]"
                             },
                             "urlPathMap": {
-                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/urlPathMaps/', variables('applicationGateway').urlpathmap)]"
+                                "id": "[resourceId('Microsoft.Network/applicationGateways/urlPathMaps', variables('applicationGateway').name, variables('applicationGateway').urlpathmap)]"
                             }
                         }
                     }
@@ -1379,10 +1449,10 @@
                         "name": "[variables('applicationGateway').urlpathmap]",
                         "properties": {
                             "defaultBackendAddressPool": {
-                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
+                                "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('applicationGateway').name, variables('applicationGateway').backend.addressPool.name)]"
                             },
                             "defaultBackendHttpSettings": {
-                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendHttpSettingsCollection/', variables('applicationGateway').backend.httpConfiguration.name)]"
+                                "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('applicationGateway').name, variables('applicationGateway').backend.httpConfiguration.name)]"
                             },
                             "pathRules": [
                                 {
@@ -1392,10 +1462,10 @@
                                             "[variables('applicationGateway').synchronybackend.pathrule.path]"
                                         ],
                                         "backendAddressPool": {
-                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').synchronybackend.addressPool.name)]"
+                                            "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('applicationGateway').name, variables('applicationGateway').synchronybackend.addressPool.name)]"
                                         },
                                         "backendHttpSettings": {
-                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendHttpSettingsCollection/', variables('applicationGateway').synchronybackend.httpConfiguration.name)]"
+                                            "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('applicationGateway').name, variables('applicationGateway').synchronybackend.httpConfiguration.name)]"
                                         }
                                     }
                                 },
@@ -1406,10 +1476,10 @@
                                             "[variables('applicationGateway').backend.pathrule.path]"
                                         ],
                                         "backendAddressPool": {
-                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
+                                            "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('applicationGateway').name, variables('applicationGateway').backend.addressPool.name)]"
                                         },
                                         "backendHttpSettings": {
-                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendHttpSettingsCollection/', variables('applicationGateway').backend.httpConfiguration.name)]"
+                                            "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('applicationGateway').name, variables('applicationGateway').backend.httpConfiguration.name)]"
                                         }
                                     }
                                 }
@@ -1463,72 +1533,11 @@
                             "diskSizeGB": "[variables('confluence').cluster.vm.osdisk.size]",
                             "createOption": "FromImage"
                         },
-                        "dataDisks": [
-                            {
-                                "lun": 0,
-                                "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 1,
-                                "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 2,
-                                "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 3,
-                                "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 4,
-                                "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 5,
-                                "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 6,
-                                "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 7,
+                        "copy" : [{
+                            "name": "dataDisks",
+                            "count": 7,
+                            "input": {
+                                "lun": "[copyIndex('dataDisks')]",
                                 "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
                                 "createOption": "Empty",
                                 "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
@@ -1536,7 +1545,7 @@
                                     "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
                                 }
                             }
-                        ]
+                        }]
                     },
                     "networkProfile": {
                         "networkInterfaceConfigurations": [
@@ -1549,11 +1558,11 @@
                                             "name": "[concat(variables('namespace'), 'scalset-ipconfig')]",
                                             "properties": {
                                                 "subnet": {
-                                                    "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('confluence').vnet.name), '/subnets/', variables('confluence').cluster.subnet.name)]"
+                                                    "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('confluence').vnet.name, variables('confluence').cluster.subnet.name)]"
                                                 },
                                                 "ApplicationGatewayBackendAddressPools": [
                                                     {
-                                                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
+                                                        "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('applicationGateway').name, variables('applicationGateway').backend.addressPool.name)]"
                                                     }
                                                 ]
                                             }
@@ -1574,9 +1583,9 @@
                                     "autoUpgradeMinorVersion": true,
                                     "settings": {
                                         "fileUris": [
-                                            "[concat(uri(variables('scripts').url, variables('scripts').prepare.name), variables('scripts').token)]",
-                                            "[concat(uri(variables('scripts').url, variables('scripts').disk.name), variables('scripts').token)]",
-                                            "[concat(uri(variables('scripts').url, variables('scripts').hydrate.name), variables('scripts').token)]"
+                                            "[uri(variables('scripts').url, concat(variables('scripts').prepare.name, variables('scripts').token))]",
+                                            "[uri(variables('scripts').url, concat(variables('scripts').disk.name, variables('scripts').token))]",
+                                            "[uri(variables('scripts').url, concat(variables('scripts').hydrate.name, variables('scripts').token))]"
                                         ]
                                     },
                                     "protectedSettings": {
@@ -1644,11 +1653,11 @@
                                             "name": "[concat(variables('namespace'), 'sync-scalset-ipconfig')]",
                                             "properties": {
                                                 "subnet": {
-                                                    "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('confluence').vnet.name), '/subnets/', variables('confluence').synchronycluster.subnet.name)]"
+                                                    "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('confluence').vnet.name, variables('confluence').synchronycluster.subnet.name)]"
                                                 },
                                                 "ApplicationGatewayBackendAddressPools": [
                                                     {
-                                                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').synchronybackend.addressPool.name)]"
+                                                        "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('applicationGateway').name, variables('applicationGateway').synchronybackend.addressPool.name)]"
                                                     }
                                                 ]
                                             }
@@ -1697,6 +1706,10 @@
         "jdbc": {
             "type": "string",
             "value": "[concat('jdbc:sqlserver://', reference(variables('sql').server.name).fullyQualifiedDomainName, ':1433;database=', variables('sql').database.name, ';user=', variables('sql').server.username, '@', variables('sql').server.name, ';password=', variables('sql').server.password)]"
+        },
+        "location" : {
+            "type" : "string",
+            "value" : "[parameters('location')]"
         }
     }
 }
