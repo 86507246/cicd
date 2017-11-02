@@ -342,7 +342,8 @@
         "namespace": "conf",
         "tags": {
             "vendor": "Atlassian",
-            "product": "Confluence"
+            "product": "Confluence",
+            "provider": "2F0AF47A-92C7-413A-9009-C3815BFF7AF6"
         },
         "diskSize": {
             "P10": 128,
