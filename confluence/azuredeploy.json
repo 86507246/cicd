@@ -1707,10 +1707,6 @@
         "jdbc": {
             "type": "string",
             "value": "[concat('jdbc:sqlserver://', reference(variables('sql').server.name).fullyQualifiedDomainName, ':1433;database=', variables('sql').database.name, ';user=', variables('sql').server.username, '@', variables('sql').server.name, ';password=', variables('sql').server.password)]"
-        },
-        "location" : {
-            "type" : "string",
-            "value" : "[parameters('location')]"
         }
     }
 }

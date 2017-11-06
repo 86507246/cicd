@@ -523,6 +523,7 @@
       }
     ],
     "outputs": {
+      "location" : "[location()]",
       "cname": "[basics('cname')]",
       "confluenceVmSize": "[steps('infrastructure').confluence.confluencenodesize]",
       "synchronyVmSize": "[coalesce(steps('infrastructure').synchrony.synchronynodesize, steps('infrastructure').confluence.confluencenodesize)]",
