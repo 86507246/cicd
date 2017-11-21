@@ -24,11 +24,11 @@
                 "description": "URL for obtaining the latest confluence artifact version."
             }
         },
-        "fileStoreUrlDomain" : {
+        "atlassianMavenRepositoryUrl" : {
             "type" : "string",
-            "defaultValue": "file.core.windows.net",
+            "defaultValue": "https://packages.atlassian.com/maven/repository/public/",
             "metadata" : {
-                "description" : "The domain of the file store for Azure."
+                "description" : "The url to the Atlassian public Maven repository. Customize this if you wish to download artifacts from your own repository (must be publically accessible)."
             }
         },
         "provisioningStorageToken": {
@@ -361,7 +361,7 @@
                 "version": "2017-06-01"
             },
             "storage": {
-                "version": "2016-01-01"
+                "version": "2017-06-01"
             },
             "sql": {
                 "version": "2014-04-01"
@@ -632,10 +632,6 @@
                 {
                     "name": "STORAGE_ACCOUNT",
                     "value": "[variables('confluence').storage.name]"
-                },
-                {
-                    "name": "FILE_STORE_URL_DOMAIN",
-                    "value": "[parameters('fileStoreUrlDomain')]"
                 }
             ],
             "server": [
@@ -813,6 +809,10 @@
                 {
                     "name": "LATEST_CONFLUENCE_PRODUCT_VERSION_URL",
                     "value": "[parameters('releaseVersionUrl')]"
+                },
+                {
+                    "name": "ATLASSIAN_MAVEN_REPOSITORY_URL",
+                    "value": "[parameters('atlassianMavenRepositoryUrl')]"
                 },
                 {
                     "name": "ATL_CONFLUENCE_PRODUCT",
@@ -1310,7 +1310,7 @@
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('confluence').storage.name), '2017-06-01').keys[0].value, ' prepare ', reference(variables('nat').ip.name).dnsSettings.fqdn, ' ', reference(variables('sql').server.name).fullyQualifiedDomainName, ' 2>&1 > ./confluence.prepare.log')]"
+                    "commandToExecute": "[concat(variables('scripts').prepare.env, ' FILE_STORE_URL_DOMAIN=\"', reference(concat('Microsoft.Storage/storageAccounts/', variables('confluence').storage.name), variables('azureApi').storage.version).primaryEndpoints.file, '\" ', './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('confluence').storage.name), '2017-06-01').keys[0].value, ' prepare ', reference(variables('nat').ip.name).dnsSettings.fqdn, ' ', reference(variables('sql').server.name).fullyQualifiedDomainName, ' 2>&1 > ./confluence.prepare.log')]"
                 }
             }
         },

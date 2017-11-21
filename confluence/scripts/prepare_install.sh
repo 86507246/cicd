@@ -122,7 +122,7 @@ function install_password_generator {
   apt-get -qqy install maven
 
   if ! [ -f atlassian-password-encoder-3.2.3.jar ]; then
-    mvn dependency:get -DremoteRepositories="https://packages.atlassian.com/maven/repository/public/" -Dartifact=com.atlassian.security:atlassian-password-encoder:3.2.3 -Dtransitive=false -Ddest=.
+    mvn dependency:get -DremoteRepositories="${ATLASSIAN_MAVEN_REPOSITORY_URL}" -Dartifact=com.atlassian.security:atlassian-password-encoder:3.2.3 -Dtransitive=false -Ddest=.
   fi
 
   if ! [ -f commons-lang-2.6.jar ]; then
@@ -149,7 +149,7 @@ function prepare_server_id_generator {
   log "Downloading artifacts to prepare Server Id generator"
 
   if ! [ -f atlassian-extras-3.2.jar ]; then
-    mvn dependency:get -DremoteRepositories="https://packages.atlassian.com/maven/repository/public/" -Dartifact=com.atlassian.extras:atlassian-extras:3.2 -Dtransitive=false -Ddest=.
+    mvn dependency:get -DremoteRepositories="${ATLASSIAN_MAVEN_REPOSITORY_URL}" -Dartifact=com.atlassian.extras:atlassian-extras:3.2 -Dtransitive=false -Ddest=.
   fi
 
   log "Artefacts are ready"
@@ -198,8 +198,7 @@ function issue_signed_request {
   request_date=$(TZ=GMT date "+%a, %d %h %Y %H:%M:%S %Z")
   storage_service_version="2015-04-05"
   authorization="SharedKey"
-  file_store_url="${FILE_STORE_URL_DOMAIN}"
-  full_url="https://${STORAGE_ACCOUNT}.${file_store_url}/${request_url}"
+  full_url="${FILE_STORE_URL_DOMAIN}${request_url}"
 
   x_ms_date_h="x-ms-date:$request_date"
   x_ms_version_h="x-ms-version:$storage_service_version"
@@ -272,7 +271,7 @@ function mount_share {
   local gid=${3:-0}
   creds_file="/etc/cifs.${ATL_CONFLUENCE_SHARED_HOME_NAME}"
   mount_options="vers=3.0,uid=${uid},gid=${gid},dir_mode=0750,file_mode=0640,credentials=${creds_file}"
-  mount_share="//${STORAGE_ACCOUNT}.file.core.windows.net/${ATL_CONFLUENCE_SHARED_HOME_NAME}"
+  mount_share="$(echo ${FILE_STORE_URL_DOMAIN} | sed 's/https://')${ATL_CONFLUENCE_SHARED_HOME_NAME}"
 
   log "creating credentials at ${creds_file}"
   echo "username=${STORAGE_ACCOUNT}" >> ${creds_file}
