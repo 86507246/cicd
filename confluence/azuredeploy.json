@@ -1590,7 +1590,7 @@
                                         ]
                                     },
                                     "protectedSettings": {
-                                        "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('confluence').storage.name), '2017-06-01').keys[0].value, ' install ' , reference(variables('nat').ip.name).dnsSettings.fqdn, ' 2>&1 > ./confluence.install.log')]"
+                                        "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('confluence').storage.name), variables('azureApi').storage.version).keys[0].value, ' install ' , reference(variables('nat').ip.name).dnsSettings.fqdn, ' 2>&1 > ./confluence.install.log')]"
                                     }
                                 }
                             }
@@ -1685,7 +1685,7 @@
                                         ]
                                     },
                                     "protectedSettings": {
-                                        "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('confluence').storage.name), '2017-06-01').keys[0].value, ' synchrony ' , reference(variables('nat').ip.name).dnsSettings.fqdn, ' 2>&1 > ./synchrony.install.log')]"
+                                        "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('confluence').storage.name), variables('azureApi').storage.version).keys[0].value, ' synchrony ' , reference(variables('nat').ip.name).dnsSettings.fqdn, ' 2>&1 > ./synchrony.install.log')]"
                                     }
                                 }
                             }
