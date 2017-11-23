@@ -128,7 +128,7 @@
                 "name": "confluencenodesize",
                 "label": "Confluence Node size",
                 "type": "Microsoft.Compute.SizeSelector",
-                "toolTip": "Pick the virtual machine size to use for each node.",
+                "toolTip": "Pick the virtual machine size to use for each node. The virtual machine must have capacity for 8 or more data disks.",
                 "recommendedSizes": [
                   "Standard_DS3_v2"
                 ],
@@ -184,7 +184,7 @@
                 "name": "natsize",
                 "label": "Jumpbox size",
                 "type": "Microsoft.Compute.SizeSelector",
-                "toolTip": "Pick the virtual machine size to use for the jump box. The vm must have a minimum of 3 NIC slots.",
+                "toolTip": "Pick the virtual machine size to use for the jump box. The virtual machine must have a minimum of 3 NIC slots.",
                 "recommendedSizes": [
                   "Standard_DS3_v2"
                 ],

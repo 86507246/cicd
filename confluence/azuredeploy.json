@@ -42,7 +42,7 @@
             "type": "string",
             "defaultValue": "Standard_DS3_v2",
             "metadata": {
-                "description": "The size of the virtual machine used for each Confluence node."
+                "description": "The size of the virtual machine used for each Confluence node. The virtual machine must have capacity for 8 or more data disks."
             }
         },
         "synchronyVmSize": {
@@ -134,7 +134,7 @@
                 "Standard_L32s"
             ],
             "metadata": {
-                "description": "The size of the virtual machine used for the NAT box."
+                "description": "The size of the virtual machine used for the NAT box. Requires a virtual machine with at least 3 NIC slots."
             }
         },
         "cname": {
