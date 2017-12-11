@@ -2,6 +2,7 @@
 
 ## Dependencies
 * Node (`brew install node`)
+* Gulp
 * Azure CLI (`curl -L https://aka.ms/InstallAzureCli | bash`)
 
 ## Configuration
@@ -12,7 +13,7 @@
 ## How to run a deployment
 1. Run `az login`
 2. Run `npm i` to install dependencies
-3. Run `npm start` to start the deployment
+3. Run `gulp start` to start the deployment
 
 ## Making changes
 If you make changes to any file, you have to put the changed file into the blobstore that is used for provisioning.
@@ -34,6 +35,6 @@ ssh -o 'ProxyCommand=ssh -i ~/.ssh/id_rsa jiraadmin@jiranat_address_.australiaea
 The password for the `jiraadmin` user on JIRA nodes is `JIRA@dmin`.
 
 ## Building a zip for publishing
-Run `npm run publish` to build a zip in the `target/` directory. Similarly with running a deployment, if you have a `.product` file with 'confluence' in it,
+Run `gulp publish` to build a zip in the `target/` directory. Similarly with running a deployment, if you have a `.product` file with 'confluence' in it,
 then the publish will build the confluence deployment files. If you want to run the publish directly regardless of the `.product` file,
-use `npm run publish-jira` or `npm run publish-confluence`.
+use `gulp publish-jira` or `gulp publish-confluence`.
