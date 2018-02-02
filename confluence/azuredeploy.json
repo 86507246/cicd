@@ -442,7 +442,7 @@
                     "image": {
                         "publisher": "Canonical",
                         "offer": "UbuntuServer",
-                        "sku": "17.04",
+                        "sku": "17.10",
                         "version": "latest"
                     },
                     "osdisk": {
@@ -475,7 +475,7 @@
                     "image": {
                         "publisher": "Canonical",
                         "offer": "UbuntuServer",
-                        "sku": "17.04",
+                        "sku": "17.10",
                         "version": "latest"
                     },
                     "osdisk": {
@@ -579,7 +579,7 @@
                 "image": {
                     "publisher": "Canonical",
                     "offer": "UbuntuServer",
-                    "sku": "17.04",
+                    "sku": "17.10",
                     "version": "latest"
                 },
                 "disk": {

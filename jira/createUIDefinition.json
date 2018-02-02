@@ -131,7 +131,7 @@
             "imageReference": {
               "publisher": "Canonical",
               "offer": "UbuntuServer",
-              "sku": "17.04"
+              "sku": "17.10"
             },
             "count": "[steps('infrastructure').clustersize]"
           }
