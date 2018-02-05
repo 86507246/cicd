@@ -178,7 +178,7 @@
                 "imageReference": {
                   "publisher": "Canonical",
                   "offer": "UbuntuServer",
-                  "sku": "17.10"
+                  "sku": "16.04-LTS"
                 },
                 "count": "[steps('infrastructure').confluence.confluenceclustersize]"
               },
@@ -263,7 +263,7 @@
                 "imageReference": {
                   "publisher": "Canonical",
                   "offer": "UbuntuServer",
-                  "sku": "17.10"
+                  "sku": "16.04-LTS"
                 }
               }
             ]
@@ -317,7 +317,7 @@
                 "imageReference": {
                   "publisher": "Canonical",
                   "offer": "UbuntuServer",
-                  "sku": "17.10"
+                  "sku": "16.04-LTS"
                 },
                 "count": "[steps('infrastructure').synchrony.synchronyclustersize]",
                 "visible": "[equals('manual', steps('infrastructure').synchrony.synchronyVmOption)]"

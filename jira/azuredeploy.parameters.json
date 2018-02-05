@@ -6,7 +6,7 @@
             "value": "https://jiradcresources.blob.core.windows.net/master/"
         },
         "provisioningStorageToken": {
-            "value": "?sv=2016-05-31&si=public-access&sr=c&sig=BhOK2kKpnkDnLhcT%2B9IYLcsQpUD%2Frf6N6nhiJX9zWrE%3D"
+            "value": "?sv=2017-04-17&si=public-access&sr=c&sig=P15kxinQOKEJruc4gxMmmKL3EpPZMg137i96w%2BKGB8E%3D"
         },
         "jiraVmSize": {
             "value": "Standard_DS3_v2"
