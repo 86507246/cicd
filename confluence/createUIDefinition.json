@@ -387,14 +387,6 @@
               "required" : "[equals('manual', steps('database').dbTierOption)]",
               "allowedValues": [
                 {
-                  "label": "S2",
-                  "value": "S2"
-                },
-                {
-                  "label": "S3",
-                  "value": "S3"
-                },
-                {
                   "label": "P1",
                   "value": "P1"
                 },
@@ -431,10 +423,6 @@
             "constraints": {
               "required" : "[equals('manual', steps('database').dbTierOption)]",
               "allowedValues": [
-                {
-                  "label": "Standard",
-                  "value": "Standard"
-                },
                 {
                   "label": "Premium",
                   "value": "Premium"
