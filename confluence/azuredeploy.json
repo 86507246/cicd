@@ -249,13 +249,7 @@
                 "P4",
                 "P6",
                 "P11",
-                "P15",
-                "PRS1",
-                "PRS2",
-                "PRS3",
-                "PRS4",
-                "PRS5",
-                "PRS6"
+                "P15"
             ]
         },
         "dbEdition": {
@@ -267,8 +261,7 @@
             "allowedValues": [
                 "",
                 "Standard",
-                "Premium",
-                "PremiumRS"
+                "Premium"
             ]
         },
         "userName": {
@@ -628,24 +621,17 @@
                 "P4" : 30000,
                 "P6" : 30000,
                 "P11" : 30000,
-                "P15" : 30000,
-                "PRS1" : 30000,
-                "PRS2" : 30000,
-                "PRS4" : 30000,
-                "PRS6" : 30000
+                "P15" : 30000
             },
             "clusterSizeToDbTier": {
-                "1": "PRS2",
-                "2": "PRS2",
-                "3": "PRS2",
-                "4": "PRS4",
-                "5": "PRS4",
-                "6": "PRS4"
+                "1": "P2",
+                "2": "P2",
+                "3": "P2",
+                "4": "P4",
+                "5": "P4",
+                "6": "P4"
             },
             "dbTierToDbEdition": {
-                "PRS2": "PremiumRS",
-                "PRS4": "PremiumRS",
-                "PRS6": "PremiumRS",
                 "P2": "Premium",
                 "P4": "Premium",
                 "P6": "Premium"
@@ -725,7 +711,7 @@
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_THREADS",
-                    "value": "[string(sub(variables('confluence').c3p0Settings.maxConnections, 10))]"
+                    "value": "[string(sub(variables('confluence').c3p0Settings.maxConnections, 20))]"
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MIN_THREADS",

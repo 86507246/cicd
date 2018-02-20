@@ -417,30 +417,6 @@
                 {
                   "label": "P15",
                   "value": "P15"
-                },
-                {
-                  "label": "PRS1",
-                  "value": "PRS1"
-                },
-                {
-                  "label": "PRS2",
-                  "value": "PRS2"
-                },
-                {
-                  "label": "PRS3",
-                  "value": "PRS3"
-                },
-                {
-                  "label": "PRS4",
-                  "value": "PRS4"
-                },
-                {
-                  "label": "PRS5",
-                  "value": "PRS5"
-                },
-                {
-                  "label": "PRS6",
-                  "value": "PRS6"
                 }
               ]
             },
@@ -462,10 +438,6 @@
                 {
                   "label": "Premium",
                   "value": "Premium"
-                },
-                {
-                  "label": "PremiumRS",
-                  "value": "PremiumRS"
                 }
               ]
             },
