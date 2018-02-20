@@ -491,10 +491,11 @@
                 "name": "nodeUsername",
                 "label": "Username",
                 "type": "Microsoft.Compute.UserNameTextBox",
-                "toolTip": "This will be the username used to SSH into each Confluence and Synchrony node from the jumpbox.",
+                "toolTip": "This will be the username used to SSH into each Confluence and Synchrony node from the jumpbox. This username must not be 'confluence', or 'synchrony'.",
                 "constraints": {
                   "required": true,
-                  "validationMessage": "You must specify a username"
+                  "regex": "^(?!confluence$|synchrony$).+",
+                  "validationMessage": "You must specify a username, and it must not be 'confluence', or 'synchrony'."
                 },
                 "osPlatform": "Linux"
               },

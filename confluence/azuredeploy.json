@@ -201,7 +201,7 @@
             "type": "string",
             "defaultValue": "confluenceadmin",
             "metadata": {
-                "description": "The username used to SSH into each Confluence node from the jumpbox."
+                "description": "The username used to SSH into each Confluence node from the jumpbox. This name must not be 'confluence', or 'synchrony'."
             }
         },
         "nodeSshPassword": {
