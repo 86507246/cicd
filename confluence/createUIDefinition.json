@@ -362,7 +362,7 @@
             "name": "dbTierOption",
             "type": "Microsoft.Common.OptionsGroup",
             "label": "Database Tier Option",
-            "toolTip": "The Automatic option will use a Premium RS type and Performance Level suitable for the number of Confluence nodes selected. You may also select the Manual option to control your database performance & cost. Consider consulting the Azure Pricing Calculator.",
+            "toolTip": "The Automatic option will use a Premium type and Performance Level suitable for the number of Confluence nodes selected. You may also select the Manual option to control your database performance & cost. Consider consulting the Azure Pricing Calculator.",
             "defaultValue": "Automatic",
             "constraints": {
               "allowedValues": [
@@ -387,14 +387,6 @@
               "required" : "[equals('manual', steps('database').dbTierOption)]",
               "allowedValues": [
                 {
-                  "label": "S2",
-                  "value": "S2"
-                },
-                {
-                  "label": "S3",
-                  "value": "S3"
-                },
-                {
                   "label": "P1",
                   "value": "P1"
                 },
@@ -417,30 +409,6 @@
                 {
                   "label": "P15",
                   "value": "P15"
-                },
-                {
-                  "label": "PRS1",
-                  "value": "PRS1"
-                },
-                {
-                  "label": "PRS2",
-                  "value": "PRS2"
-                },
-                {
-                  "label": "PRS3",
-                  "value": "PRS3"
-                },
-                {
-                  "label": "PRS4",
-                  "value": "PRS4"
-                },
-                {
-                  "label": "PRS5",
-                  "value": "PRS5"
-                },
-                {
-                  "label": "PRS6",
-                  "value": "PRS6"
                 }
               ]
             },
@@ -456,16 +424,8 @@
               "required" : "[equals('manual', steps('database').dbTierOption)]",
               "allowedValues": [
                 {
-                  "label": "Standard",
-                  "value": "Standard"
-                },
-                {
                   "label": "Premium",
                   "value": "Premium"
-                },
-                {
-                  "label": "PremiumRS",
-                  "value": "PremiumRS"
                 }
               ]
             },
@@ -531,10 +491,11 @@
                 "name": "nodeUsername",
                 "label": "Username",
                 "type": "Microsoft.Compute.UserNameTextBox",
-                "toolTip": "This will be the username used to SSH into each Confluence and Synchrony node from the jumpbox.",
+                "toolTip": "This will be the username used to SSH into each Confluence and Synchrony node from the jumpbox. This username must not be 'confluence', or 'synchrony'.",
                 "constraints": {
                   "required": true,
-                  "validationMessage": "You must specify a username"
+                  "regex": "^(?!confluence$|synchrony$).+",
+                  "validationMessage": "You must specify a username, and it must not be 'confluence', or 'synchrony'."
                 },
                 "osPlatform": "Linux"
               },
