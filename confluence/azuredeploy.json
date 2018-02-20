@@ -624,17 +624,22 @@
                 "P15" : 30000
             },
             "clusterSizeToDbTier": {
-                "1": "P2",
+                "1": "P1",
                 "2": "P2",
-                "3": "P2",
+                "3": "P4",
                 "4": "P4",
-                "5": "P4",
-                "6": "P4"
+                "5": "P6",
+                "6": "P11"
             },
             "dbTierToDbEdition": {
+                "S2": "Standard",
+                "S3": "Standard",
+                "P1": "Premium",
                 "P2": "Premium",
                 "P4": "Premium",
-                "P6": "Premium"
+                "P6": "Premium",
+                "P11": "Premium",
+                "P15": "Premium"
             },
             "clusterSizeToApplicationGatewaySize" : {
                 "1": "Standard_Small",
