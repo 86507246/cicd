@@ -279,17 +279,14 @@
         },
         "lookup": {
             "clusterSizeToDbTier": {
-                "1": "PRS2",
-                "2": "PRS2",
-                "3": "PRS2",
-                "4": "PRS4",
-                "5": "PRS4",
-                "6": "PRS4"
+                "1": "P2",
+                "2": "P2",
+                "3": "P2",
+                "4": "P4",
+                "5": "P4",
+                "6": "P4"
             },
             "dbTierToDbEdition": {
-                "PRS2": "PremiumRS",
-                "PRS4": "PremiumRS",
-                "PRS6": "PremiumRS",
                 "P2": "Premium",
                 "P4": "Premium",
                 "P6": "Premium"

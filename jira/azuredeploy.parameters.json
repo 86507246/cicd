@@ -18,7 +18,7 @@
             "value": 2
         },
         "jumpboxSshKey": {
-            "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC3CNLotlCeajpQygaiVLgkdFqqEdzbbpi72JhgA8baWv8flu3mEXPq4sbUrlv04tP0Fgi5EAfgFbwWmN/23pQR0t1lEU7TB9uU+IrhhKHuCoDikkqa//gxnAYxrY3ze6p+Ib0FTSpIrIsY1D2t1z6S/33kBz59Iz5tX6XtijGUQj5lyttfek8O2pZbGL5qHHJzyl67JfCOB8eAWhVBbL96SJgK3XlZE1rEwlA0CPa+mNLSdTd9jxBpml42RR4JEMJOtalzRXLCKubSWjfDqK5XPIhJ2vhWI2c2qgoVe/tkj6OWyXxCRImjhhSX1AMSuYKdUsimsPnOziIWm2aoE4jD aermolenko@CLI-24467"
+            "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCr5jPN1V0CTNhR5aFn2XlzQWPS5dKjPpeLK6+Wdla2FcNyOjKdfHuK8JPP7SdRZunDTI3REMtJbFDb8V37UokBRXC9Nwjbxm5gROypKzpr+Vtgu8YmULYcVJiuferLOPQ/oACJJMN2W6552eH9LjP6UcXVyflcufeo9mxXX/sppfrNY5a6LmK2MqOVRD2NXze9VSdRr/QhX0aikVagamoLQADUBpmedMDvX51yJs7VzXaexpIIqTPfrGzLlM9tpKQMsbj+qnAYArHSWLu6hSeE6l60sdekgmtZSN17eTYJHqSMlcFJJaxvp72VVzhrucJMQxURgA2gY2NlVQSGjq+t adam@lezajsk"
         },
         "dbUsername": {
             "value": "jira"
