@@ -716,11 +716,11 @@
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_THREADS",
-                    "value": "[string(sub(variables('confluence').c3p0Settings.maxConnections, 20))]"
+                    "value": "[string(sub(variables('confluence').c3p0Settings.maxConnections, 50))]"
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MIN_THREADS",
-                    "value": "[string(sub(variables('confluence').c3p0Settings.maxConnections, 20))]"
+                    "value": "[string(sub(variables('confluence').c3p0Settings.maxConnections, 50))]"
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_ACCEPT_COUNT",
