@@ -27,9 +27,9 @@ in the file `azuredeploy.parameters.json`.
 
 ## Keep parameters clean
 
-The deployment requrires to have `azuredeploy.parameters.json` in the repository. That means that you need to make sure you don't commit your custom values into it during development.
+The process deployment requires to have `azuredeploy.parameters.json` in the repository. That means that you need to make sure that you don't commit your custom values into the repository during development.
 
-To avoid this hassle just create `azuredeploy.parameters.local.json` in product specific directory, it is ignored by git and it overrides the repo version of `azuredeploy.parameters.json`
+To avoid this hassle create you can `azuredeploy.parameters.local.json` in a product specific directory, it is ignored by git and it overrides the repo version of `azuredeploy.parameters.json` when you run deployment with `npm start`
 
 ## Redeploying your changes
 Just run `npm start` again - it will delete the old resource group (stored in the file `.group`) and run a new deployment.
