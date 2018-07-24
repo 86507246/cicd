@@ -8,6 +8,7 @@ target
 .vscode
 .createDeployResult
 .deployment
+azuredeploy.parameters.local.json
 .DS_Store
 npm-debug.log
 package-lock.json
