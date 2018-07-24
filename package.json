@@ -20,7 +20,8 @@
   "devDependencies": {
     "gulp": "^3.9.1",
     "gulp-fail": "^1.0.5",
+    "run-sequence": "^2.1.0",
     "shelljs": "^0.7.8",
-    "run-sequence": "^2.1.0"
+    "standard": "^11.0.1"
   }
 }
