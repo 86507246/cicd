@@ -1,5 +1,3 @@
-/* eslint no-path-concat: "off" */
-
 const shell = require('shelljs')
 const fail = require('gulp-fail')
 const path = require('path')
@@ -11,6 +9,7 @@ const DEPLOYMENT_FILE = '.deployment'
 const PREFIX_FILE = '.prefix'
 const LOCATION_FILE = '.location'
 const PRODUCT_FILE = '.product'
+const PARAMETERS_FILE = 'azuredeploy.parameters.local.json'
 
 const MAIN_TEMPLATE_NAME = 'mainTemplate.json'
 const CREATE_UI_DEFINITION_NAME = 'createUiDefinition.json'
@@ -45,31 +44,47 @@ const currentDeployment = function () {
   return shell.test('-f', DEPLOYMENT_FILE) ? parseInt(shell.cat(DEPLOYMENT_FILE)) : 0
 }
 
-async function createDeploymentTask (deployment = getDeploymentPath(), params = getDeploymentParametersPath()) {
+function startDeployment (deployment, params, callback) {
   const group = current()
   const deploymentNumber = currentDeployment()
+  const cmd = 'az group deployment create'
+
   if (group) {
-    return new Promise((resolve, reject) => shell.exec(`az group deployment create -n "deployment-${deploymentNumber}" -g ${prefix()}${GROUP_NAME}${group} --template-file ${deployment} --parameters @${params}`, (code, stdout, stderr) => {
-      if (code !== 0) {
-        reject(new Error(stdout + stderr))
-      }
-      resolve(stdout)
-    })).then(result => {
-      const createDeployResult = JSON.parse(result)
-      fs.writeFileSync('.createDeployResult', result)
-      shell.echo(nextDeployment()).to(DEPLOYMENT_FILE)
-      return createDeployResult
-    })
+    const args = {
+      name: `-n "deployment-${deploymentNumber}"`,
+      group: `-g ${prefix()}${GROUP_NAME}${group}`,
+      template: `--template-file ${deployment}`,
+      params: `--parameters @${params}`
+    }
+
+    return shell.exec(`${cmd} ${args.name} ${args.group} ${args.template} ${args.params}`, callback)
   }
+
   throw new Error('No group')
 }
 
+async function createDeploymentTask (deployment = getDeploymentPath(), params = getDeploymentParametersPath()) {
+  return new Promise((resolve, reject) => startDeployment(deployment, params, (code, stdout, stderr) => {
+    if (code !== 0) {
+      reject(new Error(stdout + stderr))
+    }
+    resolve(stdout)
+  })).then(result => {
+    const createDeployResult = JSON.parse(result)
+    fs.writeFileSync('.createDeployResult', result)
+    shell.echo(nextDeployment()).to(DEPLOYMENT_FILE)
+    return createDeployResult
+  })
+}
+
 function getDeploymentParametersPath () {
-  return __dirname + `/${product()}/azuredeploy.parameters.json`
+  const override = path.join(__dirname, product(), PARAMETERS_FILE)
+  const byDefault = path.join(__dirname, product(), 'azuredeploy.parameters.json')
+  return shell.test('-f', override) ? override : byDefault
 }
 
 function getDeploymentPath () {
-  return __dirname + `/${product()}/azuredeploy.json`
+  return path.join(__dirname, product(), 'azuredeploy.json')
 }
 
 function applyTasks (gulp) {
@@ -122,7 +137,7 @@ function applyTasks (gulp) {
   gulp.task('stop', ['drop-existing-group'])
 
   gulp.task('publish-jira', () => {
-    const source = __dirname + '/jira'
+    const source = path.join(__dirname, 'jira')
     const target = 'target'
     const jira = path.resolve(target, 'jira')
 
@@ -141,8 +156,8 @@ function applyTasks (gulp) {
   })
 
   gulp.task('publish-confluence', () => {
-    const source = __dirname + '/confluence'
-    const target = __dirname + '/target'
+    const source = path.join(__dirname, 'confluence')
+    const target = path.join(__dirname, 'target')
     const resources = ['scripts', 'templates', 'libs']
     const confluence = path.resolve(target, 'confluence')
     resources.forEach(dir => {
