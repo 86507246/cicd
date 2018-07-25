@@ -77,6 +77,31 @@ async function createDeploymentTask (deployment = getDeploymentPath(), params = 
   })
 }
 
+function publish (prepareResources = () => {}) {
+  const pkg = {
+    name: product(),
+    source: path.join(__dirname, product()),
+    target: path.join(__dirname, 'target', product())
+  }
+
+  shell.mkdir('-p', pkg.target)
+
+  prepareResources(pkg)
+
+  shell.cp(
+    path.resolve(pkg.source, 'azuredeploy.json'),
+    path.resolve(pkg.target, MAIN_TEMPLATE_NAME))
+  shell.cp(
+    path.resolve(pkg.source, 'createUIDefinition.json'),
+    path.resolve(pkg.target, CREATE_UI_DEFINITION_NAME))
+
+  shell.exec([
+    'zip', '-r', '--junk-paths',
+    path.resolve(pkg.target, '..', `${pkg.name}.zip`),
+    pkg.target
+  ].join(' '))
+}
+
 function getDeploymentParametersPath () {
   const override = path.join(__dirname, product(), PARAMETERS_FILE)
   const byDefault = path.join(__dirname, product(), 'azuredeploy.parameters.json')
@@ -137,47 +162,26 @@ function applyTasks (gulp) {
   gulp.task('stop', ['drop-existing-group'])
 
   gulp.task('publish-jira', () => {
-    const source = path.join(__dirname, 'jira')
-    const target = 'target'
-    const jira = path.resolve(target, 'jira')
-
-    shell.mkdir('-p', jira)
-    shell.cp(path.resolve(source, 'azuredeploy.json'), path.resolve(jira, MAIN_TEMPLATE_NAME))
-    shell.cp(path.resolve(source, 'createUIDefinition.json'), path.resolve(jira, CREATE_UI_DEFINITION_NAME))
-    shell.cp(path.resolve(source, 'scripts', '*'), jira)
-    shell.cp(path.resolve(source, 'templates', '*'), jira)
-    shell.exec([
-      'zip',
-      '-r',
-      '--junk-paths',
-      path.resolve(target, 'jira.zip'),
-      jira
-    ].join(' '))
+    publish((pkg) => {
+      ['scripts', 'templates'].forEach(dir => {
+        shell.cp(path.resolve(pkg.source, dir, '*'), pkg.target)
+      })
+    })
   })
 
   gulp.task('publish-confluence', () => {
-    const source = path.join(__dirname, 'confluence')
-    const target = path.join(__dirname, 'target')
-    const resources = ['scripts', 'templates', 'libs']
-    const confluence = path.resolve(target, 'confluence')
-    resources.forEach(dir => {
-      shell.mkdir('-p', path.resolve(confluence, dir))
+    publish((pkg) => {
+      ['scripts', 'templates', 'libs'].forEach(dir => {
+        shell.mkdir('-p', path.resolve(pkg.target, dir))
+        shell.cp(
+          path.resolve(pkg.source, dir, '*'),
+          path.resolve(pkg.target, dir))
+      })
     })
-    shell.cp(path.resolve(source, 'azuredeploy.json'), path.resolve(confluence, MAIN_TEMPLATE_NAME))
-    shell.cp(path.resolve(source, 'createUIDefinition.json'), path.resolve(confluence, CREATE_UI_DEFINITION_NAME))
-    resources.forEach(dir => {
-      shell.cp(path.resolve(source, dir, '*'), path.resolve(confluence, dir))
-    })
-    shell.pushd(confluence)
-    shell.exec([
-      'zip',
-      '-r',
-      'confluence.zip',
-      '*',
-      '-9'
-    ].join(' '))
-    shell.mv(path.resolve(confluence, 'confluence.zip'), path.resolve(target, 'confluence.zip'))
-    shell.popd()
+  })
+
+  gulp.task('publish-bitbucket', () => {
+    publish()
   })
 
   gulp.task('publish', () => runSequence('check-zip-cli', `publish-${product()}`))
