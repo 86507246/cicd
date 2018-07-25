@@ -2,6 +2,7 @@ const shell = require('shelljs')
 const fail = require('gulp-fail')
 const path = require('path')
 const fs = require('fs')
+const merge = require('merge')
 const runSequenceImport = require('run-sequence')
 
 const GROUP_FILE = '.group'
@@ -105,7 +106,18 @@ function publish (prepareResources = () => {}) {
 function getDeploymentParametersPath () {
   const override = path.join(__dirname, product(), PARAMETERS_FILE)
   const byDefault = path.join(__dirname, product(), 'azuredeploy.parameters.json')
-  return shell.test('-f', override) ? override : byDefault
+
+  if (shell.test('-f', override)) {
+    const defaultParameters = JSON.parse(shell.cat(byDefault))
+    const overrideParameters = JSON.parse(shell.cat(override))
+
+    const result = merge.recursive(defaultParameters, overrideParameters)
+    const output = path.resolve(shell.tempdir(), 'azuredeploy.parameters.json')
+    shell.echo(JSON.stringify(result)).to(output)
+    return output
+  } else {
+    return byDefault
+  }
 }
 
 function getDeploymentPath () {
