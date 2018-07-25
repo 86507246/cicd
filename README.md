@@ -13,7 +13,10 @@
 ## How to run a deployment
 1. Run `az login`
 2. Run `npm i` to install dependencies
-3. Run `gulp start` to start the deployment
+3. Run `npm start` to start the deployment
+
+## How to remove deployed environment
+1. Run `npm stop`
 
 ## Making changes
 If you make changes to any file, you have to put the changed file into the blobstore that is used for provisioning.
@@ -21,6 +24,12 @@ Either create a new blobstore or reuse an existing one.
 
 If you create a new blobstore, you have to update the parameters "provisioningStorageName" and "provisioningStorageToken"
 in the file `azuredeploy.parameters.json`.
+
+## Keep parameters clean
+
+The process deployment requires to have `azuredeploy.parameters.json` in the repository. That means that you need to make sure that you don't commit your custom values into the repository during development.
+
+To avoid this hassle create you can `azuredeploy.parameters.local.json` in a product specific directory, it is ignored by git and it overrides the repo version of `azuredeploy.parameters.json` when you run deployment with `npm start`
 
 ## Redeploying your changes
 Just run `npm start` again - it will delete the old resource group (stored in the file `.group`) and run a new deployment.
