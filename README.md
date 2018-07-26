@@ -3,12 +3,12 @@
 ## Dependencies
 * Node (`brew install node`)
 * Gulp
-* Azure CLI (`curl -L https://aka.ms/InstallAzureCli | bash`)
+* Azure CLI (`curl -L https://aka.ms/InstallAzureCli | bash` or `brew install azure-cli`)
 
 ## Configuration
 1. Put your SSH PublicKey (`~/.ssh/id_rsa.pub`) into the file `azuredeploy.parameters.json` in the relevant "jumpboxSshKey" property.
 2. Execute `echo "$(id -P | cut -d: -f1)-" > .prefix`, this will prefix all resource groups with that name.
-3. By default, JIRA is the product that is deployed. If you are working on Confluence, run `echo confluence > .product`. This will make the deployment use confluence's ARM templates.
+3. By default, JIRA is the product that is deployed. If you are working on Confluence or Bitbucket Ser, run `echo confluence > .product` or `echo bitbucket > .product` accordingly. This will make the deployment to use product-specific ARM templates.
 
 ## How to run a deployment
 1. Run `az login`
@@ -46,4 +46,4 @@ The password for the `jiraadmin` user on JIRA nodes is `JIRA@dmin`.
 ## Building a zip for publishing
 Run `gulp publish` to build a zip in the `target/` directory. Similarly with running a deployment, if you have a `.product` file with 'confluence' in it,
 then the publish will build the confluence deployment files. If you want to run the publish directly regardless of the `.product` file,
-use `gulp publish-jira` or `gulp publish-confluence`.
+use `gulp publish-jira`, `gulp publish-confluence` or `gulp publish-bitbucket`.
