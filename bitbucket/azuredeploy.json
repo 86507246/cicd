@@ -18,8 +18,19 @@
       "type": "string",
       "defaultValue": "bbsadmin"
     },
+    "adminPass": {
+      "type": "securestring"
+    },
     "sshKey": {
       "type": "string"
+    },
+    "jumpboxSize": {
+      "type": "string",
+      "defaultValue": "Standard_B1s"
+    },
+    "jumpboxHostname": {
+      "type": "string",
+      "defaultValue": "jumpbox"
     },
     "applicationTitle": {
       "type": "string",
@@ -66,6 +77,18 @@
         "public": {
           "name": "[concat(variables('namespace'), 'netpublic')]",
           "cidr": "[parameters('publicNetCIDR')]"
+        }
+      }
+    },
+    "vm": {
+      "jumpbox": {
+        "name": "[concat(variables('namespace'), 'jumpobox')]",
+        "size": "[parameters('jumpboxSize')]",
+        "hostname": "[parameters('jumpboxHostname')]",
+        "image": {
+          "publisher": "Canonical",
+          "offer": "UbuntuServer",
+          "sku": "16.04.0-LTS"
         }
       }
     }
@@ -123,6 +146,7 @@
               "subnet": {
                 "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.public.name)]"
               },
+              "privateIPAllocationMethod": "Dynamic",
               "publicIPAddress": {
                 "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('net').ip.name)]"
               }
@@ -130,12 +154,55 @@
           }
         ]
       }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "[variables('api').compute.virtualMachines]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]",
+      "dependsOn": [
+        "[variables('net').nic.public.name]"
+      ],
+      "name": "[variables('vm').jumpbox.name]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vm').jumpbox.size]"
+        },
+        "osProfile": {
+          "computerName": "[variables('vm').jumpbox.hostname]",
+          "adminUsername": "[parameters('adminUser')]",
+          "adminPassword": "[parameters('adminPass')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('vm').jumpbox.image.publisher]",
+            "offer": "[variables('vm').jumpbox.image.offer]",
+            "sku": "[variables('vm').jumpbox.image.sku]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage"
+          },
+          "dataDisks": []
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('net').nic.public.name)]"
+            }
+          ]
+        }
+      }
     }
   ],
   "outputs": {
     "bitbucket": {
       "type": "string",
       "value": "[reference(variables('net').ip.name).dnsSettings.fqdn]"
+    },
+    "ssh": {
+      "type": "string",
+      "value": "[concat('ssh ', parameters('adminUser'), '@', reference(variables('net').ip.name).dnsSettings.fqdn)]"
     }
   }
 }
