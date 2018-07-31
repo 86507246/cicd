@@ -14,6 +14,14 @@
             "type": "string",
             "defaultValue": "10.0.1.0/24"
         },
+        "appgwNetCIDR": {
+            "type": "string",
+            "defaultValue": "10.0.2.0/24"
+        },
+        "lbNetCIDR": {
+            "type": "string",
+            "defaultValue": "10.0.3.0/24"
+        },
         "adminUser": {
             "type": "string",
             "defaultValue": "bbsadmin"
@@ -83,6 +91,14 @@
                 "public": {
                     "name": "[concat(variables('namespace'), 'netpublic')]",
                     "cidr": "[parameters('publicNetCIDR')]"
+                },
+                "appgw": {
+                    "name": "[concat(variables('namespace'), 'netappgw')]",
+                    "cidr": "[parameters('appgwNetCIDR')]"
+                },
+                "lb": {
+                    "name": "[concat(variables('namespace'), 'netlb')]",
+                    "cidr": "[parameters('lbNetCIDR')]"
                 }
             }
         },
@@ -167,6 +183,18 @@
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.public.name)]"
                             }
+                        }
+                    },
+                    {
+                        "name": "[variables('net').subnets.appgw.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('net').subnets.appgw.cidr]"
+                        }
+                    },
+                    {
+                        "name": "[variables('net').subnets.lb.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('net').subnets.lb.cidr]"
                         }
                     }
                 ]
