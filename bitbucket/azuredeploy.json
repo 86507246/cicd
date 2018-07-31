@@ -96,6 +96,9 @@
                 "lb": {
                     "name": "[concat(variables('namespace'), 'lbnsg')]"
                 },
+                "bbs": {
+                    "name": "[concat(variables('namespace'), 'bbsnsg')]"
+                },
                 "rules": {
                     "denyInbound": {
                         "name": "denyInbound",
@@ -290,13 +293,69 @@
             }
         },
         {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "[variables('api').network.networkSecurityGroups]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nsg.bbs.name]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allowAppGateway",
+                        "properties": {
+                            "description": "Allows incoming HTTP traffic from App Gateway subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "7990",
+                            "sourceAddressPrefix": "[variables('net').subnets.appgw.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 100
+                        }
+                    },
+                    {
+                        "name": "allowLB",
+                        "properties": {
+                            "description": "Allows incoming Git traffic from LB subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "7999",
+                            "sourceAddressPrefix": "[variables('net').subnets.lb.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 101
+                        }
+                    },
+                    {
+                        "name": "allowSSH",
+                        "properties": {
+                            "description": "Allows incoming SSH traffic from public subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "[variables('net').subnets.public.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 102
+                        }
+                    },
+                    "[variables('net').nsg.rules.denyInbound]"
+                ]
+            }
+        },
+        {
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "[variables('api').network.virtualNetworks]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
                 "[variables('net').nsg.public.name]",
-                "[variables('net').nsg.appgw.name]"
+                "[variables('net').nsg.appgw.name]",
+                "[variables('net').nsg.lb.name]",
+                "[variables('net').nsg.bbs.name]"
             ],
             "name": "[variables('net').vnet.name]",
             "properties": {
@@ -330,6 +389,15 @@
                             "addressPrefix": "[variables('net').subnets.lb.cidr]",
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.lb.name)]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "[variables('net').subnets.bbs.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.bbs.name)]"
                             }
                         }
                     }
