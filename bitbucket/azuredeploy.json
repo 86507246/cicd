@@ -95,6 +95,36 @@
                 },
                 "lb": {
                     "name": "[concat(variables('namespace'), 'lbnsg')]"
+                },
+                "rules": {
+                    "denyInbound": {
+                        "name": "denyInbound",
+                        "properties": {
+                            "description": "Deny All",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "direction": "Inbound",
+                            "priority": 1001
+                        }
+                    },
+                    "denyOutbound": {
+                        "name": "denyOutbound",
+                        "properties": {
+                            "description": "Deny All",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "direction": "Outbound",
+                            "priority": 1002
+                        }
+                    }
                 }
             },
             "subnets": {
@@ -213,34 +243,8 @@
                             "priority": 101
                         }
                     },
-                    {
-                        "name": "denyInbound",
-                        "properties": {
-                            "description": "Deny All",
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "*",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Deny",
-                            "direction": "Inbound",
-                            "priority": 102
-                        }
-                    },
-                    {
-                        "name": "denyOutbound",
-                        "properties": {
-                            "description": "Deny All",
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "*",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Deny",
-                            "direction": "Outbound",
-                            "priority": 103
-                        }
-                    }
+                    "[variables('net').nsg.rules.denyInbound]",
+                    "[variables('net').nsg.rules.denyOutbound]"
                 ]
             }
         },
@@ -280,34 +284,8 @@
                             "priority": 101
                         }
                     },
-                    {
-                        "name": "denyInbound",
-                        "properties": {
-                            "description": "Deny All",
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "*",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Deny",
-                            "direction": "Inbound",
-                            "priority": 102
-                        }
-                    },
-                    {
-                        "name": "denyOutbound",
-                        "properties": {
-                            "description": "Deny All",
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "*",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Deny",
-                            "direction": "Outbound",
-                            "priority": 103
-                        }
-                    }
+                    "[variables('net').nsg.rules.denyInbound]",
+                    "[variables('net').nsg.rules.denyOutbound]"
                 ]
             }
         },
