@@ -52,7 +52,8 @@
       "network": {
         "publicIPAddresses": "2017-10-01",
         "virtualNetworks": "2017-10-01",
-        "networkInterfaces": "2017-10-01"
+        "networkInterfaces": "2017-10-01",
+        "networkSecurityGroups": "2017-10-01"
       }
     },
     "net": {
@@ -73,6 +74,11 @@
           }
         }
       },
+      "nsg": {
+        "public": {
+          "name": "[concat(variables('namespace'), 'publicnsg')]"
+        }
+      },
       "subnets": {
         "public": {
           "name": "[concat(variables('namespace'), 'netpublic')]",
@@ -82,7 +88,7 @@
     },
     "vm": {
       "jumpbox": {
-        "name": "[concat(variables('namespace'), 'jumpobox')]",
+        "name": "[concat(variables('namespace'), 'jumpbox')]",
         "size": "[parameters('jumpboxSize')]",
         "hostname": "[parameters('jumpboxHostname')]",
         "image": {
@@ -95,11 +101,58 @@
   },
   "resources": [
     {
-      "type": "Microsoft.Network/virtualNetworks",
-      "apiVersion": "[variables('api').network.virtualNetworks]",
-      "name": "[variables('net').vnet.name]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "[variables('api').network.networkSecurityGroups]",
       "location": "[parameters('location')]",
       "tags": "[variables('tags')]",
+      "name": "[variables('net').nsg.public.name]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "allow",
+            "properties": {
+              "description": "Allows HTTP/S, SSH and Git traffic only from the Internet",
+              "protocol": "TCP",
+              "sourcePortRange": "*",
+              "destinationPortRanges": [
+                "22",
+                "80",
+                "443",
+                "7990"
+              ],
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "direction": "Inbound",
+              "priority": 100
+            }
+          },
+          {
+            "name": "denyall",
+            "properties": {
+              "description": "Deny all",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Deny",
+              "direction": "Inbound",
+              "priority": 101
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "[variables('api').network.virtualNetworks]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]",
+      "dependsOn": [
+        "[variables('net').nsg.public.name]"
+      ],
+      "name": "[variables('net').vnet.name]",
       "properties": {
         "addressSpace": {
           "addressPrefixes": [
@@ -110,7 +163,10 @@
           {
             "name": "[variables('net').subnets.public.name]",
             "properties": {
-              "addressPrefix": "[variables('net').subnets.public.cidr]"
+              "addressPrefix": "[variables('net').subnets.public.cidr]",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.public.name)]"
+              }
             }
           }
         ]
@@ -136,7 +192,8 @@
       "tags": "[variables('tags')]",
       "name": "[variables('net').nic.public.name]",
       "dependsOn": [
-        "[variables('net').ip.name]"
+        "[variables('net').ip.name]",
+        "[variables('net').vnet.name]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -171,7 +228,18 @@
         "osProfile": {
           "computerName": "[variables('vm').jumpbox.hostname]",
           "adminUsername": "[parameters('adminUser')]",
-          "adminPassword": "[parameters('adminPass')]"
+          "adminPassword": "[parameters('adminPass')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "[concat('/home/', parameters('adminUser'), '/.ssh/authorized_keys')]",
+                  "keyData": "[parameters('sshKey')]"
+                }
+              ]
+            }
+          }
         },
         "storageProfile": {
           "imageReference": {
