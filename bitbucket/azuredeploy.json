@@ -22,6 +22,10 @@
             "type": "string",
             "defaultValue": "10.0.3.0/24"
         },
+        "bbsNetCIDR": {
+            "type": "string",
+            "defaultValue": "10.0.4.0/24"
+        },
         "adminUser": {
             "type": "string",
             "defaultValue": "bbsadmin"
@@ -85,6 +89,12 @@
             "nsg": {
                 "public": {
                     "name": "[concat(variables('namespace'), 'publicnsg')]"
+                },
+                "appgw": {
+                    "name": "[concat(variables('namespace'), 'appgwnsg')]"
+                },
+                "lb": {
+                    "name": "[concat(variables('namespace'), 'lbnsg')]"
                 }
             },
             "subnets": {
@@ -99,6 +109,10 @@
                 "lb": {
                     "name": "[concat(variables('namespace'), 'netlb')]",
                     "cidr": "[parameters('lbNetCIDR')]"
+                }, 
+                "bbs": {
+                    "name": "[concat(variables('namespace'), 'netbbs')]",
+                    "cidr": "[parameters('bbsNetCIDR')]"
                 }
             }
         },
@@ -128,13 +142,13 @@
                         "name": "allow",
                         "properties": {
                             "description": "Allows HTTP/S, SSH and Git traffic only from the Internet",
-                            "protocol": "TCP",
+                            "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRanges": [
                                 "22",
                                 "80",
                                 "443",
-                                "7990"
+                                "7999"
                             ],
                             "sourceAddressPrefix": "Internet",
                             "destinationAddressPrefix": "VirtualNetwork",
@@ -155,6 +169,76 @@
                             "access": "Deny",
                             "direction": "Inbound",
                             "priority": 101
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "[variables('api').network.networkSecurityGroups]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nsg.appgw.name]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allowInbound",
+                        "properties": {
+                            "description": "Allows incoming HTTP/S traffic only from public subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRanges": [
+                                "80",
+                                "443"
+                            ],
+                            "sourceAddressPrefix": "[variables('net').subnets.public.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.appgw.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 100
+                        }
+                    },
+                    {
+                        "name": "allowOutbound",
+                        "properties": {
+                            "description": "Allows outgoing HTTP traffic only from App Gateway subnet towards BBS subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "7990",
+                            "sourceAddressPrefix": "[variables('net').subnets.appgw.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Outbound",
+                            "priority": 101
+                        }
+                    },
+                    {
+                        "name": "denyInbound",
+                        "properties": {
+                            "description": "Deny All",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "direction": "Inbound",
+                            "priority": 102
+                        }
+                    },
+                    {
+                        "name": "denyOutbound",
+                        "properties": {
+                            "description": "Deny All",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "direction": "Outbound",
+                            "priority": 103
                         }
                     }
                 ]
@@ -188,7 +272,10 @@
                     {
                         "name": "[variables('net').subnets.appgw.name]",
                         "properties": {
-                            "addressPrefix": "[variables('net').subnets.appgw.cidr]"
+                            "addressPrefix": "[variables('net').subnets.appgw.cidr]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.appgw.name)]"
+                            }
                         }
                     },
                     {
