@@ -245,12 +245,80 @@
             }
         },
         {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "[variables('api').network.networkSecurityGroups]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nsg.lb.name]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allowInbound",
+                        "properties": {
+                            "description": "Allows incoming SSH traffic only from public subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "7999",
+                            "sourceAddressPrefix": "[variables('net').subnets.public.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.lb.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 100
+                        }
+                    },
+                    {
+                        "name": "allowOutbound",
+                        "properties": {
+                            "description": "Allows outgoing SSH traffic only from LB subnet towards BBS subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "7999",
+                            "sourceAddressPrefix": "[variables('net').subnets.lb.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Outbound",
+                            "priority": 101
+                        }
+                    },
+                    {
+                        "name": "denyInbound",
+                        "properties": {
+                            "description": "Deny All",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "direction": "Inbound",
+                            "priority": 102
+                        }
+                    },
+                    {
+                        "name": "denyOutbound",
+                        "properties": {
+                            "description": "Deny All",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "direction": "Outbound",
+                            "priority": 103
+                        }
+                    }
+                ]
+            }
+        },
+        {
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "[variables('api').network.virtualNetworks]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
-                "[variables('net').nsg.public.name]"
+                "[variables('net').nsg.public.name]",
+                "[variables('net').nsg.appgw.name]"
             ],
             "name": "[variables('net').vnet.name]",
             "properties": {
@@ -281,7 +349,10 @@
                     {
                         "name": "[variables('net').subnets.lb.name]",
                         "properties": {
-                            "addressPrefix": "[variables('net').subnets.lb.cidr]"
+                            "addressPrefix": "[variables('net').subnets.lb.cidr]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.lb.name)]"
+                            }
                         }
                     }
                 ]
