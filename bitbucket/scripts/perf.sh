@@ -1,9 +1,15 @@
 #/bin/bash
 
-MAX_CORES=100
+MAX_CORES=10
 RESULTS_FILE="results.csv"
+LOG_FILE="results.log"
+SSH_KEY="${HOME}/.ssh/id_rsa.pub"
 
 vms=(
+    'vm=(Standard_L4s 4 WestUS2)'
+    'vm=(Standard_L8s 8 WestUS2)'
+    'vm=(Standard_L16s 16 WestUS2)'
+    'vm=(Standard_L32s 32 WestUS2)'
     'vm=(Standard_B1s 1 AustraliaSouthEast)'
     'vm=(Standard_B1ms 1 AustraliaSouthEast)'
     'vm=(Standard_B2s 2 AustraliaSouthEast)'
@@ -91,7 +97,7 @@ vms=(
     'vm=(Standard_GS5 32 WestUS2)'
     'vm=(Standard_G1 2 WestUS2)'
     'vm=(Standard_G2 4 WestUS2)'
-    'vm=(Standard_G3 8) WestUS2'
+    'vm=(Standard_G3 8 WestUS2)'
     'vm=(Standard_G4 16 WestUS2)'
     'vm=(Standard_G5 32 WestUS2)'
     'vm=(Standard_DS11_v2 2 AustraliaSouthEast)'
@@ -104,13 +110,6 @@ vms=(
     'vm=(Standard_D13_v2 8 AustraliaSouthEast)'
     'vm=(Standard_D14_v2 16 AustraliaSouthEast)'
     'vm=(Standard_D15_v2 20 AustraliaSouthEast)'
-)
-
-storage_vms=( 
-    'vm=(Standard_L4s 4)'
-    'vm=(Standard_L8s 8)'
-    'vm=(Standard_L16s 16)'
-    'vm=(Standard_L32s 32)'
 )
 
 disks=(
@@ -130,10 +129,36 @@ caches=(
     "ReadWrite"
 )
 
+function do_log {
+  local scope=$1
+  local msg=$2
+  echo "[${scope}]: ${msg}" >> "${LOG_FILE}"
+}
+
+function log {
+  do_log "${FUNCNAME[1]}" "$1"
+}
+
+function error {
+  do_log "${FUNCNAME[1]}" "$1"
+  exit 3
+}
+
+function gen_pass() {
+    openssl rand -base64 32
+}
+
+function get_ssh_key() {
+    cat "${SSH_KEY}"
+}
+
 function prep_parameters() {
     local vm="${1}"
     local disk="${2}"
     local cache="${3}"
+
+    log "Preparing parameters for [vm=${vm}, disk=${disk}, cache=${cache}]"
+
     cat <<EOT > "bitbucket/azuredeploy.parameters.local.json"
 {
   "parameters": {
@@ -141,10 +166,10 @@ function prep_parameters() {
       "value": "bbsadmin"
     },
     "adminPass": {
-      "value": "k[MlmkcG$$['v-3g1NPL|y0UCSHV"
+      "value": "$(gen_pass)"
     },
     "sshKey": {
-      "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC3CNLotlCeajpQygaiVLgkdFqqEdzbbpi72JhgA8baWv8flu3mEXPq4sbUrlv04tP0Fgi5EAfgFbwWmN/23pQR0t1lEU7TB9uU+IrhhKHuCoDikkqa//gxnAYxrY3ze6p+Ib0FTSpIrIsY1D2t1z6S/33kBz59Iz5tX6XtijGUQj5lyttfek8O2pZbGL5qHHJzyl67JfCOB8eAWhVBbL96SJgK3XlZE1rEwlA0CPa+mNLSdTd9jxBpml42RR4JEMJOtalzRXLCKubSWjfDqK5XPIhJ2vhWI2c2qgoVe/tkj6OWyXxCRImjhhSX1AMSuYKdUsimsPnOziIWm2aoE4jD aermolenko@CLI-24467"
+      "value": "$(get_ssh_key)"
     },
     "diskSize": {
         "value": ${disk}
@@ -168,13 +193,29 @@ function has_results() {
     fi
 }
 
+function has_log() {
+    if [ -f "${LOG_FILE}" ]; then
+        return 0; # 0 == true
+    else
+        return 1; # 1 == false
+    fi
+}
+
 function read_results() {
     cat ".createDeployResult"
 }
 
+
 function clean_results() {
+    log "Cleaning up previous deployment output"
     if has_results; then
         rm ".createDeployResult"
+    fi
+}
+
+function clean_log() {
+    if has_log; then
+        rm "${LOG_FILE}"
     fi
 }
 
@@ -185,43 +226,90 @@ function process_results() {
 
     local label="${vm}-${disk}-${cache}"
 
+    log "Processing results for test [vm=${vm}, disk=${disk}, cache=${cache}]. Assigned [label=${label}]"
+
     if has_results; then
         local stats=`read_results | jq '.properties.outputs.stats.value' -r`
         echo "${stats/jumpbox/$label}" >> "${RESULTS_FILE}"
     else
-        echo "Couldn't process results - no result file. Probably deployment has failed."
+        log "Couldn't process results - no result file. Probably deployment has failed."
     fi
-    
+}
+
+function update_location() {
+    local location="${1}"
+
+    log "Setting [location=${location}]"
+
+    echo "${location}" > ".location"
+}
+
+function start() {
+    if [ "${DRY_RUN}" != "y" ]; then
+        log "Running the deployment..."
+        npm start
+        log "Deployment has been completed!"
+    else
+        log "Dry run! Skipping the deployment."
+    fi
+}
+
+function stop() {
+    if [ "${DRY_RUN}" != "y" ]; then
+        log "Stopping the deployment..."
+        npm stop
+        log "Deployment has been stopped"
+    else
+        log "Dry run! Skipping the cleanup."
+    fi
 }
 
 function do_test() {
     local vm="${1}"
-    local disk="${2}"
-    local cache="${cache}"
+    local location="${2}"
+    local disk="${3}"
+    local cache="${4}"
+
+    log "Testing [vm=${vm}, location=${location}, disk=${disk}, cache=${cache}]"
 
     clean_results
+    update_location "${location}"
     prep_parameters "${vm}" "${disk}" "${cache}"
-    npm start
+    start
     process_results "${vm}" "${disk}" "${cache}"
+
+    log "Done testing [vm=${vm}, location=${location}, disk=${disk}, cache=${cache}]"
 }
 
 function test() {
-    for vm in "${storage_vms[@]}"; do
+    log "Starting performance testing..."
+
+    for vm in "${vms[@]}"; do
         eval $vm
 
         local vm_name="${vm[0]}"
         local vm_cores="${vm[1]}"
+        local vm_location="${vm[2]}"
+
+        log "Ready to test [vm=${vm_name}, cores=${vm_cores}, location=${vm_location}]"
 
         if [ "${vm_cores}" -lt "${MAX_CORES}" ]; then
             for disk in ${disks[@]}; do
                 for cache in ${caches[@]}; do
-                    do_test "${vm_name}" "${disk}" "${cache}"
+                    do_test "${vm_name}" "${vm_location}" "${disk}" "${cache}"
                 done
             done
+        else
+            log "Skipping test [vm=${vm_name}] it has too many [cores=${vm_cores}]. Configured maximum amount of [cores=${MAX_CORES}]"
         fi    
     done
 
-    npm stop
+    log "Performance test has been completed, cleaning up..."
+
+    stop
+
+    log "Cleanup has been completed!"
 }
 
+clean_log
 test

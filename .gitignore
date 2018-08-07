@@ -14,3 +14,4 @@ azuredeploy.parameters.local.json
 npm-debug.log
 package-lock.json
 results.csv
+results.log
