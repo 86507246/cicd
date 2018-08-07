@@ -8,7 +8,9 @@ target
 .vscode
 .createDeployResult
 .deployment
+.location
 azuredeploy.parameters.local.json
 .DS_Store
 npm-debug.log
 package-lock.json
+results.csv

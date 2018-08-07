@@ -40,6 +40,14 @@
             "type": "string",
             "defaultValue": "Standard_B1s"
         },
+        "diskCaching": {
+            "type": "string",
+            "defaultValue": "None"
+        },
+        "diskSize": {
+            "type": "int",
+            "defaultValue": 32
+        },
         "jumpboxHostname": {
             "type": "string",
             "defaultValue": "jumpbox"
@@ -59,7 +67,10 @@
         },
         "api": {
             "compute": {
-                "virtualMachines": "2018-06-01"
+                "virtualMachines": "2018-06-01",
+                "vm": {
+                    "extensions": "2018-06-01"
+                }
             },
             "network": {
                 "publicIPAddresses": "2017-10-01",
@@ -481,9 +492,20 @@
                         "version": "latest"
                     },
                     "osDisk": {
+                        "caching": "ReadWrite",
                         "createOption": "FromImage"
                     },
-                    "dataDisks": []
+                    "dataDisks": [
+                        {
+                            "lun": 0,
+                            "diskSizeGB": "[parameters('diskSize')]",
+                            "createOption": "Empty",
+                            "caching" : "[parameters('diskCaching')]",
+                            "managedDisk": {
+                                "storageAccountType": "Premium_LRS"
+                            }
+                        }
+                    ]
                 },
                 "networkProfile": {
                     "networkInterfaces": [
@@ -492,7 +514,27 @@
                         }
                     ]
                 }
-            }
+            },
+            "resources": [
+                {
+                    "type": "extensions",
+                    "apiVersion": "[variables('api').compute.vm.extensions]",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[variables('vm').jumpbox.name]"
+                    ],
+                    "name": "script",
+                    "properties": {
+                        "publisher": "Microsoft.Azure.Extensions",
+                        "type": "CustomScript",
+                        "typeHandlerVersion": "2.0",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {
+                            "script": "H4sIAPPaZ1sCA32PQQrCMBBF9znFFzeKxFjpQhC8S9qkNjQmtZlUBQ+vtKW0UtzMZ3jvD8x6JTLjRCZDyZisiV81IdZKksYFQulWuGjtiIwLJK0FfyHzzhm92/31SvL1TNjovPRwZ3RZD5n0OZ14bPFGoUyo+npQ+ezSrSoCOEE/KR2N5EdRpvnukmR3Z8Z8dDTpLVts/JKricIbHA/pCTyi8Z7A711rwKLRIVra56FlLJe0SD7YF0r5egEAAA=="
+                        }
+                    }
+                }
+            ]
         }
     ],
     "outputs": {
@@ -503,6 +545,10 @@
         "ssh": {
             "type": "string",
             "value": "[concat('ssh ', parameters('adminUser'), '@', reference(variables('net').ip.name).dnsSettings.fqdn)]"
+        },
+        "stats": {
+            "type": "string",
+            "value": "[trim(split(reference('script').instanceView.statuses[0].message, '\n')[2])]"
         }
     }
 }
