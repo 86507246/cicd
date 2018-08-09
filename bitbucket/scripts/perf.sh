@@ -6,121 +6,19 @@ LOG_FILE="results.log"
 SSH_KEY="${HOME}/.ssh/id_rsa.pub"
 
 vms=(
-    'vm=(Standard_L4s 4 WestUS2)'
-    'vm=(Standard_L8s 8 WestUS2)'
-    'vm=(Standard_L16s 16 WestUS2)'
-    'vm=(Standard_L32s 32 WestUS2)'
-    'vm=(Standard_B1s 1 AustraliaSouthEast)'
-    'vm=(Standard_B1ms 1 AustraliaSouthEast)'
-    'vm=(Standard_B2s 2 AustraliaSouthEast)'
-    'vm=(Standard_B2ms 2 AustraliaSouthEast)'
-    'vm=(Standard_B4ms 4 AustraliaSouthEast)'
-    'vm=(Standard_B8ms 8 AustraliaSouthEast)'
-    'vm=(Standard_D2s_v3 2 AustraliaSouthEast)'
-    'vm=(Standard_D4s_v3 4 AustraliaSouthEast)'
-    'vm=(Standard_D8s_v3 8 AustraliaSouthEast)'
-    'vm=(Standard_D16s_v3 16 AustraliaSouthEast)'
-    'vm=(Standard_D32s_v3 32 AustraliaSouthEast)'
-    'vm=(Standard_D64s_v3 64 AustraliaSouthEast)'
-    'vm=(Standard_D2_v3 2 AustraliaSouthEast)'
-    'vm=(Standard_D4_v3 4 AustraliaSouthEast)'
-    'vm=(Standard_D8_v3 8 AustraliaSouthEast)'
-    'vm=(Standard_D16_v3 16 AustraliaSouthEast)'
-    'vm=(Standard_D32_v3 32 AustraliaSouthEast)'
-    'vm=(Standard_D64_v3 64 AustraliaSouthEast)'
-    'vm=(Standard_DS1_v2 1 AustraliaSouthEast)'
-    'vm=(Standard_DS2_v2 2 AustraliaSouthEast)'
-    'vm=(Standard_DS3_v2 4 AustraliaSouthEast)'
+    'vm=(Standard_L4s 4 EastUS2)'
+    'vm=(Standard_L8s 8 WestUS)'
+    'vm=(Standard_E8s_v3 8 EastUS)'
+    'vm=(Standard_F4s 4 CentralUS)'
+    'vm=(Standard_F8s 8 AustraliaCentral)'
+    'vm=(Standard_D8s_v3 8 AustraliaCentral2)'
     'vm=(Standard_DS4_v2 8 AustraliaSouthEast)'
-    'vm=(Standard_DS5_v2 16 AustraliaSouthEast)'
-    'vm=(Standard_D1_v2 1 AustraliaSouthEast)'
-    'vm=(Standard_D2_v2 2 AustraliaSouthEast)'
-    'vm=(Standard_D3_v2 4 AustraliaSouthEast)'
-    'vm=(Standard_D4_v2 8 AustraliaSouthEast)'
-    'vm=(Standard_D5_v2 16 AustraliaSouthEast)'
-    'vm=(Standard_A1_v2 1 AustraliaSouthEast)'
-    'vm=(Standard_A2_v2 2 AustraliaSouthEast)'
-    'vm=(Standard_A4_v2 4 AustraliaSouthEast)'
-    'vm=(Standard_A8_v2 8 AustraliaSouthEast)'
-    'vm=(Standard_A2m_v2 2 AustraliaSouthEast)'
-    'vm=(Standard_A4m_v2 4 AustraliaSouthEast)'
-    'vm=(Standard_A8m_v2 8 AustraliaSouthEast)'
-    'vm=(Standard_F2s_v2 2 AustraliaSouthEast)'
-    'vm=(Standard_F4s_v2 4 AustraliaSouthEast)'
-    'vm=(Standard_F8s_v2 8 AustraliaSouthEast)'
-    'vm=(Standard_F16s_v2 16 AustraliaSouthEast)'
-    'vm=(Standard_F32s_v2 32 AustraliaSouthEast)'
-    'vm=(Standard_F64s_v2 64 AustraliaSouthEast)'
-    'vm=(Standard_F72s_v2 72 AustraliaSouthEast)'
-    'vm=(Standard_F1s 1 AustraliaSouthEast)'
-    'vm=(Standard_F2s 2 AustraliaSouthEast)'
-    'vm=(Standard_F4s 4 AustraliaSouthEast)'
-    'vm=(Standard_F8s 8 AustraliaSouthEast)'
-    'vm=(Standard_F16s 16 AustraliaSouthEast)'
-    'vm=(Standard_F1 1 AustraliaSouthEast)'
-    'vm=(Standard_F2 2 AustraliaSouthEast)'
-    'vm=(Standard_F4 4 AustraliaSouthEast)'
-    'vm=(Standard_F8 8 AustraliaSouthEast)'
-    'vm=(Standard_F16 16 AustraliaSouthEast)'
-    'vm=(Standard_E2s_v3 2 AustraliaSouthEast)'
-    'vm=(Standard_E4s_v3 4 AustraliaSouthEast)'
-    'vm=(Standard_E8s_v3 8 AustraliaSouthEast)'
-    'vm=(Standard_E16s_v3 16 AustraliaSouthEast)'
-    'vm=(Standard_E32s_v3 32 AustraliaSouthEast)'
-    'vm=(Standard_E64s_v3 64 AustraliaSouthEast)'
-    'vm=(Standard_E64is_v3 64 AustraliaSouthEast)'
-    'vm=(Standard_E2_v3 2 AustraliaSouthEast)'
-    'vm=(Standard_E4_v3 4 AustraliaSouthEast)'
-    'vm=(Standard_E8_v3 8 AustraliaSouthEast)'
-    'vm=(Standard_E16_v3 16 AustraliaSouthEast)'
-    'vm=(Standard_E32_v3 32 AustraliaSouthEast)'
-    'vm=(Standard_E64_v3 64 AustraliaSouthEast)'
-    'vm=(Standard_E64i_v3 64 AustraliaSouthEast)'
-    'vm=(Standard_M8ms 8 AustraliaSouthEast)'
-    'vm=(Standard_M16ms 16 AustraliaSouthEast)'
-    'vm=(Standard_M32ts 32 AustraliaSouthEast)'
-    'vm=(Standard_M32ls 32 AustraliaSouthEast)'
-    'vm=(Standard_M32ms 32 AustraliaSouthEast)'
-    'vm=(Standard_M64s 64 AustraliaSouthEast)'
-    'vm=(Standard_M64ls 64 AustraliaSouthEast)'
-    'vm=(Standard_M64ms 64 AustraliaSouthEast)'
-    'vm=(Standard_M128s 128 AustraliaSouthEast)'
-    'vm=(Standard_M128ms 128 AustraliaSouthEast)'
-    'vm=(Standard_M64 64 AustraliaSouthEast)'
-    'vm=(Standard_M64m 64 AustraliaSouthEast)'
-    'vm=(Standard_M128 128 AustraliaSouthEast)'
-    'vm=(Standard_M128m 128 AustraliaSouthEast)'
-    'vm=(Standard_GS1 2 WestUS2)'
-    'vm=(Standard_GS2 4 WestUS2)'
-    'vm=(Standard_GS3 8 WestUS2)'
-    'vm=(Standard_GS4 16 WestUS2)'
-    'vm=(Standard_GS5 32 WestUS2)'
-    'vm=(Standard_G1 2 WestUS2)'
-    'vm=(Standard_G2 4 WestUS2)'
-    'vm=(Standard_G3 8 WestUS2)'
-    'vm=(Standard_G4 16 WestUS2)'
-    'vm=(Standard_G5 32 WestUS2)'
-    'vm=(Standard_DS11_v2 2 AustraliaSouthEast)'
-    'vm=(Standard_DS12_v2 4 AustraliaSouthEast)'
-    'vm=(Standard_DS13_v2 8 AustraliaSouthEast)'
-    'vm=(Standard_DS14_v2 16 AustraliaSouthEast)'
-    'vm=(Standard_DS15_v2 20 AustraliaSouthEast)'
-    'vm=(Standard_D11_v2 2 AustraliaSouthEast)'
-    'vm=(Standard_D12_v2 4 AustraliaSouthEast)'
-    'vm=(Standard_D13_v2 8 AustraliaSouthEast)'
-    'vm=(Standard_D14_v2 16 AustraliaSouthEast)'
-    'vm=(Standard_D15_v2 20 AustraliaSouthEast)'
 )
 
 disks=(
-    "31"
-    "63"
-    "127"
     "255"
     "511"
     "1023"
-    "2047"
-    "4095"
 )
 
 caches=(
@@ -284,30 +182,28 @@ function do_test() {
 function test() {
     log "Starting performance testing..."
 
-    for vm in "${vms[@]}"; do
-        eval $vm
+    for cache in ${caches[@]}; do
+        for disk in ${disks[@]}; do
+            for vm in "${vms[@]}"; do
+                eval $vm
 
-        local vm_name="${vm[0]}"
-        local vm_cores="${vm[1]}"
-        local vm_location="${vm[2]}"
+                local vm_name="${vm[0]}"
+                local vm_cores="${vm[1]}"
+                local vm_location="${vm[2]}"
 
-        log "Ready to test [vm=${vm_name}, cores=${vm_cores}, location=${vm_location}]"
+                log "Ready to test [vm=${vm_name}, cores=${vm_cores}, location=${vm_location}]"
 
-        if [ "${vm_cores}" -lt "${MAX_CORES}" ]; then
-            for disk in ${disks[@]}; do
-                for cache in ${caches[@]}; do
+                if [ "${vm_cores}" -lt "${MAX_CORES}" ]; then
                     do_test "${vm_name}" "${vm_location}" "${disk}" "${cache}"
-                done
+                else
+                    log "Skipping test [vm=${vm_name}] it has too many [cores=${vm_cores}]. Configured maximum amount of [cores=${MAX_CORES}]"
+                fi  
             done
-        else
-            log "Skipping test [vm=${vm_name}] it has too many [cores=${vm_cores}]. Configured maximum amount of [cores=${MAX_CORES}]"
-        fi    
+        done
     done
 
     log "Performance test has been completed, cleaning up..."
-
     stop
-
     log "Cleanup has been completed!"
 }
 
