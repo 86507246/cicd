@@ -100,15 +100,24 @@
         },
         "bbsDiskSize": {
             "type": "int",
-            "defaultValue": 31
+            "defaultValue": 31,
+            "metadata": {
+                "description": "The size of the disk used for logs on a Bitbucket Server node"
+            }
         },
         "bbsDiskStorageType": {
             "type": "string",
-            "defaultValue": "Standard_LRS"
+            "defaultValue": "Standard_LRS",
+            "metadata": {
+                "description": "The type of storage account used for logs on a Bitbucket Server node"
+            }
         },
         "scriptsBranch": {
             "type": "string",
-            "defaultValue": "master"
+            "defaultValue": "master",
+            "metadata": {
+                "description": "Machines download initialization scripts to run during deployment. This specifies where from to download those scripts"
+            }
         },
         "applicationTitle": {
             "type": "string",
