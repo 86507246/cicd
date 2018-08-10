@@ -100,7 +100,7 @@
         },
         "bbsDiskSize": {
             "type": "int",
-            "defaultValue": "31"
+            "defaultValue": 31
         },
         "bbsDiskStorageType": {
             "type": "string",
@@ -600,7 +600,7 @@
                         "adminUsername": "[parameters('adminUsername')]",
                         "adminPassword": "[parameters('adminPassword')]",
                         "linuxConfiguration": {
-                            "computerNamePrefix": false,
+                            "disablePasswordAuthentication": false,
                             "ssh": {
                                 "publicKeys": [
                                     {
@@ -629,6 +629,26 @@
                                 "caching" : "[variables('vm').bbs.storage.caching]",
                                 "managedDisk": {
                                     "storageAccountType": "[variables('vm').bbs.storage.type]"
+                                }
+                            }
+                        ]
+                    },
+                    "networkProfile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "[concat(variables('namespace'), variables('vm').bbs.hostname, '-nic')]",
+                                "properties": {
+                                    "primary": true,
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "[concat(variables('namespace'), variables('vm').bbs.hostname, '-ipconfig')]",
+                                            "properties": {
+                                                "subnet": {
+                                                    "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('net').vnet.name), '/subnets/', variables('net').subnets.bbs.name)]"
+                                                }
+                                            }
+                                        }
+                                    ]
                                 }
                             }
                         ]
