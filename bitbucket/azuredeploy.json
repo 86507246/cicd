@@ -4,45 +4,78 @@
     "parameters": {
         "location": {
             "type": "string",
-            "defaultValue": "[resourceGroup().location]"
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Azure region (WestUS, CentralUs, AustraliaEast, etc) shared by all of the resources in the template"
+            }
         },
         "vnetCIDR": {
             "type": "string",
-            "defaultValue": "10.0.0.0/16"
+            "defaultValue": "10.0.0.0/16",
+            "metadata": {
+                "description": "Address space for the Virtual Network created by the template"
+            }
         },
         "publicNetCIDR": {
             "type": "string",
-            "defaultValue": "10.0.1.0/24"
+            "defaultValue": "10.0.1.0/24",
+            "metadata": {
+                "description": "Address space for the public subnet in the vnet"
+            }
         },
         "appgwNetCIDR": {
             "type": "string",
-            "defaultValue": "10.0.2.0/24"
+            "defaultValue": "10.0.2.0/24",
+            "metadata": {
+                "description": "Address space for the private subnet with Application Gateways"
+            }
         },
         "lbNetCIDR": {
             "type": "string",
-            "defaultValue": "10.0.3.0/24"
+            "defaultValue": "10.0.3.0/24",
+            "metadata": {
+                "description": "Address space for the private subnet with SSH Load Balancers"
+            }
         },
         "bbsNetCIDR": {
             "type": "string",
-            "defaultValue": "10.0.4.0/24"
+            "defaultValue": "10.0.4.0/24",
+            "metadata": {
+                "description": "Address space for the private subnet where Bitbucket Server nodes are deployed"
+            }
         },
-        "adminUser": {
+        "adminUsername": {
             "type": "string",
-            "defaultValue": "bbsadmin"
+            "defaultValue": "bbsadmin",
+            "metadata": {
+                "description": "Username for SSH access to Bitbucket Server nodes as well as for the jumpbox"
+            }
         },
-        "adminPass": {
-            "type": "securestring"
+        "adminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Password for SSH access to Bitbucket Server nodes."
+            }
         },
         "sshKey": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "SSH key to allow access to jumpbox."
+            }
         },
         "jumpboxSize": {
             "type": "string",
-            "defaultValue": "Standard_B1s"
+            "defaultValue": "Standard_B1s",
+            "metadata": {
+                "description": "The size of jumpbox VM"
+            }
         },
         "jumpboxHostname": {
             "type": "string",
-            "defaultValue": "jumpbox"
+            "defaultValue": "jumpbox",
+            "metadata": {
+                "description": "The hostname for jumpbox. Does not affect it's DNS name"
+            }
         },
         "applicationTitle": {
             "type": "string",
@@ -75,7 +108,7 @@
             },
             "ip": {
                 "name": "[concat(variables('namespace'), 'natip')]",
-                "cidr": "10.0.2.99",
+                "addr": "10.0.2.99",
                 "dns": "[concat(variables('namespace'), 'nat', variables('suffix'))]"
             },
             "nic": {
@@ -459,14 +492,14 @@
                 },
                 "osProfile": {
                     "computerName": "[variables('vm').jumpbox.hostname]",
-                    "adminUsername": "[parameters('adminUser')]",
-                    "adminPassword": "[parameters('adminPass')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
                     "linuxConfiguration": {
                         "disablePasswordAuthentication": true,
                         "ssh": {
                             "publicKeys": [
                                 {
-                                    "path": "[concat('/home/', parameters('adminUser'), '/.ssh/authorized_keys')]",
+                                    "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
                                     "keyData": "[parameters('sshKey')]"
                                 }
                             ]
@@ -502,7 +535,7 @@
         },
         "ssh": {
             "type": "string",
-            "value": "[concat('ssh ', parameters('adminUser'), '@', reference(variables('net').ip.name).dnsSettings.fqdn)]"
+            "value": "[concat('ssh ', parameters('adminUsername'), '@', reference(variables('net').ip.name).dnsSettings.fqdn)]"
         }
     }
 }
