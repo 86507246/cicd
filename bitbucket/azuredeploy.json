@@ -77,6 +77,39 @@
                 "description": "The hostname for jumpbox. Does not affect it's DNS name"
             }
         },
+        "bbsSize": {
+            "type": "string",
+            "defaultValue": "Standard_E8-4s_v3",
+            "metadata": {
+                "description": "The size of Bitbucket Server nodes vm"
+            }
+        },
+        "bbsNodeCount": {
+            "type": "int",
+            "defaultValue": 2,
+            "metadata": {
+                "description": "The amount of Bitbucket Server nodes to deploy"
+            }
+        },
+        "bbsNodePrefix": {
+            "type": "string",
+            "defaultValue": "bbshnode",
+            "metadata": {
+                "description": "Hostname prefix for nodes in Bitbucket Server cluster"
+            }
+        },
+        "bbsDiskSize": {
+            "type": "int",
+            "defaultValue": "31"
+        },
+        "bbsDiskStorageType": {
+            "type": "string",
+            "defaultValue": "Standard_LRS"
+        },
+        "scriptsBranch": {
+            "type": "string",
+            "defaultValue": "master"
+        },
         "applicationTitle": {
             "type": "string",
             "defaultValue": "Atlassian Bitbucket Server"
@@ -195,7 +228,20 @@
                 }
             },
             "bbs": {
-                "name": "[concat(variables('namespace'), 'bbsnodes')]"
+                "name": "[concat(variables('namespace'), 'bbsnodes')]",
+                "size": "[parameters('bbsSize')]",
+                "count": "[parameters('bbsNodeCount')]",
+                "hostname": "[parameters('bbsNodePrefix')]",
+                "image": {
+                    "publisher": "Canonical",
+                    "offer": "UbuntuServer",
+                    "sku": "16.04.0-LTS"
+                },
+                "storage": {
+                    "size": "[parameters('bbsDiskSize')]",
+                    "type": "[parameters('bbsDiskStorageType')]",
+                    "caching": "None"
+                }
             }
         }
     },
@@ -539,7 +585,76 @@
             "dependsOn": [
                 "[variables('net').vnet.name]"
             ],
-            "name": "[variables('vm').bbs.name]"
+            "name": "[variables('vm').bbs.name]",
+            "sku": {
+                "name": "[variables('vm').bbs.size]",
+                "capacity": "[variables('vm').bbs.count]"
+            },
+            "properties": {
+                "upgradePolicy": {
+                    "mode": "Manual"
+                },
+                "virtualMachineProfile": {
+                    "osProfile": {
+                        "computerNamePrefix": "[variables('vm').bbs.hostname]",
+                        "adminUsername": "[parameters('adminUsername')]",
+                        "adminPassword": "[parameters('adminPassword')]",
+                        "linuxConfiguration": {
+                            "computerNamePrefix": false,
+                            "ssh": {
+                                "publicKeys": [
+                                    {
+                                        "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                                        "keyData": "[parameters('sshKey')]"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "storageProfile": {
+                        "imageReference": {
+                            "publisher": "[variables('vm').bbs.image.publisher]",
+                            "offer": "[variables('vm').bbs.image.offer]",
+                            "sku": "[variables('vm').bbs.image.sku]",
+                            "version": "latest"
+                        },
+                        "osDisk": {
+                            "createOption": "FromImage"
+                        },
+                        "dataDisks": [
+                            {
+                                "lun": 0,
+                                "diskSizeGB": "[variables('vm').bbs.storage.size]",
+                                "createOption": "Empty",
+                                "caching" : "[variables('vm').bbs.storage.caching]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('vm').bbs.storage.type]"
+                                }
+                            }
+                        ]
+                    },
+                    "extensionProfile": {
+                        "extensions": [
+                            {
+                                "type": "extensions",
+                                "name": "script",
+                                "properties": {
+                                    "publisher": "Microsoft.Azure.Extensions",
+                                    "type": "CustomScript",
+                                    "typeHandlerVersion": "2.0",
+                                    "autoUpgradeMinorVersion": true,
+                                    "settings": {
+                                        "fileUris": [
+                                            "[concat('https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/', parameters('scriptsBranch'), '/bitbucket/scripts/init_storage.sh')]"
+                                        ],
+                                        "commandToExecute": "bash init_storage.sh"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
         }
     ],
     "outputs": {
