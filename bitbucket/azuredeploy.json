@@ -4,7 +4,78 @@
     "parameters": {
         "location": {
             "type": "string",
-            "defaultValue": "[resourceGroup().location]"
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Azure region (WestUS, CentralUs, AustraliaEast, etc) shared by all of the resources in the template"
+            }
+        },
+        "vnetCIDR": {
+            "type": "string",
+            "defaultValue": "10.0.0.0/16",
+            "metadata": {
+                "description": "Address space for the Virtual Network created by the template"
+            }
+        },
+        "publicNetCIDR": {
+            "type": "string",
+            "defaultValue": "10.0.1.0/24",
+            "metadata": {
+                "description": "Address space for the public subnet in the vnet"
+            }
+        },
+        "appgwNetCIDR": {
+            "type": "string",
+            "defaultValue": "10.0.2.0/24",
+            "metadata": {
+                "description": "Address space for the private subnet with Application Gateways"
+            }
+        },
+        "lbNetCIDR": {
+            "type": "string",
+            "defaultValue": "10.0.3.0/24",
+            "metadata": {
+                "description": "Address space for the private subnet with SSH Load Balancers"
+            }
+        },
+        "bbsNetCIDR": {
+            "type": "string",
+            "defaultValue": "10.0.4.0/24",
+            "metadata": {
+                "description": "Address space for the private subnet where Bitbucket Server nodes are deployed"
+            }
+        },
+        "adminUsername": {
+            "type": "string",
+            "defaultValue": "bbsadmin",
+            "metadata": {
+                "description": "Username for SSH access to Bitbucket Server nodes as well as for the jumpbox"
+            }
+        },
+        "adminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Password for SSH access to Bitbucket Server nodes."
+            }
+        },
+        "sshKey": {
+            "type": "string",
+            "metadata": {
+                "description": "SSH key to allow access to jumpbox."
+            }
+        },
+        "jumpboxSize": {
+            "type": "string",
+            "defaultValue": "Standard_B1s",
+            "metadata": {
+                "description": "The size of jumpbox VM"
+            }
+        },
+        "jumpboxHostname": {
+            "type": "string",
+            "defaultValue": "jumpbox",
+            "metadata": {
+                "description": "The hostname for jumpbox. Does not affect it's DNS name"
+            }
         },
         "applicationTitle": {
             "type": "string",
@@ -24,28 +95,435 @@
                 "virtualMachines": "2018-06-01"
             },
             "network": {
-                "publicIPAddresses": "2017-10-01"
+                "publicIPAddresses": "2017-10-01",
+                "virtualNetworks": "2017-10-01",
+                "networkInterfaces": "2017-10-01",
+                "networkSecurityGroups": "2017-10-01"
             }
         },
-        "nat": {
+        "net": {
+            "vnet": {
+                "name": "[concat(variables('namespace'), 'vnet')]",
+                "cidr": "[parameters('vnetCIDR')]"
+            },
             "ip": {
                 "name": "[concat(variables('namespace'), 'natip')]",
                 "addr": "10.0.2.99",
                 "dns": "[concat(variables('namespace'), 'nat', variables('suffix'))]"
+            },
+            "nic": {
+                "public": {
+                    "name": "[concat(variables('namespace'), 'publicnic')]",
+                    "ipConfig": {
+                        "name": "[concat(variables('namespace'), 'publicipconfig')]"
+                    }
+                }
+            },
+            "nsg": {
+                "public": {
+                    "name": "[concat(variables('namespace'), 'publicnsg')]"
+                },
+                "appgw": {
+                    "name": "[concat(variables('namespace'), 'appgwnsg')]"
+                },
+                "lb": {
+                    "name": "[concat(variables('namespace'), 'lbnsg')]"
+                },
+                "bbs": {
+                    "name": "[concat(variables('namespace'), 'bbsnsg')]"
+                },
+                "rules": {
+                    "denyInbound": {
+                        "name": "denyInbound",
+                        "properties": {
+                            "description": "Deny All",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "direction": "Inbound",
+                            "priority": 1001
+                        }
+                    },
+                    "denyOutbound": {
+                        "name": "denyOutbound",
+                        "properties": {
+                            "description": "Deny All",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "direction": "Outbound",
+                            "priority": 1002
+                        }
+                    }
+                }
+            },
+            "subnets": {
+                "public": {
+                    "name": "[concat(variables('namespace'), 'netpublic')]",
+                    "cidr": "[parameters('publicNetCIDR')]"
+                },
+                "appgw": {
+                    "name": "[concat(variables('namespace'), 'netappgw')]",
+                    "cidr": "[parameters('appgwNetCIDR')]"
+                },
+                "lb": {
+                    "name": "[concat(variables('namespace'), 'netlb')]",
+                    "cidr": "[parameters('lbNetCIDR')]"
+                }, 
+                "bbs": {
+                    "name": "[concat(variables('namespace'), 'netbbs')]",
+                    "cidr": "[parameters('bbsNetCIDR')]"
+                }
+            }
+        },
+        "vm": {
+            "jumpbox": {
+                "name": "[concat(variables('namespace'), 'jumpbox')]",
+                "size": "[parameters('jumpboxSize')]",
+                "hostname": "[parameters('jumpboxHostname')]",
+                "image": {
+                    "publisher": "Canonical",
+                    "offer": "UbuntuServer",
+                    "sku": "16.04.0-LTS"
+                }
             }
         }
     },
     "resources": [
         {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "[variables('api').network.networkSecurityGroups]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nsg.public.name]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allow",
+                        "properties": {
+                            "description": "Allows HTTP/S, SSH and Git traffic only from the Internet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRanges": [
+                                "22",
+                                "80",
+                                "443",
+                                "7999"
+                            ],
+                            "sourceAddressPrefix": "Internet",
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 100
+                        }
+                    },
+                    {
+                        "name": "denyall",
+                        "properties": {
+                            "description": "Deny all",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "Internet",
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Deny",
+                            "direction": "Inbound",
+                            "priority": 101
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "[variables('api').network.networkSecurityGroups]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nsg.appgw.name]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allowInbound",
+                        "properties": {
+                            "description": "Allows incoming HTTP/S traffic only from public subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRanges": [
+                                "80",
+                                "443"
+                            ],
+                            "sourceAddressPrefix": "[variables('net').subnets.public.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.appgw.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 100
+                        }
+                    },
+                    {
+                        "name": "allowOutbound",
+                        "properties": {
+                            "description": "Allows outgoing HTTP traffic only from App Gateway subnet towards BBS subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "7990",
+                            "sourceAddressPrefix": "[variables('net').subnets.appgw.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Outbound",
+                            "priority": 101
+                        }
+                    },
+                    "[variables('net').nsg.rules.denyInbound]",
+                    "[variables('net').nsg.rules.denyOutbound]"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "[variables('api').network.networkSecurityGroups]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nsg.lb.name]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allowInbound",
+                        "properties": {
+                            "description": "Allows incoming SSH traffic only from public subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "7999",
+                            "sourceAddressPrefix": "[variables('net').subnets.public.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.lb.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 100
+                        }
+                    },
+                    {
+                        "name": "allowOutbound",
+                        "properties": {
+                            "description": "Allows outgoing SSH traffic only from LB subnet towards BBS subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "7999",
+                            "sourceAddressPrefix": "[variables('net').subnets.lb.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Outbound",
+                            "priority": 101
+                        }
+                    },
+                    "[variables('net').nsg.rules.denyInbound]",
+                    "[variables('net').nsg.rules.denyOutbound]"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "[variables('api').network.networkSecurityGroups]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nsg.bbs.name]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allowAppGateway",
+                        "properties": {
+                            "description": "Allows incoming HTTP traffic from App Gateway subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "7990",
+                            "sourceAddressPrefix": "[variables('net').subnets.appgw.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 100
+                        }
+                    },
+                    {
+                        "name": "allowLB",
+                        "properties": {
+                            "description": "Allows incoming Git traffic from LB subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "7999",
+                            "sourceAddressPrefix": "[variables('net').subnets.lb.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 101
+                        }
+                    },
+                    {
+                        "name": "allowSSH",
+                        "properties": {
+                            "description": "Allows incoming SSH traffic from public subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "[variables('net').subnets.public.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 102
+                        }
+                    },
+                    "[variables('net').nsg.rules.denyInbound]"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "[variables('api').network.virtualNetworks]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[variables('net').nsg.public.name]",
+                "[variables('net').nsg.appgw.name]",
+                "[variables('net').nsg.lb.name]",
+                "[variables('net').nsg.bbs.name]"
+            ],
+            "name": "[variables('net').vnet.name]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('net').vnet.cidr]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('net').subnets.public.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('net').subnets.public.cidr]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.public.name)]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "[variables('net').subnets.appgw.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('net').subnets.appgw.cidr]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.appgw.name)]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "[variables('net').subnets.lb.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('net').subnets.lb.cidr]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.lb.name)]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "[variables('net').subnets.bbs.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.bbs.name)]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
             "type": "Microsoft.Network/publicIPAddresses",
             "apiVersion": "[variables('api').network.publicIPAddresses]",
-            "name": "[variables('nat').ip.name]",
+            "name": "[variables('net').ip.name]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "properties": {
                 "publicIPAllocationMethod": "Static",
                 "dnsSettings": {
-                    "domainNameLabel": "[variables('nat').ip.dns]"
+                    "domainNameLabel": "[variables('net').ip.dns]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "[variables('api').network.networkInterfaces]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nic.public.name]",
+            "dependsOn": [
+                "[variables('net').ip.name]",
+                "[variables('net').vnet.name]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "[variables('net').nic.public.ipConfig.name]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.public.name)]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('net').ip.name)]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "[variables('api').compute.virtualMachines]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[variables('net').nic.public.name]"
+            ],
+            "name": "[variables('vm').jumpbox.name]",
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('vm').jumpbox.size]"
+                },
+                "osProfile": {
+                    "computerName": "[variables('vm').jumpbox.hostname]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": true,
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                                    "keyData": "[parameters('sshKey')]"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[variables('vm').jumpbox.image.publisher]",
+                        "offer": "[variables('vm').jumpbox.image.offer]",
+                        "sku": "[variables('vm').jumpbox.image.sku]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "FromImage"
+                    },
+                    "dataDisks": []
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('net').nic.public.name)]"
+                        }
+                    ]
                 }
             }
         }
@@ -53,7 +531,11 @@
     "outputs": {
         "bitbucket": {
             "type": "string",
-            "value": "[reference(variables('nat').ip.name).dnsSettings.fqdn]"
+            "value": "[reference(variables('net').ip.name).dnsSettings.fqdn]"
+        },
+        "ssh": {
+            "type": "string",
+            "value": "[concat('ssh ', parameters('adminUsername'), '@', reference(variables('net').ip.name).dnsSettings.fqdn)]"
         }
     }
 }
