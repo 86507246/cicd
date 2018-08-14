@@ -93,7 +93,7 @@
         },
         "bbsNodePrefix": {
             "type": "string",
-            "defaultValue": "bbshnode",
+            "defaultValue": "bbsnode",
             "metadata": {
                 "description": "Hostname prefix for nodes in Bitbucket Server cluster"
             }
@@ -116,7 +116,7 @@
             "type": "string",
             "defaultValue": "master",
             "metadata": {
-                "description": "Machines download initialization scripts to run during deployment. This specifies where from to download those scripts"
+                "description": "A branch in the repository to download scripts from. We want to be able to override it during development."
             }
         },
         "applicationTitle": {
@@ -237,8 +237,7 @@
                 }
             },
             "bbs": {
-                "name": "[concat(variables('namespace'), 'bbsnodes')]",
-                "size": "[parameters('bbsSize')]",
+                "name": "[concat(variables('namespace'), 'bbs-nodes')]", "size": "[parameters('bbsSize')]",
                 "count": "[parameters('bbsNodeCount')]",
                 "hostname": "[parameters('bbsNodePrefix')]",
                 "image": {
