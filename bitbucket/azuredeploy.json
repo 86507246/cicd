@@ -673,9 +673,11 @@
                                     "autoUpgradeMinorVersion": true,
                                     "settings": {
                                         "fileUris": [
-                                            "[concat('https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/', parameters('scriptsBranch'), '/bitbucket/scripts/init_storage.sh')]"
+                                            "[concat('https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/', parameters('scriptsBranch'), '/bitbucket/scripts/log.sh')]",
+                                            "[concat('https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/', parameters('scriptsBranch'), '/bitbucket/scripts/vm-disk-utils-0.1.sh')]",
+                                            "[concat('https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/', parameters('scriptsBranch'), '/bitbucket/scripts/install.sh')]"
                                         ],
-                                        "commandToExecute": "bash init_storage.sh"
+                                        "commandToExecute": "bash install.sh"
                                     }
                                 }
                             }
