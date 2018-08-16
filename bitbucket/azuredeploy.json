@@ -102,7 +102,7 @@
             "type": "int",
             "defaultValue": 31,
             "metadata": {
-                "description": "The size of the disk used for logs on a Bitbucket Server node"
+                "description": "The size (in GB) of the data disk that is used for logs on a Bitbucket Server node"
             }
         },
         "bbsDiskStorageType": {
@@ -117,6 +117,13 @@
             "defaultValue": "master",
             "metadata": {
                 "description": "A branch in the repository to download scripts from. We want to be able to override it during development."
+            }
+        },
+        "scriptsRepository": {
+            "type": "string",
+            "defaultValue": "https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/",
+            "metadata": {
+                "description": "A URL prefix for repository which stores installation scripts"
             }
         },
         "applicationTitle": {
@@ -249,7 +256,12 @@
                     "size": "[parameters('bbsDiskSize')]",
                     "type": "[parameters('bbsDiskStorageType')]",
                     "caching": "None"
-                }
+                },
+                "scripts": [
+                    "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/log.sh')]",
+                    "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/vm-disk-utils-0.1.sh')]",
+                    "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/install.sh')]"
+                ]
             }
         }
     },
@@ -672,11 +684,7 @@
                                     "typeHandlerVersion": "2.0",
                                     "autoUpgradeMinorVersion": true,
                                     "settings": {
-                                        "fileUris": [
-                                            "[concat('https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/', parameters('scriptsBranch'), '/bitbucket/scripts/log.sh')]",
-                                            "[concat('https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/', parameters('scriptsBranch'), '/bitbucket/scripts/vm-disk-utils-0.1.sh')]",
-                                            "[concat('https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/', parameters('scriptsBranch'), '/bitbucket/scripts/install.sh')]"
-                                        ],
+                                        "fileUris": "[variables('vm').bbs.scripts]",
                                         "commandToExecute": "bash install.sh"
                                     }
                                 }
