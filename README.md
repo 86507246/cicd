@@ -1,14 +1,24 @@
 # Azure Deployment Template
 
 ## Dependencies
-* Node (`brew install node`)
+* Node (`brew install node`), version 7.6+ for support for `async`
 * Gulp
 * Azure CLI (`curl -L https://aka.ms/InstallAzureCli | bash` or `brew install azure-cli`)
 
 ## Configuration
-1. Put your SSH PublicKey (`~/.ssh/id_rsa.pub`) into the file `azuredeploy.parameters.json` in the relevant "jumpboxSshKey" property.
-2. Execute `echo "$(id -P | cut -d: -f1)-" > .prefix`, this will prefix all resource groups with that name.
-3. By default, JIRA is the product that is deployed. If you are working on Confluence or Bitbucket Ser, run `echo confluence > .product` or `echo bitbucket > .product` accordingly. This will make the deployment to use product-specific ARM templates.
+1. Before making changes to the configuration, be sure to have read about keeping parameters clean in the respective section below.
+2. Put your SSH public key (`~/.ssh/id_rsa.pub`) as the `jumpboxSshKey` property (or `sshKey` for Bitbucket, at the moment), in the product-specific file `$product/azuredeploy.parameters.local.json`, like so:
+
+       {
+           "parameters": {
+               "jumpboxSshKey":
+                   "value": "ssh-rsa AAAAo2D7KUiFoodDCJ4VhimXqG..."
+               }
+           }
+       }
+3. For Bitbucket, also set an admin password, which is the password that would allow you to SSH _from_ the jumpbox into the actual nodes: `"adminPassword: { "value": "..." }`
+4. Execute `echo "$(whoami)-" > .prefix`. This will prefix all resource groups with your username. This file, just like `.product` in the next step, is expected in the main directory, i.e. not a product subdirectory.
+5. By default, JIRA is the product that is deployed. If you are working on Confluence or Bitbucket Server, run `echo confluence > .product` or `echo bitbucket > .product` accordingly. This will make the deployment to use product-specific ARM templates.
 
 ## How to run a deployment
 1. Run `az login`
