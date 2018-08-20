@@ -115,6 +115,24 @@
         "azureSqlTier": {
             "type": "string",
             "defaultValue": "P2",
+            "allowedValues": [
+                "Basic",
+                "S0",
+                "S1",
+                "S2",
+                "S3",
+                "S4",
+                "S6",
+                "S7",
+                "S9",
+                "S12",
+                "P1",
+                "P2",
+                "P4",
+                "P6",
+                "P11",
+                "P15"
+            ],
             "metadata": {
                 "description": "Database Tier for Azure SQL DTU pricing model"
             }
@@ -287,7 +305,7 @@
         "lookup": {
             "sql": {
                 "tierToEdition": {
-                    "B": "Basic",
+                    "Basic": "Basic",
                     "S0": "Standard",
                     "S1": "Standard",
                     "S2": "Standard",
