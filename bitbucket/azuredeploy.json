@@ -173,7 +173,10 @@
         "api": {
             "compute": {
                 "virtualMachines": "2018-06-01",
-                "virtualMachineScaleSets": "2018-06-01"
+                "virtualMachineScaleSets": "2018-06-01",
+                "vm": {
+                    "extensions": "2018-06-01"
+                }
             },
             "network": {
                 "publicIPAddresses": "2017-10-01",
@@ -732,7 +735,7 @@
                                     "autoUpgradeMinorVersion": true,
                                     "settings": {
                                         "fileUris": "[variables('vm').bbs.scripts]",
-                                        "commandToExecute": "bash install.sh"
+                                        "commandToExecute": "bash install.sh bbs"
                                     }
                                 }
                             }
@@ -822,7 +825,28 @@
                         }
                     ]
                 }
-            }
+            },
+            "resources": [
+                {
+                    "type": "extensions",
+                    "apiVersion": "[variables('api').compute.vm.extensions]",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[variables('vm').nfs.name]"
+                    ],
+                    "name": "script",
+                    "properties": {
+                        "publisher": "Microsoft.Azure.Extensions",
+                        "type": "CustomScript",
+                        "typeHandlerVersion": "2.0",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {
+                            "fileUris": "[variables('vm').bbs.scripts]",
+                            "commandToExecute": "bash install.sh nfs"
+                        }
+                    }
+                }
+            ]
         }
     ],
     "outputs": {
