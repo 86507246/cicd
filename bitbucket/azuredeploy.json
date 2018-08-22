@@ -298,8 +298,11 @@
                 "name": "[concat(variables('namespace'), '-sql-server-', uniqueString(resourceGroup().id))]"
             },
             "database": {
-                "name": "[concat(variables('namespace'), '-sql-db')]",
+                "name": "[concat(variables('namespace'), '-db')]",
                 "edition": "[variables('lookup').sql.tierToEdition[parameters('azureSqlTier')]]"
+            },
+            "endpoint": {
+                "name": "[concat(variables('namespace'), '-endpoint')]"
             }
         },
         "lookup": {
@@ -561,7 +564,12 @@
                             "addressPrefix": "[variables('net').subnets.bbs.cidr]",
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.bbs.name)]"
-                            }
+                            },
+                            "serviceEndpoints": [
+                                {
+                                    "service": "Microsoft.Sql"
+                                }
+                            ]
                         }
                     }
                 ]
@@ -682,6 +690,19 @@
                         "requestedServiceObjectiveName": "[parameters('azureSqlTier')]",
                         "collation": "SQL_Latin1_General_CP1_CS_AS"
                     }
+                },
+                {
+                    "type": "virtualNetworkRules",
+                    "apiVersion": "[variables('api').sql.servers]",
+                    "name": "[variables('sql').endpoint.name]",
+                    "dependsOn": [
+                        "[variables('sql').server.name]"
+                    ],
+                    "properties": {
+                        "virtualNetworkSubnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.bbs.name)]",
+                        "ignoreMissingVnetServiceEndpoint": false
+                    }
+
                 }
             ]
         },
