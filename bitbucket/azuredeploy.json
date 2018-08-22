@@ -167,6 +167,12 @@
                     "ipConfig": {
                         "name": "[concat(variables('namespace'), 'publicipconfig')]"
                     }
+                },
+                "nfs": {
+                    "name": "[concat(variables('namespace'), '-nfs-nic')]",
+                    "ipConfig": {
+                        "name": "[concat(variables('namespace'), 'nfs-ipconfig')]"
+                    }
                 }
             },
             "nsg": {
@@ -692,6 +698,29 @@
                         ]
                     }
                 }
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "[variables('api').network.networkInterfaces]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nic.nfs.name]",
+            "dependsOn": [
+                "[variables('net').vnet.name]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "[variables('net').nic.nfs.ipConfig.name]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.bbs.name)]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic"
+                        }
+                    }
+                ]
             }
         }
     ],
