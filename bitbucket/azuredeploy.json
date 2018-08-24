@@ -566,6 +566,25 @@
                             "priority": 102
                         }
                     },
+                    {
+                        "name": "allowNFS",
+                        "properties": {
+                            "description": "Allows NFS traffic inside the subnet",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRanges": [
+                                "111",
+                                "2049",
+                                "1110",
+                                "4045"
+                            ],
+                            "sourceAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 200
+                        }
+                    },
                     "[variables('net').nsg.rules.denyInbound]"
                 ]
             }
