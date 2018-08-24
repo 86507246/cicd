@@ -211,6 +211,7 @@ function install_nfs {
 
     install_common
 
+    nfs_install_server
     nfs_prepare_shared_home
     nfs_configure
 
