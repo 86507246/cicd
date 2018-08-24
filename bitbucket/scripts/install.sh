@@ -97,9 +97,18 @@ function nfs_bind_directory {
     log "Bound [directory=${NFS_DISK_MOUNT}] to [directory=${NFS_SHARED_HOME}]"
 }
 
+function nfs_create_shared_home {
+    log "Creating NFS shard home [directory=${NFS_SHARED_HOME}]"
+
+    mkdir -p "${NFS_SHARED_HOME}"
+
+    log "Done creating NFS shared home  [directory=${NFS_SHARED_HOME}]!"
+}
+
 function nfs_prepare_shared_home {
     log "Preparing shared home directory"
 
+    nfs_create_shared_home
     nfs_bind_directory
     nfs_update_fstab
 
