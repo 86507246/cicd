@@ -3,8 +3,6 @@
 source ./log.sh
 source ./settings.sh
 
-BBS_NFS_SERVER_IP="10.0.4.6"
-
 function ensure_jq {
     log "Making sure jq is installed. We need it during the installation process"
 
@@ -49,13 +47,13 @@ function create_bb_user {
     #  hardcoded user id - needs to be the same on NFS server and client
     #  same goes for group id
     #  username
-    useradd -m -d "${ATL_HOME}/${BBS_USER}" \
+    useradd -m -d "${BBS_HOME}" \
         -s /bin/false \
         -u "${BBS_UID}" \
         -g "${BBS_GID}" \
         "${BBS_USER}" 
 
-    log "Bitubkcet Server user has been created"
+    log "Bitbucket Server user has been created"
 }
 
 function create_bb_owner {
@@ -146,11 +144,20 @@ function nfs_configure {
     log "NFS server configuration has been completed!"
 }
 
+function bbs_install_nfs_client {
+    log "Installing NFS client"
+
+    apt-get update
+    apt-get install -y nfs-common
+
+    log "Done installing NFS client"
+}
+
 function bbs_create_shared_home {
     log "Creating Bitbucket Server shared home [directory=${BBS_SHARED_HOME}]"
 
     mkdir -p "${BBS_SHARED_HOME}"
-    chown "${BBS_USER}""${BBS_GROUP}" "${BBS_SHARED_HOME}"
+    chown "${BBS_USER}":"${BBS_GROUP}" "${BBS_SHARED_HOME}"
 
     log "Done creating Bitbucket Server shared home [directory=${BBS_SHARED_HOME}]!"
 }
@@ -214,6 +221,7 @@ function install_bbs {
     log "Configuration Bitbucket Server node..."
 
     install_common
+    bbs_install_nfs_client
     bbs_configure_shared_home
 
     log "Done configuring Bitbucket Server node!"
