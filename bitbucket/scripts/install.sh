@@ -97,7 +97,7 @@ function nfs_bind_directory {
     log "Bound [directory=${NFS_DISK_MOUNT}] to [directory=${NFS_SHARED_HOME}]"
 }
 
-function create_shared_home {
+function nfs_create_shared_home {
     log "Creating NFS shard home [directory=${NFS_SHARED_HOME}, owner=${BBS_USER}:${BBS_GROUP}]"
 
     mkdir -p "${NFS_SHARED_HOME}"
