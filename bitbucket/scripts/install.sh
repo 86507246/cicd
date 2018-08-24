@@ -98,10 +98,9 @@ function nfs_bind_directory {
 }
 
 function nfs_create_shared_home {
-    log "Creating NFS shard home [directory=${NFS_SHARED_HOME}, owner=${BBS_USER}:${BBS_GROUP}]"
+    log "Creating NFS shard home [directory=${NFS_SHARED_HOME}]"
 
     mkdir -p "${NFS_SHARED_HOME}"
-    chown "${BBS_USER}":"${BBS_GROUP}" "${NFS_SHARED_HOME}"
 
     log "Done creating NFS shared home  [directory=${NFS_SHARED_HOME}]!"
 }
@@ -111,6 +110,10 @@ function nfs_prepare_shared_home {
 
     nfs_create_shared_home
     nfs_bind_directory
+
+    log "Updating [owner=${BBS_USER}":"${BBS_GROUP}] for [directory=${NFS_SHARED_HOME}]"
+    chown "${BBS_USER}":"${BBS_GROUP}" "${NFS_SHARED_HOME}"
+
     nfs_update_fstab
 
     log "Shared home directory is ready!"
