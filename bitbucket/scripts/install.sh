@@ -4,7 +4,7 @@ source ./log.sh
 source ./settings.sh
 
 function ensure_jq {
-    log "Making sure jq is installed. We need in the installation process"
+    log "Making sure jq is installed. We need it during the installation process"
 
     apt-get update
     apt-get install -y jq
@@ -144,7 +144,7 @@ function install_nfs {
 
 function install_bbs {
     log "Configuration Bitbucket Server node..."
-    
+
     install_common
 
     log "Done configuring Bitbucket Server node!"

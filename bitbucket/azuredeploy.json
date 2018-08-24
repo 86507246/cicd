@@ -166,9 +166,10 @@
             "type": "string",
             "defaultValue": "Standard_L4s",
             "allowedValues": [
+                "Standard_B1s",
                 "Standard_D8s_v3",
                 "Standard_DS4_v2",
-                "Standard_E8s_v3",
+                "Standard_E8-4s_v3",
                 "Standard_L4s",
                 "Standard_L8s"
             ],
@@ -346,6 +347,9 @@
                 "scripts": [
                     "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/log.sh')]",
                     "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/vm-disk-utils-0.1.sh')]",
+                    "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/bbs_settings.sh')]",
+                    "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/nfs_settings.sh')]",
+                    "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/settings.sh')]",
                     "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/install.sh')]"
                 ]
             }
