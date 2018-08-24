@@ -161,6 +161,37 @@
         "applicationTitle": {
             "type": "string",
             "defaultValue": "Atlassian Bitbucket Server"
+        },
+        "nfsVmSize": {
+            "type": "string",
+            "defaultValue": "Standard_L4s",
+            "allowedValues": [
+                "Standard_D8s_v3",
+                "Standard_DS4_v2",
+                "Standard_E8s_v3",
+                "Standard_L4s",
+                "Standard_L8s"
+            ],
+            "metadata": {
+                "description": "The size of the VM that is used for NFS server."
+            }
+        },
+        "nfsDiskSize": {
+            "type": "int",
+            "defaultValue": 32,
+            "allowedValues": [
+                32,
+                64,
+                128,
+                256,
+                512,
+                1024,
+                2048,
+                4095
+            ],
+            "metadata": {
+                "description": "The size of the data disk for Git repositories in GB"
+            }
         }
     },
     "variables": {
@@ -174,7 +205,10 @@
         "api": {
             "compute": {
                 "virtualMachines": "2018-06-01",
-                "virtualMachineScaleSets": "2018-06-01"
+                "virtualMachineScaleSets": "2018-06-01",
+                "vm": {
+                    "extensions": "2018-06-01"
+                }
             },
             "network": {
                 "publicIPAddresses": "2017-10-01",
@@ -202,6 +236,12 @@
                     "name": "[concat(variables('namespace'), '-public-nic')]",
                     "ipConfig": {
                         "name": "[concat(variables('namespace'), '-publicip-config')]"
+                    }
+                },
+                "nfs": {
+                    "name": "[concat(variables('namespace'), '-nfs-nic')]",
+                    "ipConfig": {
+                        "name": "[concat(variables('namespace'), 'nfs-ipconfig')]"
                     }
                 }
             },
@@ -273,6 +313,16 @@
                 "name": "[concat(variables('namespace'), 'jumpbox')]",
                 "size": "[parameters('jumpboxSize')]",
                 "hostname": "[parameters('jumpboxHostname')]",
+                "image": {
+                    "publisher": "Canonical",
+                    "offer": "UbuntuServer",
+                    "sku": "16.04.0-LTS"
+                }
+            },
+            "nfs": {
+                "name": "[concat(variables('namespace'), '-nfs')]",
+                "size": "[parameters('nfsVmSize')]",
+                "hostname": "bbsnfs",
                 "image": {
                     "publisher": "Canonical",
                     "offer": "UbuntuServer",
@@ -802,7 +852,7 @@
                                     "autoUpgradeMinorVersion": true,
                                     "settings": {
                                         "fileUris": "[variables('vm').bbs.scripts]",
-                                        "commandToExecute": "bash install.sh"
+                                        "commandToExecute": "bash install.sh bbs"
                                     }
                                 }
                             }
@@ -810,12 +860,120 @@
                     }
                 }
             }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "[variables('api').network.networkInterfaces]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nic.nfs.name]",
+            "dependsOn": [
+                "[variables('net').vnet.name]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "[variables('net').nic.nfs.ipConfig.name]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.bbs.name)]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "[variables('api').compute.virtualMachines]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[variables('net').nic.nfs.name]"
+            ],
+            "name": "[variables('vm').nfs.name]",
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('vm').nfs.size]"
+                },
+                "osProfile": {
+                    "computerName": "[variables('vm').nfs.hostname]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false,
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                                    "keyData": "[parameters('sshKey')]"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[variables('vm').nfs.image.publisher]",
+                        "offer": "[variables('vm').nfs.image.offer]",
+                        "sku": "[variables('vm').nfs.image.sku]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "FromImage"
+                    },
+                    "dataDisks": [
+                        {
+                            "lun": 0,
+                            "diskSizeGB": "[parameters('nfsDiskSize')]",
+                            "createOption": "Empty",
+                            "caching" : "None",
+                            "managedDisk": {
+                                "storageAccountType": "Premium_LRS"
+                            }
+                        }
+                    ]
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('net').nic.nfs.name)]"
+                        }
+                    ]
+                }
+            },
+            "resources": [
+                {
+                    "type": "extensions",
+                    "apiVersion": "[variables('api').compute.vm.extensions]",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[variables('vm').nfs.name]"
+                    ],
+                    "name": "script",
+                    "properties": {
+                        "publisher": "Microsoft.Azure.Extensions",
+                        "type": "CustomScript",
+                        "typeHandlerVersion": "2.0",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {
+                            "fileUris": "[variables('vm').bbs.scripts]",
+                            "commandToExecute": "bash install.sh nfs"
+                        }
+                    }
+                }
+            ]
         }
     ],
     "outputs": {
         "bitbucket": {
             "type": "string",
             "value": "[reference(variables('net').ip.name).dnsSettings.fqdn]"
+        },
+        "nfs": {
+            "type": "string",
+            "value": "[reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress]"
         },
         "ssh": {
             "type": "string",
