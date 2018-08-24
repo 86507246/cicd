@@ -793,7 +793,8 @@
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
-                "[variables('net').vnet.name]"
+                "[variables('net').vnet.name]",
+                "[variables('vm').nfs.name]"
             ],
             "name": "[variables('vm').bbs.name]",
             "sku": {
@@ -875,7 +876,7 @@
                                     "autoUpgradeMinorVersion": true,
                                     "settings": {
                                         "fileUris": "[variables('vm').bbs.scripts]",
-                                        "commandToExecute": "bash install.sh bbs"
+                                        "commandToExecute": "[concat('NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' bash install.sh bbs')]"
                                     }
                                 }
                             }

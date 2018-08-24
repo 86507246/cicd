@@ -3,6 +3,8 @@
 source ./log.sh
 source ./settings.sh
 
+BBS_NFS_SERVER_IP="10.0.4.6"
+
 function ensure_jq {
     log "Making sure jq is installed. We need it during the installation process"
 
@@ -47,7 +49,7 @@ function create_bb_user {
     #  hardcoded user id - needs to be the same on NFS server and client
     #  same goes for group id
     #  username
-    useradd -m -d "${BBS_HOME}" \
+    useradd -m -d "${ATL_HOME}/${BBS_USER}" \
         -s /bin/false \
         -u "${BBS_UID}" \
         -g "${BBS_GID}" \
@@ -97,10 +99,11 @@ function nfs_bind_directory {
     log "Bound [directory=${NFS_DISK_MOUNT}] to [directory=${NFS_SHARED_HOME}]"
 }
 
-function nfs_create_shared_home {
-    log "Creating NFS shard home [directory=${NFS_SHARED_HOME}]"
+function create_shared_home {
+    log "Creating NFS shard home [directory=${NFS_SHARED_HOME}, owner=${BBS_USER}:${BBS_GROUP}]"
 
     mkdir -p "${NFS_SHARED_HOME}"
+    chown "${BBS_USER}":"${BBS_GROUP}" "${NFS_SHARED_HOME}"
 
     log "Done creating NFS shared home  [directory=${NFS_SHARED_HOME}]!"
 }
@@ -143,6 +146,53 @@ function nfs_configure {
     log "NFS server configuration has been completed!"
 }
 
+function bbs_create_shared_home {
+    log "Creating Bitbucket Server shared home [directory=${BBS_SHARED_HOME}]"
+
+    mkdir -p "${BBS_SHARED_HOME}"
+    chown "${BBS_USER}""${BBS_GROUP}" "${BBS_SHARED_HOME}"
+
+    log "Done creating Bitbucket Server shared home [directory=${BBS_SHARED_HOME}]!"
+}
+
+function bbs_mount_shared_home {
+    local msg_header="Mounting BitBucket Server shared home"
+    local msg_source="[server=${BBS_NFS_SERVER_IP}, directory=${NFS_SHARED_HOME}]"
+    local msg_target="[directory=${BBS_SHARED_HOME}]"
+    local msg_opts="[options=${BBS_SHARED_HOME_MOUNT_OPTS}]"
+    log "${msg_header} ${msg_source} to ${msg_target} with ${msg_opts}"
+
+    mount -t nfs "${BBS_NFS_SERVER_IP}":"${NFS_SHARED_HOME}" -o "${BBS_SHARED_HOME_MOUNT_OPTS}" "${BBS_SHARED_HOME}"
+
+    log "Done mounting BitBucket Server shared home [server=${BBS_NFS_SERVER_IP}, directory=${NFS_SHARED_HOME}] to [directory=${BBS_SHARED_HOME}]!"
+}
+
+function bbs_update_fstab {
+    log "Updating /etc/fstab with shared home mount:"
+    log "    from [server=${BBS_NFS_SERVER_IP}, directory=${NFS_SHARED_HOME}]"
+    log "    to [directory=${BBS_SHARED_HOME}]"
+    log "    with [options=${BBS_SHARED_HOME_MOUNT_OPTS}]"
+
+    local source="${BBS_NFS_SERVER_IP}:${NFS_SHARED_HOME}"
+    local target="${BBS_SHARED_HOME}"
+    local opts="${BBS_SHARED_HOME_MOUNT_OPTS}"
+    local type="nfs"
+
+    printf "\n${source}\t${target}\t${type}\t${opts}\t0 0" >> /etc/fstab
+
+    log "Done updating /etc/fstab!"
+}
+
+function bbs_configure_shared_home {
+    log "Configuring Bitbucket Server shared home [directory=${BBS_SHARED_HOME}]"
+
+    bbs_create_shared_home
+    bbs_mount_shared_home
+    bbs_update_fstab
+
+    log "Done configuring Bitbucket Server shared home [directory=${BBS_SHARED_HOME}]!"
+}
+
 function install_common {
     ensure_prerequisites
     prepare_datadisks
@@ -164,6 +214,7 @@ function install_bbs {
     log "Configuration Bitbucket Server node..."
 
     install_common
+    bbs_configure_shared_home
 
     log "Done configuring Bitbucket Server node!"
 }
