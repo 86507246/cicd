@@ -28,8 +28,11 @@ function ensure_prerequisites {
 function create_bb_group {
     log "Preparing a group for Bitbucket Server"
 
+    # Options:
+    #  hardcoded group id - neds to be the same on NFS server and client
+    #  group name
     groupadd \
-        -g "${BBS_GID}" \ # hardcoded group id - neds to be the same on NFS server and client
+        -g "${BBS_GID}" \
         "${BBS_GROUP}"
 
     log "Bitbucket Server group has been created"
@@ -38,11 +41,17 @@ function create_bb_group {
 function create_bb_user {
     log "Preparing a user for Bitbucket Server"
 
-    useradd -m -d "${BBS_HOME}" \ # create home directory as specified
-        -s /bin/false \ # no login shell
-        -u "${BBS_UID}" \ # hardcoded user id - needs to be the same on NFS server and client
-        -g "${BBS_GID}" \ # same goes for group id
-        "${BBS_USER}" # username
+    # Options:
+    #  create home directory as specified
+    #  no login shell
+    #  hardcoded user id - needs to be the same on NFS server and client
+    #  same goes for group id
+    #  username
+    useradd -m -d "${BBS_HOME}" \
+        -s /bin/false \
+        -u "${BBS_UID}" \
+        -g "${BBS_GID}" \
+        "${BBS_USER}" 
 
     log "Bitubkcet Server user has been created"
 }
@@ -51,7 +60,7 @@ function create_bb_owner {
     log "Creating Bitbucket Server owner"
 
     create_bb_group
-    create_bb_group
+    create_bb_user
 
     log "Bitbucket Server owner is ready"
 }
