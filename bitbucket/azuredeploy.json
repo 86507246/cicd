@@ -166,9 +166,10 @@
             "type": "string",
             "defaultValue": "Standard_L4s",
             "allowedValues": [
+                "Standard_B1s",
                 "Standard_D8s_v3",
                 "Standard_DS4_v2",
-                "Standard_E8s_v3",
+                "Standard_E8-4s_v3",
                 "Standard_L4s",
                 "Standard_L8s"
             ],
@@ -346,6 +347,9 @@
                 "scripts": [
                     "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/log.sh')]",
                     "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/vm-disk-utils-0.1.sh')]",
+                    "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/bbs_settings.sh')]",
+                    "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/nfs_settings.sh')]",
+                    "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/settings.sh')]",
                     "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/install.sh')]"
                 ]
             }
@@ -566,6 +570,25 @@
                             "priority": 102
                         }
                     },
+                    {
+                        "name": "allowNFS",
+                        "properties": {
+                            "description": "Allows NFS traffic inside the subnet",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRanges": [
+                                "111",
+                                "2049",
+                                "1110",
+                                "4045"
+                            ],
+                            "sourceAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 200
+                        }
+                    },
                     "[variables('net').nsg.rules.denyInbound]"
                 ]
             }
@@ -770,7 +793,8 @@
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
-                "[variables('net').vnet.name]"
+                "[variables('net').vnet.name]",
+                "[variables('vm').nfs.name]"
             ],
             "name": "[variables('vm').bbs.name]",
             "sku": {
@@ -852,7 +876,7 @@
                                     "autoUpgradeMinorVersion": true,
                                     "settings": {
                                         "fileUris": "[variables('vm').bbs.scripts]",
-                                        "commandToExecute": "bash install.sh bbs"
+                                        "commandToExecute": "[concat('NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' bash install.sh bbs')]"
                                     }
                                 }
                             }
