@@ -245,6 +245,12 @@
             "product": "Bitbucket Server",
             "provider": "2F0AF47A-92C7-413A-9009-C3815BFF7AF6"
         },
+        "image": {
+            "publisher": "[variables('vm').jumpbox.image.publisher]",
+            "offer": "[variables('vm').jumpbox.image.offer]",
+            "sku": "[variables('vm').jumpbox.image.sku]",
+            "version": "latest"
+        },
         "api": {
             "compute": {
                 "virtualMachines": "2018-06-01",
@@ -287,6 +293,12 @@
                     "name": "[concat(variables('namespace'), '-nfs-nic')]",
                     "ipConfig": {
                         "name": "[concat(variables('namespace'), '-nfs-ipconfig')]"
+                    }
+                },
+                "nat": {
+                    "name": "[concat(variables('namespace'), '-nat-nic')]",
+                    "ipConfig": {
+                        "name": "[concat(variables('namespace'), '-nat-nic-ipconfig')]"
                     }
                 }
             },
@@ -422,6 +434,14 @@
                     "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/nfs_settings.sh')]",
                     "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/settings.sh')]",
                     "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/install.sh')]"
+                ]
+            },
+            "nat": {
+                "name": "[concat(variables('namespace'), '-nat')]",
+                "hostname": "[parameters('jumpboxHostname')]",
+                "scripts": [
+                    "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/log.sh')]",
+                    "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/enable_nat.sh')]"
                 ]
             }
         },
@@ -886,6 +906,35 @@
             }
         },
         {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "[variables('api').network.networkInterfaces]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nic.nat.name]",
+            "dependsOn": [
+                "[variables('net').vnet.name]",
+                "[variables('net').lb.name]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "[variables('net').nic.nat.ipConfig.name]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.public.name)]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "loadBalancerBackendAddressPools": [
+                                {
+                                    "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendHttp)]"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "[variables('api').compute.virtualMachines]",
             "location": "[parameters('location')]",
@@ -1259,6 +1308,76 @@
                     }
                 }
             }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "[variables('api').compute.virtualMachines]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[variables('net').nic.nat.name]",
+                "[variables('net').appGw.name]"
+            ],
+            "name": "[variables('vm').nat.name]",
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('httpGatewaySize')]"
+                },
+                "osProfile": {
+                    "computerName": "[variables('vm').nat.hostname]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": true,
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                                    "keyData": "[parameters('sshKey')]"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": "[variables('image')]",
+                    "osDisk": {
+                        "createOption": "FromImage"
+                    },
+                    "dataDisks": []
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('net').nic.nat.name)]",
+                            "properties": {
+                                "primary": true
+                            }
+                        }
+                    ]
+                }
+            },
+            "resources": [
+                {
+                    "type": "extensions",
+                    "apiVersion": "[variables('api').compute.vm.extensions]",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[variables('vm').nat.name]"
+                    ],
+                    "name": "script",
+                    "properties": {
+                        "publisher": "Microsoft.Azure.Extensions",
+                        "type": "CustomScript",
+                        "typeHandlerVersion": "2.0",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {
+                            "fileUris": "[variables('vm').nat.scripts]",
+                            "commandToExecute": "[concat('bash enable_nat.sh', ' ', reference(variables('net').appGw.name).frontendIPConfigurations[0].properties.privateIPAddress)]"
+                        }
+                    }
+                }
+            ]
         }
     ],
     "outputs": {
@@ -1273,6 +1392,10 @@
         "jumpbox": {
             "type": "string",
             "value": "[reference(variables('net').nic.jumpbox.name).ipConfigurations[0].properties.privateIPAddress]"
+        },
+        "nat": {
+            "type": "string",
+            "value": "[reference(variables('net').nic.nat.name).ipConfigurations[0].properties.privateIPAddress]"
         },
         "nfs": {
             "type": "string",
