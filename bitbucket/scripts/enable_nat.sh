@@ -20,3 +20,9 @@ function enable_port_forwarding {
 
     log "Done enabling port forwarding for HTTP traffic [target ip=${target}]!"
 }
+
+if [ "x$1" == "x" ]; then
+    log "Usage: enable_nat _target_ip_"
+else
+    enable_port_forwarding "$1"
+fi
