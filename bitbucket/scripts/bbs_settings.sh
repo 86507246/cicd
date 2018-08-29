@@ -2,8 +2,8 @@
 
 BBS_USER="bitbucket"
 BBS_GROUP="bitbucket"
-BBS_UID="7990"
-BBS_GID="7990"
+BBS_UID="9079"
+BBS_GID="9079"
 BBS_HOME="${ATL_HOME}/${BBS_USER}"
 BBS_SHARED_HOME="${BBS_HOME}/shared"
 
