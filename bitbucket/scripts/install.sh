@@ -46,11 +46,13 @@ function create_bb_user {
     #  no login shell
     #  hardcoded user id - needs to be the same on NFS server and client
     #  same goes for group id
+    #  a comment for the user
     #  username
     useradd -m -d "${BBS_HOME}" \
         -s /bin/false \
         -u "${BBS_UID}" \
         -g "${BBS_GID}" \
+        -c "Atlassian Bitbucket" \
         "${BBS_USER}" 
 
     log "Bitbucket Server user has been created"
