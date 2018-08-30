@@ -112,6 +112,13 @@
                 "description": "The type of storage account used for logs on a Bitbucket Server node"
             }
         },
+        "bbsHttpPort": {
+            "type": "string",
+            "defaultValue": "7990",
+            "metadata": {
+                "description": "Internal port that Bitbucket Server uses to accept HTTP connections"
+            }
+        },
         "azureSqlTier": {
             "type": "string",
             "defaultValue": "P2",
@@ -193,6 +200,32 @@
             "metadata": {
                 "description": "The size of the data disk for Git repositories in GB"
             }
+        },
+        "appGatewaySize": {
+            "type": "string",
+            "defaultValue": "Medium",
+            "allowedValues": [
+                "Small",
+                "Medium",
+                "Large"
+            ],
+            "metadata": {
+                "description": "The size of Application Gateway. Can be small, medium and large."
+            }
+        },
+        "appGatewayProbeInterval": {
+            "type": "int",
+            "defaultValue": 5,
+            "metadata": {
+                "description": "The interval in seconds for Application Gateway to very that Bitbucket Server node is available"
+            }
+        },
+        "appGatewayCapacity": {
+            "type": "int",
+            "defaultValue": 1,
+            "metadata": {
+                "description": "Amount of Application Gateway instances to created"
+            }
         }
     },
     "variables": {
@@ -215,7 +248,8 @@
                 "publicIPAddresses": "2017-10-01",
                 "virtualNetworks": "2017-10-01",
                 "networkInterfaces": "2017-10-01",
-                "networkSecurityGroups": "2017-10-01"
+                "networkSecurityGroups": "2017-10-01",
+                "appGateways": "2017-10-01"
             },
             "sql": {
                 "servers": "2015-05-01-preview",
@@ -307,6 +341,28 @@
                     "name": "[concat(variables('namespace'), '-net-bbs')]",
                     "cidr": "[parameters('bbsNetCIDR')]"
                 }
+            },
+            "appGw": {
+                "name": "[concat(variables('namespace'), '-app-gw')]",
+                "probe": {
+                    "interval": "[parameters('appGatewayProbeInterval')]",
+                    "timeout": 10,
+                    "unhealthyThreshold": 3
+
+                },
+                "tier": "[variables('lookup').appGw.sizeToTier[concat('Standard_', parameters('appGatewaySize'))]]",
+                "size": "[concat('Standard_', parameters('appGatewaySize'))]",
+                "capacity": "[parameters('appGatewayCapacity')]",
+                "names": {
+                    "ipConfig": "[concat(variables('namespace'), '-app-gw', '-ip-cfg')]",
+                    "fendIp": "[concat(variables('namespace'), '-app-gw', '-fend')]",
+                    "fendPort": "[concat(variables('namespace'), '-app-gw', '-fend-port')]",
+                    "bend": "[concat(variables('namespace'), '-app-gw', '-bend')]",
+                    "bendHttpSettings": "[concat(variables('namespace'), '-app-gw', '-bend-http')]",
+                    "httpListener": "[concat(variables('namespace'), '-app-gw', '-listener')]",
+                    "routeRule": "[concat(variables('namespace'), '-app-gw', '-route-rule')]",
+                    "probe": "[concat(variables('namespace'), '-app-gw', '-probe')]"
+                }
             }
         },
         "vm": {
@@ -387,6 +443,15 @@
                     "P11": "Premium",
                     "P15": "Premium"
                 }
+            },
+            "appGw": {
+                "sizeToTier": {
+                    "Standard_Small": "Standard",
+                    "Standard_Medium": "Standard",
+                    "Standard_Large": "Standard",
+                    "WAF_Medium": "WAF",
+                    "WAF_Large": "WAF"
+                }
             }
         }
     },
@@ -466,7 +531,7 @@
                             "description": "Allows outgoing HTTP traffic only from App Gateway subnet towards BBS subnet",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
-                            "destinationPortRange": "7990",
+                            "destinationPortRange": "[parameters('bbsHttpPort')]",
                             "sourceAddressPrefix": "[variables('net').subnets.appgw.cidr]",
                             "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
                             "access": "Allow",
@@ -534,7 +599,7 @@
                             "description": "Allows incoming HTTP traffic from App Gateway subnet",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
-                            "destinationPortRange": "7990",
+                            "destinationPortRange": "[parameters('bbsHttpPort')]",
                             "sourceAddressPrefix": "[variables('net').subnets.appgw.cidr]",
                             "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
                             "access": "Allow",
@@ -697,6 +762,29 @@
             }
         },
         {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "[variables('api').network.networkInterfaces]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nic.nfs.name]",
+            "dependsOn": [
+                "[variables('net').vnet.name]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "[variables('net').nic.nfs.ipConfig.name]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.bbs.name)]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic"
+                        }
+                    }
+                ]
+            }
+        },
+        {
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "[variables('api').compute.virtualMachines]",
             "location": "[parameters('location')]",
@@ -744,168 +832,6 @@
                         }
                     ]
                 }
-            }
-        },
-        {
-            "type": "Microsoft.Sql/servers",
-            "apiVersion": "[variables('api').sql.servers]",
-            "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
-            "name": "[variables('sql').server.name]",
-            "properties": {
-                "administratorLogin": "saadmin",
-                "administratorLoginPassword": "[variables('sql').server.password]"
-            },
-            "resources": [
-                {
-                    "type": "databases",
-                    "apiVersion": "[variables('api').sql.databases]",
-                    "name": "[variables('sql').database.name]",
-                    "location": "[parameters('location')]",
-                    "tags": "[variables('tags')]",
-                    "dependsOn": [
-                        "[variables('sql').server.name]"
-                    ],
-                    "properties": {
-                        "edition": "[variables('sql').database.edition]",
-                        "requestedServiceObjectiveName": "[parameters('azureSqlTier')]",
-                        "collation": "SQL_Latin1_General_CP1_CS_AS"
-                    }
-                },
-                {
-                    "type": "virtualNetworkRules",
-                    "apiVersion": "[variables('api').sql.servers]",
-                    "name": "[variables('sql').endpoint.name]",
-                    "dependsOn": [
-                        "[variables('sql').server.name]"
-                    ],
-                    "properties": {
-                        "virtualNetworkSubnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.bbs.name)]",
-                        "ignoreMissingVnetServiceEndpoint": false
-                    }
-
-                }
-            ]
-        },
-        {
-            "type": "Microsoft.Compute/virtualMachineScaleSets",
-            "apiVersion": "[variables('api').compute.virtualMachineScaleSets]",
-            "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
-            "dependsOn": [
-                "[variables('net').vnet.name]",
-                "[variables('vm').nfs.name]"
-            ],
-            "name": "[variables('vm').bbs.name]",
-            "sku": {
-                "name": "[variables('vm').bbs.size]",
-                "capacity": "[variables('vm').bbs.count]"
-            },
-            "properties": {
-                "upgradePolicy": {
-                    "mode": "Manual"
-                },
-                "virtualMachineProfile": {
-                    "osProfile": {
-                        "computerNamePrefix": "[variables('vm').bbs.hostname]",
-                        "adminUsername": "[parameters('adminUsername')]",
-                        "adminPassword": "[parameters('adminPassword')]",
-                        "linuxConfiguration": {
-                            "disablePasswordAuthentication": false,
-                            "ssh": {
-                                "publicKeys": [
-                                    {
-                                        "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
-                                        "keyData": "[parameters('sshKey')]"
-                                    }
-                                ]
-                            }
-                        }
-                    },
-                    "storageProfile": {
-                        "imageReference": {
-                            "publisher": "[variables('vm').bbs.image.publisher]",
-                            "offer": "[variables('vm').bbs.image.offer]",
-                            "sku": "[variables('vm').bbs.image.sku]",
-                            "version": "latest"
-                        },
-                        "osDisk": {
-                            "createOption": "FromImage"
-                        },
-                        "dataDisks": [
-                            {
-                                "lun": 0,
-                                "diskSizeGB": "[variables('vm').bbs.storage.size]",
-                                "createOption": "Empty",
-                                "caching" : "[variables('vm').bbs.storage.caching]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('vm').bbs.storage.type]"
-                                }
-                            }
-                        ]
-                    },
-                    "networkProfile": {
-                        "networkInterfaceConfigurations": [
-                            {
-                                "name": "[concat(variables('namespace'), variables('vm').bbs.hostname, '-nic')]",
-                                "properties": {
-                                    "primary": true,
-                                    "ipConfigurations": [
-                                        {
-                                            "name": "[concat(variables('namespace'), variables('vm').bbs.hostname, '-ipconfig')]",
-                                            "properties": {
-                                                "subnet": {
-                                                    "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('net').vnet.name), '/subnets/', variables('net').subnets.bbs.name)]"
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        ]
-                    },
-                    "extensionProfile": {
-                        "extensions": [
-                            {
-                                "type": "extensions",
-                                "name": "script",
-                                "properties": {
-                                    "publisher": "Microsoft.Azure.Extensions",
-                                    "type": "CustomScript",
-                                    "typeHandlerVersion": "2.0",
-                                    "autoUpgradeMinorVersion": true,
-                                    "settings": {
-                                        "fileUris": "[variables('vm').bbs.scripts]",
-                                        "commandToExecute": "[concat('NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' bash install.sh bbs')]"
-                                    }
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
-        },
-        {
-            "type": "Microsoft.Network/networkInterfaces",
-            "apiVersion": "[variables('api').network.networkInterfaces]",
-            "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
-            "name": "[variables('net').nic.nfs.name]",
-            "dependsOn": [
-                "[variables('net').vnet.name]"
-            ],
-            "properties": {
-                "ipConfigurations": [
-                    {
-                        "name": "[variables('net').nic.nfs.ipConfig.name]",
-                        "properties": {
-                            "subnet": {
-                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.bbs.name)]"
-                            },
-                            "privateIPAllocationMethod": "Dynamic"
-                        }
-                    }
-                ]
             }
         },
         {
@@ -988,12 +914,267 @@
                     }
                 }
             ]
+        },
+        {
+            "type": "Microsoft.Sql/servers",
+            "apiVersion": "[variables('api').sql.servers]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('sql').server.name]",
+            "properties": {
+                "administratorLogin": "saadmin",
+                "administratorLoginPassword": "[variables('sql').server.password]"
+            },
+            "resources": [
+                {
+                    "type": "databases",
+                    "apiVersion": "[variables('api').sql.databases]",
+                    "name": "[variables('sql').database.name]",
+                    "location": "[parameters('location')]",
+                    "tags": "[variables('tags')]",
+                    "dependsOn": [
+                        "[variables('sql').server.name]"
+                    ],
+                    "properties": {
+                        "edition": "[variables('sql').database.edition]",
+                        "requestedServiceObjectiveName": "[parameters('azureSqlTier')]",
+                        "collation": "SQL_Latin1_General_CP1_CS_AS"
+                    }
+                },
+                {
+                    "type": "virtualNetworkRules",
+                    "apiVersion": "[variables('api').sql.servers]",
+                    "name": "[variables('sql').endpoint.name]",
+                    "dependsOn": [
+                        "[variables('sql').server.name]"
+                    ],
+                    "properties": {
+                        "virtualNetworkSubnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.bbs.name)]",
+                        "ignoreMissingVnetServiceEndpoint": false
+                    }
+
+                }
+            ]
+        },   
+        {
+            "type": "Microsoft.Network/applicationGateways",
+            "location": "[parameters('location')]",
+            "apiVersion": "[variables('api').network.appGateways]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[variables('net').vnet.name]"
+            ],
+            "name": "[variables('net').appGw.name]",
+            "properties": {
+                "sku": {
+                    "name": "[variables('net').appGw.size]",
+                    "tier": "[variables('net').appGw.tier]",
+                    "capacity": "[variables('net').appGw.capacity]"
+                },
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "[variables('net').appGw.names.ipConfig]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.appgw.name)]"
+                            }
+                        }
+                    }
+                ],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "[variables('net').appGw.names.fendIp]",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.appgw.name)]"
+                            }
+                        }
+                    }
+                ],
+                "frontendPorts": [
+                    {
+                        "name": "[variables('net').appGw.names.fendPort]",
+                        "properties": {
+                            "port": 80
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "[variables('net').appGw.names.bend]"
+                    }
+                ],
+                "backendHttpSettingsCollection": [
+                    {
+                        "name": "[variables('net').appGw.names.bendHttpSettings]",
+                        "properties": {
+                            "port": "[parameters('bbsHttpPort')]",
+                            "protocol": "Http",
+                            "cookieBasedAffinity": "Enabled",
+                            "affinityCookieName": "BITBUCKETSESSIONID"
+                        }
+                    }
+                ],
+                "httpListeners": [
+                    {
+                        "name": "[variables('net').appGw.names.httpListener]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/frontendIPConfigurations/', variables('net').appGw.names.fendIp)]"
+                            },
+                            "frontendPort": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/frontendPorts/', variables('net').appGw.names.fendPort)]"
+                            },
+                            "protocol": "Http"
+                        }
+                    }
+                ],
+                "requestRoutingRules": [
+                    {
+                        "name": "[variables('net').appGw.names.routeRule]",
+                        "properties": {
+                            "ruleType": "Basic",
+                            "httpListener": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/httpListeners/', variables('net').appGw.names.httpListener)]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/backendAddressPools/', variables('net').appGw.names.bend)]"
+                            },
+                            "backendHttpSettings": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/backendHttpSettingsCollection/', variables('net').appGw.names.bendHttpSettings)]"
+                            }
+                        }
+                    }
+                ],
+                "probes": [
+                    {
+                        "name": "[variables('net').appGw.names.probe]",
+                        "properties": {
+                            "protocol": "Http",
+                            "path": "/status",
+                            "interval": "[variables('net').appGw.probe.interval]",
+                            "timeout": "[variables('net').appGw.probe.timeout]",
+                            "unhealthyThreshold": "[variables('net').appGw.probe.unhealthyThreshold]",
+                            "pickHostNameFromBackendHttpSettings": true
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "apiVersion": "[variables('api').compute.virtualMachineScaleSets]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[variables('net').vnet.name]",
+                "[variables('net').appGw.name]",
+                "[variables('vm').nfs.name]"
+            ],
+            "name": "[variables('vm').bbs.name]",
+            "sku": {
+                "name": "[variables('vm').bbs.size]",
+                "capacity": "[variables('vm').bbs.count]"
+            },
+            "properties": {
+                "upgradePolicy": {
+                    "mode": "Manual"
+                },
+                "virtualMachineProfile": {
+                    "osProfile": {
+                        "computerNamePrefix": "[variables('vm').bbs.hostname]",
+                        "adminUsername": "[parameters('adminUsername')]",
+                        "adminPassword": "[parameters('adminPassword')]",
+                        "linuxConfiguration": {
+                            "disablePasswordAuthentication": false,
+                            "ssh": {
+                                "publicKeys": [
+                                    {
+                                        "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                                        "keyData": "[parameters('sshKey')]"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "storageProfile": {
+                        "imageReference": {
+                            "publisher": "[variables('vm').bbs.image.publisher]",
+                            "offer": "[variables('vm').bbs.image.offer]",
+                            "sku": "[variables('vm').bbs.image.sku]",
+                            "version": "latest"
+                        },
+                        "osDisk": {
+                            "createOption": "FromImage"
+                        },
+                        "dataDisks": [
+                            {
+                                "lun": 0,
+                                "diskSizeGB": "[variables('vm').bbs.storage.size]",
+                                "createOption": "Empty",
+                                "caching" : "[variables('vm').bbs.storage.caching]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('vm').bbs.storage.type]"
+                                }
+                            }
+                        ]
+                    },
+                    "networkProfile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "[concat(variables('namespace'), variables('vm').bbs.hostname, '-nic')]",
+                                "properties": {
+                                    "primary": true,
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "[concat(variables('namespace'), variables('vm').bbs.hostname, '-ipconfig')]",
+                                            "properties": {
+                                                "subnet": {
+                                                    "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('net').vnet.name), '/subnets/', variables('net').subnets.bbs.name)]"
+                                                },
+                                                "applicationGatewayBackendAddressPools": [
+                                                    {
+                                                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/backendAddressPools/', variables('net').appGw.names.bend)]"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    "extensionProfile": {
+                        "extensions": [
+                            {
+                                "type": "extensions",
+                                "name": "script",
+                                "properties": {
+                                    "publisher": "Microsoft.Azure.Extensions",
+                                    "type": "CustomScript",
+                                    "typeHandlerVersion": "2.0",
+                                    "autoUpgradeMinorVersion": true,
+                                    "settings": {
+                                        "fileUris": "[variables('vm').bbs.scripts]",
+                                        "commandToExecute": "[concat('NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' bash install.sh bbs')]"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
         }
     ],
     "outputs": {
         "bitbucket": {
             "type": "string",
             "value": "[reference(variables('net').ip.name).dnsSettings.fqdn]"
+        },
+        "gateway": {
+            "type": "string",
+            "value": "[reference(variables('net').appGw.name).frontendIPConfigurations[0].properties.privateIPAddress]"
         },
         "nfs": {
             "type": "string",
