@@ -213,6 +213,13 @@
                 "description": "The size of Application Gateway. Can be small, medium and large."
             }
         },
+        "appGatewayProbeInterval": {
+            "type": "int",
+            "defaultValue": 5,
+            "metadata": {
+                "description": "The interval in seconds for Application Gateway to very that Bitbucket Server node is available"
+            }
+        },
         "appGatewayCapacity": {
             "type": "int",
             "defaultValue": 1,
@@ -337,6 +344,12 @@
             },
             "appGw": {
                 "name": "[concat(variables('namespace'), '-app-gw')]",
+                "probe": {
+                    "interval": "[parameters('appGatewayProbeInterval')]",
+                    "timeout": 10,
+                    "unhealthyThreshold": 3
+
+                },
                 "tier": "[variables('lookup').appGw.sizeToTier[concat('Standard_', parameters('appGatewaySize'))]]",
                 "size": "[concat('Standard_', parameters('appGatewaySize'))]",
                 "capacity": "[parameters('appGatewayCapacity')]",
@@ -347,7 +360,8 @@
                     "bend": "[concat(variables('namespace'), '-app-gw', '-bend')]",
                     "bendHttpSettings": "[concat(variables('namespace'), '-app-gw', '-bend-http')]",
                     "httpListener": "[concat(variables('namespace'), '-app-gw', '-listener')]",
-                    "routeRule": "[concat(variables('namespace'), '-app-gw', '-route-rule')]"
+                    "routeRule": "[concat(variables('namespace'), '-app-gw', '-route-rule')]",
+                    "probe": "[concat(variables('namespace'), '-app-gw', '-probe')]"
                 }
             }
         },
@@ -997,7 +1011,8 @@
                         "properties": {
                             "port": "[parameters('bbsHttpPort')]",
                             "protocol": "Http",
-                            "cookieBasedAffinity": "Enabled"
+                            "cookieBasedAffinity": "Enabled",
+                            "affinityCookieName": "BITBUCKETSESSIONID"
                         }
                     }
                 ],
@@ -1029,6 +1044,19 @@
                             "backendHttpSettings": {
                                 "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/backendHttpSettingsCollection/', variables('net').appGw.names.bendHttpSettings)]"
                             }
+                        }
+                    }
+                ],
+                "probes": [
+                    {
+                        "name": "[variables('net').appGw.names.probe]",
+                        "properties": {
+                            "protocol": "Http",
+                            "path": "/status",
+                            "interval": "[variables('net').appGw.probe.interval]",
+                            "timeout": "[variables('net').appGw.probe.timeout]",
+                            "unhealthyThreshold": "[variables('net').appGw.probe.unhealthyThreshold]",
+                            "pickHostNameFromBackendHttpSettings": true
                         }
                     }
                 ]
