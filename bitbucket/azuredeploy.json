@@ -226,6 +226,22 @@
             "metadata": {
                 "description": "Amount of Application Gateway instances to created"
             }
+        },
+        "httpGatewaySize": {
+            "type": "string",
+            "allowedValues": [
+                "Standard_B1s",
+                "Standard_D2s_v3",
+                "Standard_D4s_v3",
+                "Standard_D8s_v3",
+                "Standard_D16s_v3",
+                "Standard_D32s_v3",
+                "Standard_D64s_v3"
+            ],
+            "defaultValue": "Standard_B1s",
+            "metadata": {
+                "description": "VM type which used for forwarding HTTP traffic from Load Balancer to Application Gateway"
+            }
         }
     },
     "variables": {
@@ -235,6 +251,12 @@
             "vendor": "Atlassian",
             "product": "Bitbucket Server",
             "provider": "2F0AF47A-92C7-413A-9009-C3815BFF7AF6"
+        },
+        "image": {
+            "publisher": "[variables('vm').jumpbox.image.publisher]",
+            "offer": "[variables('vm').jumpbox.image.offer]",
+            "sku": "[variables('vm').jumpbox.image.sku]",
+            "version": "latest"
         },
         "api": {
             "compute": {
@@ -249,7 +271,8 @@
                 "virtualNetworks": "2017-10-01",
                 "networkInterfaces": "2017-10-01",
                 "networkSecurityGroups": "2017-10-01",
-                "appGateways": "2017-10-01"
+                "appGateways": "2017-10-01",
+                "loadBalancers": "2017-10-01"
             },
             "sql": {
                 "servers": "2015-05-01-preview",
@@ -262,21 +285,27 @@
                 "cidr": "[parameters('vnetCIDR')]"
             },
             "ip": {
-                "name": "[concat(variables('namespace'), '-natip')]",
+                "name": "[concat(variables('namespace'), '-public-ip')]",
                 "addr": "10.0.2.99",
-                "dns": "[concat(variables('namespace'), 'nat', variables('suffix'))]"
+                "dns": "[concat(variables('namespace'), variables('suffix'))]"
             },
             "nic": {
-                "public": {
-                    "name": "[concat(variables('namespace'), '-public-nic')]",
+                "jumpbox": {
+                    "name": "[concat(variables('namespace'), '-jumpbox-nic')]",
                     "ipConfig": {
-                        "name": "[concat(variables('namespace'), '-publicip-config')]"
+                        "name": "[concat(variables('namespace'), '-jumpbox-ipconfig')]"
                     }
                 },
                 "nfs": {
                     "name": "[concat(variables('namespace'), '-nfs-nic')]",
                     "ipConfig": {
-                        "name": "[concat(variables('namespace'), 'nfs-ipconfig')]"
+                        "name": "[concat(variables('namespace'), '-nfs-ipconfig')]"
+                    }
+                },
+                "nat": {
+                    "name": "[concat(variables('namespace'), '-nat-nic')]",
+                    "ipConfig": {
+                        "name": "[concat(variables('namespace'), '-nat-nic-ipconfig')]"
                     }
                 }
             },
@@ -363,6 +392,18 @@
                     "routeRule": "[concat(variables('namespace'), '-app-gw', '-route-rule')]",
                     "probe": "[concat(variables('namespace'), '-app-gw', '-probe')]"
                 }
+            },
+            "lb": {
+                "name": "[concat(variables('namespace'), '-lb')]",
+                "names": {
+                    "fendIpConfig": "[concat(variables('namespace'), '-lb', '-fend-ipconfig')]",
+                    "bendGit": "[concat(variables('namespace'), '-lb', '-bend-git')]",
+                    "bendSsh": "[concat(variables('namespace'), '-lb', '-bend-ssh')]",
+                    "bendHttp": "[concat(variables('namespace'), '-lb', '-bend-http')]",
+                    "ruleGit": "[concat(variables('namespace'), '-lb', '-rule-git')]",
+                    "ruleSsh": "[concat(variables('namespace'), '-lb', '-rule-ssh')]",
+                    "ruleHttp": "[concat(variables('namespace'), '-lb', '-rule-http')]"
+                }
             }
         },
         "vm": {
@@ -407,6 +448,14 @@
                     "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/nfs_settings.sh')]",
                     "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/settings.sh')]",
                     "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/install.sh')]"
+                ]
+            },
+            "nat": {
+                "name": "[concat(variables('namespace'), '-nat')]",
+                "hostname": "[parameters('jumpboxHostname')]",
+                "scripts": [
+                    "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/log.sh')]",
+                    "[concat(parameters('scriptsRepository'), parameters('scriptsBranch'), '/bitbucket/scripts/enable_nat.sh')]"
                 ]
             }
         },
@@ -727,6 +776,9 @@
             "name": "[variables('net').ip.name]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
+            "sku": {
+                "name": "Standard"
+            },
             "properties": {
                 "publicIPAllocationMethod": "Static",
                 "dnsSettings": {
@@ -735,27 +787,110 @@
             }
         },
         {
+            "type": "Microsoft.Network/loadBalancers",
+            "apiVersion": "[variables('api').network.loadBalancers]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[variables('net').vnet.name]",
+                "[variables('net').ip.name]"
+            ],
+            "name": "[variables('net').lb.name]",
+            "sku": {
+                "name": "Standard"
+            },
+            "properties": {
+                "frontendIPConfigurations": [
+                    {
+                        "name": "[variables('net').lb.names.fendIpConfig]",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('net').ip.name)]"
+                            }
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "[variables('net').lb.names.bendGit]"
+                    },
+                    {
+                        "name": "[variables('net').lb.names.bendSsh]"
+                    },
+                    {
+                        "name": "[variables('net').lb.names.bendHttp]"
+                    }
+                ],
+                "loadBalancingRules": [
+                    {
+                        "name": "[variables('net').lb.names.ruleGit]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/frontendIPConfigurations/', variables('net').lb.names.fendIpConfig)]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendGit)]"
+                            },
+                            "frontendPort": 7999,
+                            "backendPort": 7999,
+                            "protocol": "Tcp"
+                        }
+                    },
+                    {
+                        "name": "[variables('net').lb.names.ruleSsh]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/frontendIPConfigurations/', variables('net').lb.names.fendIpConfig)]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendSsh)]"
+                            },
+                            "frontendPort": 22,
+                            "backendPort": 22,
+                            "protocol": "Tcp"
+                        }
+                    },
+                    {
+                        "name": "[variables('net').lb.names.ruleHttp]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/frontendIPConfigurations/', variables('net').lb.names.fendIpConfig)]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendHttp)]"
+                            },
+                            "frontendPort": 80,
+                            "backendPort": 80,
+                            "protocol": "Tcp"
+                        }
+                    }
+                ]
+            }
+        },
+        {
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "[variables('api').network.networkInterfaces]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
-            "name": "[variables('net').nic.public.name]",
+            "name": "[variables('net').nic.jumpbox.name]",
             "dependsOn": [
-                "[variables('net').ip.name]",
-                "[variables('net').vnet.name]"
+                "[variables('net').vnet.name]",
+                "[variables('net').lb.name]"
             ],
             "properties": {
                 "ipConfigurations": [
                     {
-                        "name": "[variables('net').nic.public.ipConfig.name]",
+                        "name": "[variables('net').nic.jumpbox.ipConfig.name]",
                         "properties": {
                             "subnet": {
                                 "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.public.name)]"
                             },
                             "privateIPAllocationMethod": "Dynamic",
-                            "publicIPAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('net').ip.name)]"
-                            }
+                            "loadBalancerBackendAddressPools": [
+                                {
+                                    "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendSsh)]"
+                                }
+                            ]
                         }
                     }
                 ]
@@ -785,12 +920,41 @@
             }
         },
         {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "[variables('api').network.networkInterfaces]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nic.nat.name]",
+            "dependsOn": [
+                "[variables('net').vnet.name]",
+                "[variables('net').lb.name]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "[variables('net').nic.nat.ipConfig.name]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.public.name)]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "loadBalancerBackendAddressPools": [
+                                {
+                                    "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendHttp)]"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "[variables('api').compute.virtualMachines]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
-                "[variables('net').nic.public.name]"
+                "[variables('net').nic.jumpbox.name]"
             ],
             "name": "[variables('vm').jumpbox.name]",
             "properties": {
@@ -828,7 +992,7 @@
                 "networkProfile": {
                     "networkInterfaces": [
                         {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('net').nic.public.name)]"
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('net').nic.jumpbox.name)]"
                         }
                     ]
                 }
@@ -962,7 +1126,8 @@
             "apiVersion": "[variables('api').network.appGateways]",
             "tags": "[variables('tags')]",
             "dependsOn": [
-                "[variables('net').vnet.name]"
+                "[variables('net').vnet.name]",
+                "[variables('net').lb.name]"
             ],
             "name": "[variables('net').appGw.name]",
             "properties": {
@@ -1070,7 +1235,8 @@
             "dependsOn": [
                 "[variables('net').vnet.name]",
                 "[variables('net').appGw.name]",
-                "[variables('vm').nfs.name]"
+                "[variables('vm').nfs.name]",
+                "[variables('net').lb.name]"
             ],
             "name": "[variables('vm').bbs.name]",
             "sku": {
@@ -1137,6 +1303,11 @@
                                                     {
                                                         "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/backendAddressPools/', variables('net').appGw.names.bend)]"
                                                     }
+                                                ],
+                                                "loadBalancerBackendAddressPools": [
+                                                    {
+                                                        "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendGit)]"
+                                                    }
                                                 ]
                                             }
                                         }
@@ -1165,6 +1336,76 @@
                     }
                 }
             }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "[variables('api').compute.virtualMachines]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[variables('net').nic.nat.name]",
+                "[variables('net').appGw.name]"
+            ],
+            "name": "[variables('vm').nat.name]",
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('httpGatewaySize')]"
+                },
+                "osProfile": {
+                    "computerName": "[variables('vm').nat.hostname]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": true,
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                                    "keyData": "[parameters('sshKey')]"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": "[variables('image')]",
+                    "osDisk": {
+                        "createOption": "FromImage"
+                    },
+                    "dataDisks": []
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('net').nic.nat.name)]",
+                            "properties": {
+                                "primary": true
+                            }
+                        }
+                    ]
+                }
+            },
+            "resources": [
+                {
+                    "type": "extensions",
+                    "apiVersion": "[variables('api').compute.vm.extensions]",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[variables('vm').nat.name]"
+                    ],
+                    "name": "script",
+                    "properties": {
+                        "publisher": "Microsoft.Azure.Extensions",
+                        "type": "CustomScript",
+                        "typeHandlerVersion": "2.0",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {
+                            "fileUris": "[variables('vm').nat.scripts]",
+                            "commandToExecute": "[concat('bash enable_nat.sh', ' ', reference(variables('net').appGw.name).frontendIPConfigurations[0].properties.privateIPAddress)]"
+                        }
+                    }
+                }
+            ]
         }
     ],
     "outputs": {
@@ -1175,6 +1416,14 @@
         "gateway": {
             "type": "string",
             "value": "[reference(variables('net').appGw.name).frontendIPConfigurations[0].properties.privateIPAddress]"
+        },
+        "jumpbox": {
+            "type": "string",
+            "value": "[reference(variables('net').nic.jumpbox.name).ipConfigurations[0].properties.privateIPAddress]"
+        },
+        "nat": {
+            "type": "string",
+            "value": "[reference(variables('net').nic.nat.name).ipConfigurations[0].properties.privateIPAddress]"
         },
         "nfs": {
             "type": "string",
