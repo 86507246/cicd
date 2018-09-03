@@ -231,7 +231,7 @@ function bbs_download_installer {
 }
 
 function bbs_prepare_installer_settings {
-    local version="${BBS_INSTALLER_VERSION}}"
+    local version="${BBS_INSTALLER_VERSION}"
     local home="${BBS_HOME}"
 
     log "Preparing installer configuration"
