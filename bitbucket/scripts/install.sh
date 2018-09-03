@@ -49,7 +49,7 @@ function create_bb_user {
     #  a comment for the user
     #  username
     useradd -m -d "${BBS_HOME}" \
-        -s /bin/false \
+        -s /bin/bash \
         -u "${BBS_UID}" \
         -g "${BBS_GID}" \
         -c "Atlassian Bitbucket" \
