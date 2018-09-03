@@ -205,6 +205,70 @@ function bbs_configure_shared_home {
     log "Done configuring Bitbucket Server shared home [directory=${BBS_SHARED_HOME}]!"
 }
 
+function bbs_download_installer {
+    local base="${BBS_INSTALLER_BASE}"
+    local bucket="${BBS_INSTALLER_BUCKET}"
+    local path="${BBS_INSTALLER_PATH}"
+    local version="${BBS_INSTALLER_VERSION}"
+    local file="${BBS_INSTALLER_FILE}"
+
+    local url="${base}/${bucket}/${path}/${version}/${file}"
+    local target="installer"
+
+    log "Downloading Bitbucket Server installer [base=${base}, bucket=${bucket}, path=${path}, version=${version}, file=${file}] from [url=${url}]"
+
+    if ! curl -L -f --silent "${url}" \
+       -o "${target}" 2>&1
+    then
+        error "Could not download Bitbucket Server installer from [url=${url}]"
+        exit 1
+    else
+        log "Making Bitbucket Server installer executable..."
+        chmod +x "${target}"
+    fi
+
+    log "Done downloading Bitbucket Server installer from [url=${url}]"
+}
+
+function bbs_prepare_installer_settings {
+    local version="${BBS_INSTALLER_VERSION}}"
+    local home="${BBS_HOME}"
+
+    log "Preparing installer configuration"
+
+    cat <<EOT >> "${BBS_INSTALER_VARS}"
+app.bitbucketHome=${home}
+app.defaultInstallDir=/opt/atlassian/bitbucket/${version}
+app.install.service$Boolean=true
+executeLauncherAction$Boolean=true
+httpPort=7990
+installation.type=DATA_CENTER_INSTALL
+launch.application$Boolean=true
+sys.adminRights$Boolean=true
+sys.languageId=en
+EOT
+
+    log "Done preparing installer configuration"
+}
+
+function bbs_run_installer {
+    log "Running Bitbucket Server installer"
+
+    bbs_prepare_installer_settings
+    ./installer -q -varfile "${BBS_INSTALER_VARS}"
+
+    log "Done running Bitbucket Server installer"
+}
+
+function bbs_install {
+    log "Downloading and running Bitbucket Server installer"
+
+    bbs_download_installer
+    bbs_run_installer
+
+    log "Done downloading and running Bitbucket Server installer"
+}
+
 function install_common {
     ensure_prerequisites
     prepare_datadisks
@@ -229,6 +293,8 @@ function install_bbs {
     install_common
     bbs_install_nfs_client
     bbs_configure_shared_home
+
+    bbs_install
 
     log "Done configuring Bitbucket Server node!"
 }
