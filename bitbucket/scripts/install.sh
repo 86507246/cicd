@@ -268,23 +268,6 @@ function bbs_stop {
     log "Bitbucket Server application has been stopped"
 }
 
-function bbs_start {
-    log "Starting Bitbucket Server application..."
-
-    /etc/init.d/atlbitbucket start
-
-    log "Bitbucket Server application has been started"
-}
-
-function bbs_restart {
-    log "Restarting Bitbucket Server application..."
-
-    bbs_stop
-    bbs_start
-
-    log "Done restarting Bitbucket Server application"
-}
-
 function bbs_prepare_properties {
     log "Generging 'bitbucket.properties' configuration file"
 
@@ -301,21 +284,20 @@ function bbs_prepare_properties {
 
     local file="${BBS_SHARED_HOME}/bitbucket.properties"
 
-    cat <<EOT >> "${file}"
-    jdbc.driver=com.microsoft.sqlserver.jdbc.SQLServerDriver
-    jdbc.url=jdbc:sqlserver://${dbhost}.database.windows.net:1433;database=bitbucket-db;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
-    jdbc.user=${dbuser}
-    jdbc.password=${dbpass}
+    sudo -u "${BBS_USER}" cat <<EOT >> "${file}"
+jdbc.driver=com.microsoft.sqlserver.jdbc.SQLServerDriver
+jdbc.url=jdbc:sqlserver://${dbhost}.database.windows.net:1433;database=bitbucket-db;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+jdbc.user=${dbuser}
+jdbc.password=${dbpass}
 
-    setup.license=${license}
-    setup.displayName=Bitbucket
-    setup.baseUrl=${baseUrl}
-    setup.sysadmin.username=${adminUser}
-    setup.sysadmin.password=${adminPass}
-    setup.sysadmin.displayName=${adminName}
-    setup.sysadmin.emailAddress=${adminEmail}
+setup.license=${license}
+setup.displayName=Bitbucket
+setup.baseUrl=${baseUrl}
+setup.sysadmin.username=${adminUser}
+setup.sysadmin.password=${adminPass}
+setup.sysadmin.displayName=${adminName}
+setup.sysadmin.emailAddress=${adminEmail}
 EOT
-    chown "${BBS_USER}":"${BBS_GROUP}" "${file}"
 
     log "Done generating 'bitbucket.properties' configuration file"
 }
@@ -324,7 +306,6 @@ function bbs_configure {
     log "Configuring Bitbucket Server application"
 
     bbs_prepare_properties
-    bbs_restart
 
     log "Done configuring Bitbucket Server application"
 }
@@ -363,8 +344,8 @@ function install_bbs {
     bbs_install_nfs_client
     bbs_configure_shared_home
 
-    bbs_install
     bbs_configure
+    bbs_install 
 
     log "Done configuring Bitbucket Server node!"
 }
