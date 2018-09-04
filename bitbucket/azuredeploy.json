@@ -462,6 +462,7 @@
         "sql": {
             "server": {
                 "name": "[concat(variables('namespace'), '-sql-server-', uniqueString(resourceGroup().id))]",
+                "user": "saadmin",
                 "password": "[if(equals(parameters('azureSqlPassword'),'generate'), concat('P', uniqueString(guid(variables('suffix'))), 'x', '!'), parameters('azureSqlPassword'))]"
             },
             "database": {
@@ -502,6 +503,16 @@
                     "WAF_Large": "WAF"
                 }
             }
+        },
+        "env": {
+            "SQL": [
+                "[concat(' SQL_HOST=\"', variables('sql').server.name)]",
+                "[concat(' SQL_USER=\"', variables('sql').server.user)]",
+                "[concat(' SQL_USER=\"', variables('sql').server.password)]"
+            ]
+        },
+        "data": {
+            "SQL": "[concat(variables('env').SQL)]"
         }
     },
     "resources": [
@@ -1086,7 +1097,7 @@
             "tags": "[variables('tags')]",
             "name": "[variables('sql').server.name]",
             "properties": {
-                "administratorLogin": "saadmin",
+                "administratorLogin": "[variables('sql').server.user]",
                 "administratorLoginPassword": "[variables('sql').server.password]"
             },
             "resources": [
@@ -1328,7 +1339,7 @@
                                     "autoUpgradeMinorVersion": true,
                                     "settings": {
                                         "fileUris": "[variables('vm').bbs.scripts]",
-                                        "commandToExecute": "[concat('NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' bash install.sh bbs')]"
+                                        "commandToExecute": "[concat(variables('data').SQL, ' NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' bash install.sh bbs')]"
                                     }
                                 }
                             }

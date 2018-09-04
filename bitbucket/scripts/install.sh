@@ -337,11 +337,11 @@ function install_nfs {
 function install_bbs {
     log "Configuration Bitbucket Server node..."
 
-    #install_common
-    #bbs_install_nfs_client
-    #bbs_configure_shared_home
+    install_common
+    bbs_install_nfs_client
+    bbs_configure_shared_home
 
-    #bbs_install
+    bbs_install
     bbs_configure
 
     log "Done configuring Bitbucket Server node!"
