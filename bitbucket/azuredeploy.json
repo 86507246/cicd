@@ -242,6 +242,41 @@
             "metadata": {
                 "description": "VM type which used for forwarding HTTP traffic from Load Balancer to Application Gateway"
             }
+        },
+        "license": {
+            "type": "securestring",
+            "defaultValue": "AAABmw0ODAoPeNp9kV1P2zAUhu/9KyztrpJTF8oElSKtOIZVa5MuHxfb2IXrHqghsSPbKfTfzyRlbEPswjc+H3re53woO8AFtJhOMT2fTc5mpxN8vSrxCZ2co7RrNmCz28qBdTGZIGa0F9KnooFYgG1MDfrBfBK+Fs4poSNpGuS8cLtoqSRoB+Whhb6dZasVz9livnzb8Gdx3Vm5Ew4S4SF+piD0gtAp+s++Y4k/tcoe+rn16Uf6+YWWr4Sq38ctwO7BLpL48uv8C1myq5xcME5JNb3+fkQNOwUD7cHG3naAim7jpFWtV0YPP6PRKM1KcpXlZJ1nScXKRZaSquChEDMLAWqLNwfsd4CPuJhrabZgcWvNPUiPf+y8b29m4/Gdif5CHNfDBIFh4meEE4O18XirnLdq03kIm5XD3mDZOW+acK8IhdyBWQst37oZggU7ag+/I7Ccz0uekMtvz9jvGjsGCMoq/aDNo0YFT+PwyBmlKLN3Qisnejn8STRtDZiZphX6gHoVofDvdRN4Fcr3ou76rhdV6PVrYP0FXeTs4jAtAhUAhTqzG60AOVBVHPHdOoB1AaGgPLoCFE8e0Qqo9KwWUj8wUZbRtFt/mll4X02jr",
+            "metadata": {
+                "description": "Bitbucket Server license that is enable for use in Data Center mode"
+            }
+        },
+        "bitbucketAdminUsername": {
+            "type": "string",
+            "defaultValue": "ssh",
+            "metadata": {
+                "description": "Username for Bitbucket Server administrator user. By default it's the same as ssh user."
+            }
+        },
+        "bitbucketAdminPassword": {
+            "type": "securestring",
+            "defaultValue": "ssh",
+            "metadata": {
+                "description": "Password for Bitbucket Server administrator user. By default it's the same as ssh password."
+            }
+        },
+        "bitbucketAdminName": {
+            "type": "string",
+            "defaultValue": "John Doe",
+            "metadata": {
+                "description": "Bitbucket Server administorator full name."
+            }
+        },
+        "bitbucketAdminEmail": {
+            "type": "string",
+            "defaultValue": "admin@example.com",
+            "metadata": {
+                "description": "Bitbucket Server administrator email."
+            }
         }
     },
     "variables": {
@@ -504,15 +539,32 @@
                 }
             }
         },
+        "bitbucket": {
+            "license": "[parameters('license')]",
+            "admin": {
+                "username": "[if(equals(parameters('bitbucketAdminUsername'),'ssh'), parameters('adminUsername'), parameters('bitbucketAdminUsername'))]",
+                "password": "[if(equals(parameters('bitbucketAdminPassword'),'ssh'), parameters('adminPassword'), parameters('bitbucketAdminPassword'))]",
+                "fullName": "[parameters('bitbucketAdminName')]",
+                "email": "[parameters('bitbucketAdminEmail')]"
+            }
+        },
         "env": {
             "SQL": [
-                "[concat('SQL_HOST=\"', variables('sql').server.name, '\" ')]",
-                "[concat('SQL_USER=\"', variables('sql').server.user, '\" ')]",
-                "[concat('SQL_PASS=\"', variables('sql').server.password, '\" ')]"
+                "[concat('SQL_HOST', '=\"', variables('sql').server.name, '\" ')]",
+                "[concat('SQL_USER', '=\"', variables('sql').server.user, '\" ')]",
+                "[concat('SQL_PASS', '=\"', variables('sql').server.password, '\" ')]"
+            ],
+            "BBS": [
+                "[concat('BBS_ADMIN', '=\"', variables('bitbucket').admin.username, '\" ')]",
+                "[concat('BBS_PASS', '=\"', variables('bitbucket').admin.password, '\" ')]",
+                "[concat('BBS_NAME', '=\"', variables('bitbucket').admin.fullName, '\" ')]",
+                "[concat('BBS_EMAIL', '=\"', variables('bitbucket').admin.email, '\" ')]",
+                "[concat('BBS_LICENSE', '=\"', variables('bitbucket').license, '\" ')]"
             ]
         },
         "data": {
-            "SQL": "[replace(replace(replace(replace(string(variables('env').SQL), '[\"', ''), '\"]', ''), '\",\"', ''), '\\\"', '\"')]"
+            "SQL": "[replace(replace(replace(replace(string(variables('env').SQL), '[\"', ''), '\"]', ''), '\",\"', ''), '\\\"', '\"')]",
+            "BBS": "[replace(replace(replace(replace(string(variables('env').BBS), '[\"', ''), '\"]', ''), '\",\"', ''), '\\\"', '\"')]"
         }
     },
     "resources": [
@@ -1339,7 +1391,7 @@
                                     "autoUpgradeMinorVersion": true,
                                     "settings": {
                                         "fileUris": "[variables('vm').bbs.scripts]",
-                                        "commandToExecute": "[concat(variables('data').SQL, ' NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' bash install.sh bbs')]"
+                                        "commandToExecute": "[concat(variables('data').SQL, variables('data').BBS, ' NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' bash install.sh bbs')]"
                                     }
                                 }
                             }
