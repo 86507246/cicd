@@ -260,6 +260,49 @@ function bbs_run_installer {
     log "Done running Bitbucket Server installer"
 }
 
+function bbs_stop {
+    log "Stopping Bitbucket Server application..."
+
+    /etc/init.d/atlbitbucket stop
+
+    log "Bitbucket Server application has been stopped"
+}
+
+function bbs_start {
+    log "Starting Bitbucket Server application..."
+
+    /etc/init.d/atlbitbucket start
+
+    log "Bitbucket Server application has been started"
+}
+
+function bbs_restart {
+    log "Restarting Bitbucket Server application..."
+
+    log "Done restarting Bitbucket Server application"
+}
+
+function bbs_prepare_properties {
+    local dbhost="${SQL_HOST}"
+    local dbuser="${SQL_USER}"
+    local dbpass="${SQL_PASS}"
+
+    cat <<EOT >> "${BBS_HOME}/bitbucket.properties"
+    jdbc.driver=com.microsoft.sqlserver.jdbc.SQLServerDriver
+    jdbc.url=jdbc:sqlserver://${dbhost}.database.windows.net:1433;database=bitbucket-db;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+    jdbc.user=${dbuser}
+    jdbc.password=${dbpass}
+EOT
+}
+
+function bbs_configure {
+    log "Configuring Bitbucket Server application"
+
+    bbs_prepare_properties
+
+    log "Done configuring Bitbucket Server application"
+}
+
 function bbs_install {
     log "Downloading and running Bitbucket Server installer"
 
@@ -290,11 +333,12 @@ function install_nfs {
 function install_bbs {
     log "Configuration Bitbucket Server node..."
 
-    install_common
-    bbs_install_nfs_client
-    bbs_configure_shared_home
+    #install_common
+    #bbs_install_nfs_client
+    #bbs_configure_shared_home
 
-    bbs_install
+    #bbs_install
+    bbs_configure
 
     log "Done configuring Bitbucket Server node!"
 }
