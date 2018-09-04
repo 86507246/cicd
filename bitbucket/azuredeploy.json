@@ -506,13 +506,13 @@
         },
         "env": {
             "SQL": [
-                "[concat(' SQL_HOST=\"', variables('sql').server.name)]",
-                "[concat(' SQL_USER=\"', variables('sql').server.user)]",
-                "[concat(' SQL_USER=\"', variables('sql').server.password)]"
+                "[concat('SQL_HOST=\"', variables('sql').server.name, '\" ')]",
+                "[concat('SQL_USER=\"', variables('sql').server.user, '\" ')]",
+                "[concat('SQL_USER=\"', variables('sql').server.password, '\" ')]"
             ]
         },
         "data": {
-            "SQL": "[concat(variables('env').SQL)]"
+            "SQL": "[replace(replace(replace(string(variables('env').SQL), '[', ''), ']', ''), ',', '')]"
         }
     },
     "resources": [
