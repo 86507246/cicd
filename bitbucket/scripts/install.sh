@@ -299,7 +299,7 @@ function bbs_prepare_properties {
     local adminName="${BBS_NAME}"
     local adminEmail="${BBS_EMAIL}"
 
-    local file="${BBS_HOME}/bitbucket.properties"
+    local file="${BBS_SHARED_HOME}/bitbucket.properties"
 
     cat <<EOT >> "${file}"
     jdbc.driver=com.microsoft.sqlserver.jdbc.SQLServerDriver
