@@ -290,12 +290,15 @@ function bbs_prepare_properties {
     local dbuser="${SQL_USER}"
     local dbpass="${SQL_PASS}"
 
-    cat <<EOT >> "${BBS_HOME}/bitbucket.properties"
+    local file="${BBS_HOME}/bitbucket.properties"
+
+    cat <<EOT >> "${file}"
     jdbc.driver=com.microsoft.sqlserver.jdbc.SQLServerDriver
     jdbc.url=jdbc:sqlserver://${dbhost}.database.windows.net:1433;database=bitbucket-db;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
     jdbc.user=${dbuser}
     jdbc.password=${dbpass}
 EOT
+    chown "${BBS_USER}":"${BBS_GROUP}" "${file}"
 }
 
 function bbs_configure {

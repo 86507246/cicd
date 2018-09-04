@@ -508,11 +508,11 @@
             "SQL": [
                 "[concat('SQL_HOST=\"', variables('sql').server.name, '\" ')]",
                 "[concat('SQL_USER=\"', variables('sql').server.user, '\" ')]",
-                "[concat('SQL_USER=\"', variables('sql').server.password, '\" ')]"
+                "[concat('SQL_PASS=\"', variables('sql').server.password, '\" ')]"
             ]
         },
         "data": {
-            "SQL": "[replace(replace(replace(string(variables('env').SQL), '[', ''), ']', ''), ',', '')]"
+            "SQL": "[replace(replace(replace(replace(string(variables('env').SQL), '[\"', ''), '\"]', ''), '\",\"', ''), '\\\"', '\"')]"
         }
     },
     "resources": [
@@ -1137,8 +1137,7 @@
             "apiVersion": "[variables('api').network.appGateways]",
             "tags": "[variables('tags')]",
             "dependsOn": [
-                "[variables('net').vnet.name]",
-                "[variables('net').lb.name]"
+                "[variables('net').vnet.name]"
             ],
             "name": "[variables('net').appGw.name]",
             "properties": {
@@ -1245,6 +1244,7 @@
             "tags": "[variables('tags')]",
             "dependsOn": [
                 "[variables('net').vnet.name]",
+                "[variables('sql').database.name]",
                 "[variables('net').appGw.name]",
                 "[variables('vm').nfs.name]",
                 "[variables('net').lb.name]"
@@ -1443,6 +1443,10 @@
         "ssh": {
             "type": "string",
             "value": "[concat('ssh ', parameters('adminUsername'), '@', reference(variables('net').ip.name).dnsSettings.fqdn)]"
+        },
+        "cmd": {
+            "type": "string",
+            "value": "[concat(variables('data').SQL, ' NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' bash install.sh bbs')]"
         }
     }
 }
