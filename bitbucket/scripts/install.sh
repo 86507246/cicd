@@ -279,6 +279,9 @@ function bbs_start {
 function bbs_restart {
     log "Restarting Bitbucket Server application..."
 
+    bbs_stop
+    bbs_start
+
     log "Done restarting Bitbucket Server application"
 }
 
@@ -299,6 +302,7 @@ function bbs_configure {
     log "Configuring Bitbucket Server application"
 
     bbs_prepare_properties
+    bbs_restart
 
     log "Done configuring Bitbucket Server application"
 }
