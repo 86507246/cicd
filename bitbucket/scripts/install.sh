@@ -282,9 +282,10 @@ function bbs_prepare_properties {
     local adminName="${BBS_NAME}"
     local adminEmail="${BBS_EMAIL}"
 
-    local file="${BBS_SHARED_HOME}/bitbucket.properties"
+    local file_temp="${BBS_HOME}/bitbucket.properties"
+    local file_target="${BBS_SHARED_HOME}/bitbucket.properties"
 
-    sudo -u "${BBS_USER}" cat <<EOT >> "${file}"
+    cat <<EOT >> "${file_temp}"
 jdbc.driver=com.microsoft.sqlserver.jdbc.SQLServerDriver
 jdbc.url=jdbc:sqlserver://${dbhost}.database.windows.net:1433;database=bitbucket-db;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
 jdbc.user=${dbuser}
@@ -298,6 +299,9 @@ setup.sysadmin.password=${adminPass}
 setup.sysadmin.displayName=${adminName}
 setup.sysadmin.emailAddress=${adminEmail}
 EOT
+
+    chown "${BBS_USER}":"${BBS_GROUP}" "${file_temp}"
+    sudo -u "${BBS_USER}" mv "${file_temp}" "${file_target}"
 
     log "Done generating 'bitbucket.properties' configuration file"
 }
