@@ -239,12 +239,12 @@ function bbs_prepare_installer_settings {
     cat <<EOT >> "${BBS_INSTALER_VARS}"
 app.bitbucketHome=${home}
 app.defaultInstallDir=/opt/atlassian/bitbucket/${version}
-app.install.service$Boolean=true
-executeLauncherAction$Boolean=true
+app.install.service\$Boolean=true
+executeLauncherAction\$Boolean=false
 httpPort=7990
 installation.type=DATA_CENTER_INSTALL
-launch.application$Boolean=true
-sys.adminRights$Boolean=true
+launch.application\$Boolean=false
+sys.adminRights\$Boolean=true
 sys.languageId=en
 EOT
 
@@ -256,7 +256,7 @@ function bbs_run_installer {
 
     bbs_prepare_installer_settings
     ./installer -q -varfile "${BBS_INSTALER_VARS}"
-
+    
     log "Done running Bitbucket Server installer"
 }
 
@@ -349,7 +349,7 @@ function install_nfs {
     nfs_prepare_shared_home
     nfs_configure
 
-    log "Done configuriong NFS node!"
+    log "Done configuring NFS node!"
 }
 
 function install_bbs {
@@ -360,7 +360,10 @@ function install_bbs {
     bbs_configure_shared_home
 
     bbs_configure
-    bbs_install 
+    bbs_install
+    
+    log "Starting Bitbucket Server..."    
+    service atlbitbucket start
 
     log "Done configuring Bitbucket Server node!"
 }

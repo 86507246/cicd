@@ -489,6 +489,9 @@
                     "offer": "UbuntuServer",
                     "sku": "16.04.0-LTS"
                 },
+                "role": {
+                    "name": "[guid(resourceGroup().id)]"  
+                },
                 "hazelcastTag": {
                     "[parameters('bbsHazelcastTag')]": "[parameters('bbsHazelcastPort')]"
                 },
@@ -1332,8 +1335,9 @@
             },
             "properties": {
                 "upgradePolicy": {
-                    "mode": "Manual"
+                    "mode": "Automatic"
                 },
+                "overprovision": "false",
                 "virtualMachineProfile": {
                     "osProfile": {
                         "computerNamePrefix": "[variables('vm').bbs.hostname]",
@@ -1402,27 +1406,31 @@
                                 }
                             }
                         ]
-                    },
-                    "extensionProfile": {
-                        "extensions": [
-                            {
-                                "type": "extensions",
-                                "name": "script",
-                                "properties": {
-                                    "publisher": "Microsoft.Azure.Extensions",
-                                    "type": "CustomScript",
-                                    "typeHandlerVersion": "2.0",
-                                    "autoUpgradeMinorVersion": true,
-                                    "settings": {
-                                        "fileUris": "[variables('vm').bbs.scripts]",
-                                        "commandToExecute": "[concat(variables('data').SQL, variables('data').BBS, ' NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' bash install.sh bbs')]"
-                                    }
-                                }
-                            }
-                        ]
                     }
                 }
-            }
+            },
+            "resources": [
+                {
+                    "name": "[concat(variables('vm').bbs.name, '-extension')]",
+                    "type": "extensions",
+                    "location": "[parameters('location')]",
+                    "apiVersion": "[variables('api').compute.virtualMachineScaleSets]",
+                    "dependsOn": [
+                        "[variables('vm').bbs.name]",
+                        "[variables('vm').bbs.role.name]"
+                    ],
+                    "properties": {
+                        "publisher": "Microsoft.Azure.Extensions",
+                        "type": "CustomScript",
+                        "typeHandlerVersion": "2.0",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {
+                            "fileUris": "[variables('vm').bbs.scripts]",
+                            "commandToExecute": "[concat(variables('data').SQL, variables('data').BBS, ' NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' BBS_URL=\"', 'http://', reference(variables('net').ip.name).dnsSettings.fqdn, '\"', ' bash install.sh bbs')]"
+                        }
+                    }
+                }
+            ]
         },
         {
           "type": "Microsoft.Authorization/roleAssignments",
