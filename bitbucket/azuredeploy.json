@@ -359,9 +359,6 @@
                 "appgw": {
                     "name": "[concat(variables('namespace'), '-appgw-nsg')]"
                 },
-                "lb": {
-                    "name": "[concat(variables('namespace'), '-lb-nsg')]"
-                },
                 "bbs": {
                     "name": "[concat(variables('namespace'), '-bbs-nsg')]"
                 },
@@ -405,10 +402,6 @@
                     "name": "[concat(variables('namespace'), '-net-appgw')]",
                     "cidr": "[parameters('appgwNetCIDR')]"
                 },
-                "lb": {
-                    "name": "[concat(variables('namespace'), '-net-lb')]",
-                    "cidr": "[parameters('lbNetCIDR')]"
-                }, 
                 "bbs": {
                     "name": "[concat(variables('namespace'), '-net-bbs')]",
                     "cidr": "[parameters('bbsNetCIDR')]"
@@ -636,7 +629,7 @@
                             "destinationAddressPrefix": "VirtualNetwork",
                             "access": "Deny",
                             "direction": "Inbound",
-                            "priority": 101
+                            "priority": 1001
                         }
                     }
                 ]
@@ -691,47 +684,6 @@
             "apiVersion": "[variables('api').network.networkSecurityGroups]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
-            "name": "[variables('net').nsg.lb.name]",
-            "properties": {
-                "securityRules": [
-                    {
-                        "name": "allowInbound",
-                        "properties": {
-                            "description": "Allows incoming SSH traffic only from public subnet",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "7999",
-                            "sourceAddressPrefix": "[variables('net').subnets.public.cidr]",
-                            "destinationAddressPrefix": "[variables('net').subnets.lb.cidr]",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "priority": 100
-                        }
-                    },
-                    {
-                        "name": "allowOutbound",
-                        "properties": {
-                            "description": "Allows outgoing SSH traffic only from LB subnet towards BBS subnet",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "7999",
-                            "sourceAddressPrefix": "[variables('net').subnets.lb.cidr]",
-                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
-                            "access": "Allow",
-                            "direction": "Outbound",
-                            "priority": 101
-                        }
-                    },
-                    "[variables('net').nsg.rules.denyInbound]",
-                    "[variables('net').nsg.rules.denyOutbound]"
-                ]
-            }
-        },
-        {
-            "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "[variables('api').network.networkSecurityGroups]",
-            "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
             "name": "[variables('net').nsg.bbs.name]",
             "properties": {
                 "securityRules": [
@@ -752,11 +704,11 @@
                     {
                         "name": "allowLB",
                         "properties": {
-                            "description": "Allows incoming Git traffic from LB subnet",
+                            "description": "Allows incoming Git traffic from public subnet",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "7999",
-                            "sourceAddressPrefix": "[variables('net').subnets.lb.cidr]",
+                            "sourceAddressPrefix": "[variables('net').subnets.public.cidr]",
                             "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
                             "access": "Allow",
                             "direction": "Inbound",
@@ -796,6 +748,20 @@
                             "priority": 200
                         }
                     },
+                    {
+                        "name": "allowNAT",
+                        "properties": {
+                            "description": "Allows NAT traffic inside the subnet",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "destinationAddressPrefix": "Internet",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 300
+                        }
+                    },
                     "[variables('net').nsg.rules.denyInbound]"
                 ]
             }
@@ -808,7 +774,6 @@
             "dependsOn": [
                 "[variables('net').nsg.public.name]",
                 "[variables('net').nsg.appgw.name]",
-                "[variables('net').nsg.lb.name]",
                 "[variables('net').nsg.bbs.name]",
                 "[variables('net').routing.table.name]"
             ],
@@ -835,15 +800,6 @@
                             "addressPrefix": "[variables('net').subnets.appgw.cidr]",
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.appgw.name)]"
-                            }
-                        }
-                    },
-                    {
-                        "name": "[variables('net').subnets.lb.name]",
-                        "properties": {
-                            "addressPrefix": "[variables('net').subnets.lb.cidr]",
-                            "networkSecurityGroup": {
-                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.lb.name)]"
                             }
                         }
                     },
@@ -903,7 +859,7 @@
                         "properties": {
                             "privateIPAllocationMethod": "Dynamic",
                             "subnet": {
-                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.lb.name)]"
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.public.name)]"
                             }
                         }
                     }
@@ -911,12 +867,6 @@
                 "backendAddressPools": [
                     {
                         "name": "[variables('net').lb.names.bendGit]"
-                    },
-                    {
-                        "name": "[variables('net').lb.names.bendSsh]"
-                    },
-                    {
-                        "name": "[variables('net').lb.names.bendHttp]"
                     }
                 ],
                 "loadBalancingRules": [
@@ -931,34 +881,6 @@
                             },
                             "frontendPort": 7999,
                             "backendPort": 7999,
-                            "protocol": "Tcp"
-                        }
-                    },
-                    {
-                        "name": "[variables('net').lb.names.ruleSsh]",
-                        "properties": {
-                            "frontendIPConfiguration": {
-                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/frontendIPConfigurations/', variables('net').lb.names.fendIpConfig)]"
-                            },
-                            "backendAddressPool": {
-                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendSsh)]"
-                            },
-                            "frontendPort": 22,
-                            "backendPort": 22,
-                            "protocol": "Tcp"
-                        }
-                    },
-                    {
-                        "name": "[variables('net').lb.names.ruleHttp]",
-                        "properties": {
-                            "frontendIPConfiguration": {
-                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/frontendIPConfigurations/', variables('net').lb.names.fendIpConfig)]"
-                            },
-                            "backendAddressPool": {
-                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendHttp)]"
-                            },
-                            "frontendPort": 80,
-                            "backendPort": 80,
                             "protocol": "Tcp"
                         }
                     }
@@ -1082,6 +1004,112 @@
             ]
         },
         {
+            "type": "Microsoft.Network/applicationGateways",
+            "location": "[parameters('location')]",
+            "apiVersion": "[variables('api').network.appGateways]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[variables('net').vnet.name]"
+            ],
+            "name": "[variables('net').appGw.name]",
+            "properties": {
+                "sku": {
+                    "name": "[variables('net').appGw.size]",
+                    "tier": "[variables('net').appGw.tier]",
+                    "capacity": "[variables('net').appGw.capacity]"
+                },
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "[variables('net').appGw.names.ipConfig]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.appgw.name)]"
+                            }
+                        }
+                    }
+                ],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "[variables('net').appGw.names.fendIp]",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.appgw.name)]"
+                            }
+                        }
+                    }
+                ],
+                "frontendPorts": [
+                    {
+                        "name": "[variables('net').appGw.names.fendPort]",
+                        "properties": {
+                            "port": 80
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "[variables('net').appGw.names.bend]"
+                    }
+                ],
+                "backendHttpSettingsCollection": [
+                    {
+                        "name": "[variables('net').appGw.names.bendHttpSettings]",
+                        "properties": {
+                            "port": "[parameters('bbsHttpPort')]",
+                            "protocol": "Http",
+                            "cookieBasedAffinity": "Enabled",
+                            "affinityCookieName": "BITBUCKETSESSIONID"
+                        }
+                    }
+                ],
+                "httpListeners": [
+                    {
+                        "name": "[variables('net').appGw.names.httpListener]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/frontendIPConfigurations/', variables('net').appGw.names.fendIp)]"
+                            },
+                            "frontendPort": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/frontendPorts/', variables('net').appGw.names.fendPort)]"
+                            },
+                            "protocol": "Http"
+                        }
+                    }
+                ],
+                "requestRoutingRules": [
+                    {
+                        "name": "[variables('net').appGw.names.routeRule]",
+                        "properties": {
+                            "ruleType": "Basic",
+                            "httpListener": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/httpListeners/', variables('net').appGw.names.httpListener)]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/backendAddressPools/', variables('net').appGw.names.bend)]"
+                            },
+                            "backendHttpSettings": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/backendHttpSettingsCollection/', variables('net').appGw.names.bendHttpSettings)]"
+                            }
+                        }
+                    }
+                ],
+                "probes": [
+                    {
+                        "name": "[variables('net').appGw.names.probe]",
+                        "properties": {
+                            "protocol": "Http",
+                            "path": "/status",
+                            "interval": "[variables('net').appGw.probe.interval]",
+                            "timeout": "[variables('net').appGw.probe.timeout]",
+                            "unhealthyThreshold": "[variables('net').appGw.probe.unhealthyThreshold]",
+                            "pickHostNameFromBackendHttpSettings": true
+                        }
+                    }
+                ]
+            }
+        },
+        {
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "[variables('api').compute.virtualMachines]",
             "location": "[parameters('location')]",
@@ -1089,7 +1117,8 @@
             "dependsOn": [
                 "[variables('net').nic.jumpbox.name]",
                 "[variables('net').nic.nat.name]",
-                "[variables('net').lb.name]"
+                "[variables('net').lb.name]",
+                "[variables('net').appGw.name]"
             ],
             "name": "[variables('vm').jumpbox.name]",
             "properties": {
@@ -1152,7 +1181,7 @@
                         "autoUpgradeMinorVersion": true,
                         "settings": {
                             "fileUris": "[variables('vm').nat.scripts]",
-                            "commandToExecute": "[concat('bash enable_nat.sh', ' ', reference(variables('net').lb.name).frontendIPConfigurations[0].properties.privateIPAddress)]"
+                            "commandToExecute": "[concat('bash enable_nat.sh', ' ', reference(variables('net').appGw.name).frontendIPConfigurations[0].properties.privateIPAddress, ' ', reference(variables('net').lb.name).frontendIPConfigurations[0].properties.privateIPAddress)]"
                         }
                     }
                 }
@@ -1313,6 +1342,11 @@
                                                 "subnet": {
                                                     "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('net').vnet.name), '/subnets/', variables('net').subnets.bbs.name)]"
                                                 },
+                                                "applicationGatewayBackendAddressPools": [
+                                                    {
+                                                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/backendAddressPools/', variables('net').appGw.names.bend)]"
+                                                    }
+                                                ],
                                                 "loadBalancerBackendAddressPools": [
                                                     {
                                                         "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendGit)]"
@@ -1359,6 +1393,10 @@
         "nat": {
             "type": "string",
             "value": "[reference(variables('net').nic.nat.name).ipConfigurations[0].properties.privateIPAddress]"
+        },
+        "gateway": {
+            "type": "string",
+            "value": "[reference(variables('net').appGw.name).frontendIPConfigurations[0].properties.privateIPAddress]"
         },
         "nfs": {
             "type": "string",

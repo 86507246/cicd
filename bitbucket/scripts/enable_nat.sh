@@ -27,5 +27,5 @@ else
     enable_nat
     enable_port_forwarding "$1" 80
     enable_port_forwarding "$1" 443
-    enable_port_forwarding "$1" 7999
+    enable_port_forwarding "$2" 7999
 fi
