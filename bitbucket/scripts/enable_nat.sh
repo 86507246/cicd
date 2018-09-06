@@ -24,7 +24,8 @@ function enable_nat {
 if [ "x$1" == "x" ]; then
     log "Usage: enable_nat _app_gw_ip_ _git_lb_ip_"
 else
+    enable_nat
     enable_port_forwarding "$1" 80
     enable_port_forwarding "$1" 443
-    enable_port_forwarding "$2" 7999
+    enable_port_forwarding "$1" 7999
 fi

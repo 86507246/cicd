@@ -770,7 +770,7 @@
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "22",
-                            "sourceAddressPrefix": "[variables('net').subnets.public.cidr]",
+                            "sourceAddressPrefix": "[variables('net').ip.addr]",
                             "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
                             "access": "Allow",
                             "direction": "Inbound",
@@ -1087,6 +1087,7 @@
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
+                "[variables('net').nic.jumpbox.name]",
                 "[variables('net').nic.nat.name]",
                 "[variables('net').lb.name]"
             ],
@@ -1163,7 +1164,8 @@
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
-                "[variables('net').nic.nfs.name]"
+                "[variables('net').nic.nfs.name]",
+                "[resourceId('Microsoft.Compute/virtualMachines/extensions', variables('vm').jumpbox.name, 'script')]"
             ],
             "name": "[variables('vm').nfs.name]",
             "properties": {
@@ -1247,7 +1249,8 @@
                 "[variables('net').vnet.name]",
                 "[variables('sql').database.name]",
                 "[variables('vm').nfs.name]",
-                "[variables('net').lb.name]"
+                "[variables('net').lb.name]",
+                "[resourceId('Microsoft.Compute/virtualMachines/extensions', variables('vm').jumpbox.name, 'script')]"
             ],
             "name": "[variables('vm').bbs.name]",
             "sku": {
