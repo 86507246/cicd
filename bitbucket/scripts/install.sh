@@ -269,7 +269,7 @@ function bbs_stop {
 }
 
 function bbs_prepare_properties {
-    log "Generging 'bitbucket.properties' configuration file"
+    log "Generating 'bitbucket.properties' configuration file"
 
     local dbhost="${SQL_HOST}"
     local dbuser="${SQL_USER}"
@@ -281,6 +281,11 @@ function bbs_prepare_properties {
     local adminPass="${BBS_PASS}"
     local adminName="${BBS_NAME}"
     local adminEmail="${BBS_EMAIL}"
+    
+    local hazelcastPort="${BBS_HAZELCAST_PORT}"
+    local hazelcastClusterId="${BBS_HAZELCAST_CLUSTER_ID}"
+    local hazelcastGroupName="${BBS_HAZELCAST_GROUP_NAME}"
+    local hazelcastSubscriptionId="${BBS_HAZELCAST_SUBSCRIPTION_ID}"
 
     local file_temp="${BBS_HOME}/bitbucket.properties"
     local file_target="${BBS_SHARED_HOME}/bitbucket.properties"
@@ -298,6 +303,12 @@ setup.sysadmin.username=${adminUser}
 setup.sysadmin.password=${adminPass}
 setup.sysadmin.displayName=${adminName}
 setup.sysadmin.emailAddress=${adminEmail}
+
+hazelcast.port=${hazelcastPort}
+hazelcast.network.azure=true
+hazelcast.network.azure.cluster.id=${hazelcastClusterId}
+hazelcast.network.azure.group.name=${hazelcastGroupName}
+hazelcast.network.azure.subscription.id=${hazelcastSubscriptionId}
 EOT
 
     chown "${BBS_USER}":"${BBS_GROUP}" "${file_temp}"

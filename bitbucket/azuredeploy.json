@@ -119,6 +119,20 @@
                 "description": "Internal port that Bitbucket Server uses to accept HTTP connections"
             }
         },
+        "bbsHazelcastTag": {
+            "type": "string",
+            "defaultValue": "HAZELCAST",
+            "metadata": {
+                "description": "Hazelcast tag for nodes in Bitbucket Server cluster"
+            }
+        },
+        "bbsHazelcastPort": {
+            "type": "string",
+            "defaultValue": "5701",
+            "metadata": {
+                "description": "Internal port that Bitbucket Server uses for Hazelcast communication"
+            }
+        },
         "azureSqlTier": {
             "type": "string",
             "defaultValue": "P2",
@@ -312,6 +326,9 @@
             "sql": {
                 "servers": "2015-05-01-preview",
                 "databases": "2014-04-01"
+            },
+            "authorization": {
+                "roleAssignments": "2017-05-01"
             }
         },
         "net": {
@@ -472,6 +489,9 @@
                     "offer": "UbuntuServer",
                     "sku": "16.04.0-LTS"
                 },
+                "hazelcastTag": {
+                    "[parameters('bbsHazelcastTag')]": "[parameters('bbsHazelcastPort')]"
+                },
                 "storage": {
                     "size": "[parameters('bbsDiskSize')]",
                     "type": "[parameters('bbsDiskStorageType')]",
@@ -560,13 +580,18 @@
                 "[concat('BBS_PASS', '=\"', variables('bitbucket').admin.password, '\" ')]",
                 "[concat('BBS_NAME', '=\"', variables('bitbucket').admin.fullName, '\" ')]",
                 "[concat('BBS_EMAIL', '=\"', variables('bitbucket').admin.email, '\" ')]",
-                "[concat('BBS_LICENSE', '=\"', variables('bitbucket').license, '\" ')]"
+                "[concat('BBS_LICENSE', '=\"', variables('bitbucket').license, '\" ')]",
+                "[concat('BBS_HAZELCAST_PORT', '=\"', parameters('bbsHazelcastPort'), '\" ')]",
+                "[concat('BBS_HAZELCAST_CLUSTER_ID', '=\"', parameters('bbsHazelcastTag'), '\" ')]",
+                "[concat('BBS_HAZELCAST_GROUP_NAME', '=\"', resourceGroup().name, '\" ')]",
+                "[concat('BBS_HAZELCAST_SUBSCRIPTION_ID', '=\"', subscription().subscriptionId, '\" ')]"
             ]
         },
         "data": {
             "SQL": "[replace(replace(replace(replace(string(variables('env').SQL), '[\"', ''), '\"]', ''), '\",\"', ''), '\\\"', '\"')]",
             "BBS": "[replace(replace(replace(replace(string(variables('env').BBS), '[\"', ''), '\"]', ''), '\",\"', ''), '\\\"', '\"')]"
-        }
+        },
+        "reader-role": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')]"
     },
     "resources": [
         {
@@ -760,6 +785,22 @@
                             "access": "Allow",
                             "direction": "Inbound",
                             "priority": 300
+                        }
+                    },
+                    {
+                        "name": "allowHazelcast",
+                        "properties": {
+                            "description": "Allows Hazelcast traffic inside the subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRanges": [
+                                "[parameters('bbsHazelcastPort')]"
+                            ],
+                            "sourceAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 201
                         }
                     },
                     "[variables('net').nsg.rules.denyInbound]"
@@ -1273,7 +1314,7 @@
             "type": "Microsoft.Compute/virtualMachineScaleSets",
             "apiVersion": "[variables('api').compute.virtualMachineScaleSets]",
             "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
+            "tags": "[union(variables('tags'),variables('vm').bbs.hazelcastTag)]",
             "dependsOn": [
                 "[variables('net').vnet.name]",
                 "[variables('sql').database.name]",
@@ -1285,6 +1326,9 @@
             "sku": {
                 "name": "[variables('vm').bbs.size]",
                 "capacity": "[variables('vm').bbs.count]"
+            },
+            "identity": {
+                "type": "SystemAssigned"
             },
             "properties": {
                 "upgradePolicy": {
@@ -1379,6 +1423,19 @@
                     }
                 }
             }
+        },
+        {
+          "type": "Microsoft.Authorization/roleAssignments",
+          "apiVersion": "[variables('api').authorization.roleAssignments]",
+          "dependsOn": [
+            "[variables('vm').bbs.name]"
+          ],
+          "name": "[guid(resourceGroup().id)]",
+          "properties": {
+            "roleDefinitionId": "[variables('reader-role')]",
+            "principalId": "[reference(concat(resourceId('Microsoft.Compute/virtualMachineScaleSets/', variables('vm').bbs.name),'/providers/Microsoft.ManagedIdentity/Identities/default'),'2015-08-31-PREVIEW').principalId]",
+            "scope": "[resourceGroup().id]"
+          }
         }
     ],
     "outputs": {
