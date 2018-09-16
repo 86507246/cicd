@@ -321,7 +321,8 @@
                 "networkInterfaces": "2017-10-01",
                 "networkSecurityGroups": "2017-10-01",
                 "appGateways": "2017-10-01",
-                "loadBalancers": "2017-10-01"
+                "loadBalancers": "2017-10-01",
+                "routeTables": "2017-03-01"
             },
             "sql": {
                 "servers": "2015-05-01-preview",
@@ -596,14 +597,14 @@
     "resources": [
         {
             "type": "Microsoft.Network/routeTables",
-            "apiVersion": "2017-03-01",
+            "apiVersion": "[variables('api').network.routeTables]",
             "name": "[variables('net').routing.table.name]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "resources": [
                 {
                     "type": "routes",
-                    "apiVersion": "2017-03-01",
+                    "apiVersion": "[variables('api').network.routeTables]",
                     "name": "[variables('net').routing.route.name]",
                     "dependsOn": [
                         "[resourceId('Microsoft.Network/routeTables', variables('net').routing.table.name)]"

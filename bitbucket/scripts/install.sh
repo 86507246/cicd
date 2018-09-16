@@ -312,7 +312,7 @@ hazelcast.network.azure.subscription.id=${hazelcastSubscriptionId}
 EOT
 
     chown "${BBS_USER}":"${BBS_GROUP}" "${file_temp}"
-    sudo -u "${BBS_USER}" mv "${file_temp}" "${file_target}"
+    sudo -u "${BBS_USER}" mv -n "${file_temp}" "${file_target}"
 
     log "Done generating 'bitbucket.properties' configuration file"
 }
