@@ -49,7 +49,7 @@ function create_bb_user {
     #  a comment for the user
     #  username
     useradd -m -d "${BBS_HOME}" \
-        -s /bin/false \
+        -s /bin/bash \
         -u "${BBS_UID}" \
         -g "${BBS_GID}" \
         -c "Atlassian Bitbucket" \
@@ -205,6 +205,135 @@ function bbs_configure_shared_home {
     log "Done configuring Bitbucket Server shared home [directory=${BBS_SHARED_HOME}]!"
 }
 
+function bbs_download_installer {
+    local base="${BBS_INSTALLER_BASE}"
+    local bucket="${BBS_INSTALLER_BUCKET}"
+    local path="${BBS_INSTALLER_PATH}"
+    local version="${BBS_INSTALLER_VERSION}"
+    local file="${BBS_INSTALLER_FILE}"
+
+    local url="${base}/${bucket}/${path}/${version}/${file}"
+    local target="installer"
+
+    log "Downloading Bitbucket Server installer [base=${base}, bucket=${bucket}, path=${path}, version=${version}, file=${file}] from [url=${url}]"
+
+    if ! curl -L -f --silent "${url}" \
+       -o "${target}" 2>&1
+    then
+        error "Could not download Bitbucket Server installer from [url=${url}]"
+        exit 1
+    else
+        log "Making Bitbucket Server installer executable..."
+        chmod +x "${target}"
+    fi
+
+    log "Done downloading Bitbucket Server installer from [url=${url}]"
+}
+
+function bbs_prepare_installer_settings {
+    local version="${BBS_INSTALLER_VERSION}"
+    local home="${BBS_HOME}"
+
+    log "Preparing installer configuration"
+
+    cat <<EOT >> "${BBS_INSTALER_VARS}"
+app.bitbucketHome=${home}
+app.defaultInstallDir=/opt/atlassian/bitbucket/${version}
+app.install.service$Boolean=true
+executeLauncherAction$Boolean=true
+httpPort=7990
+installation.type=DATA_CENTER_INSTALL
+launch.application$Boolean=true
+sys.adminRights$Boolean=true
+sys.languageId=en
+EOT
+
+    log "Done preparing installer configuration"
+}
+
+function bbs_run_installer {
+    log "Running Bitbucket Server installer"
+
+    bbs_prepare_installer_settings
+    ./installer -q -varfile "${BBS_INSTALER_VARS}"
+
+    log "Done running Bitbucket Server installer"
+}
+
+function bbs_stop {
+    log "Stopping Bitbucket Server application..."
+
+    /etc/init.d/atlbitbucket stop
+
+    log "Bitbucket Server application has been stopped"
+}
+
+function bbs_prepare_properties {
+    log "Generating 'bitbucket.properties' configuration file"
+
+    local dbhost="${SQL_HOST}"
+    local dbuser="${SQL_USER}"
+    local dbpass="${SQL_PASS}"
+
+    local license="${BBS_LICENSE}"
+    local baseUrl="${BBS_URL}"
+    local adminUser="${BBS_ADMIN}"
+    local adminPass="${BBS_PASS}"
+    local adminName="${BBS_NAME}"
+    local adminEmail="${BBS_EMAIL}"
+    
+    local hazelcastPort="${BBS_HAZELCAST_PORT}"
+    local hazelcastClusterId="${BBS_HAZELCAST_CLUSTER_ID}"
+    local hazelcastGroupName="${BBS_HAZELCAST_GROUP_NAME}"
+    local hazelcastSubscriptionId="${BBS_HAZELCAST_SUBSCRIPTION_ID}"
+
+    local file_temp="${BBS_HOME}/bitbucket.properties"
+    local file_target="${BBS_SHARED_HOME}/bitbucket.properties"
+
+    cat <<EOT >> "${file_temp}"
+jdbc.driver=com.microsoft.sqlserver.jdbc.SQLServerDriver
+jdbc.url=jdbc:sqlserver://${dbhost}.database.windows.net:1433;database=bitbucket-db;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+jdbc.user=${dbuser}
+jdbc.password=${dbpass}
+
+setup.license=${license}
+setup.displayName=Bitbucket
+setup.baseUrl=${baseUrl}
+setup.sysadmin.username=${adminUser}
+setup.sysadmin.password=${adminPass}
+setup.sysadmin.displayName=${adminName}
+setup.sysadmin.emailAddress=${adminEmail}
+
+hazelcast.port=${hazelcastPort}
+hazelcast.network.azure=true
+hazelcast.network.azure.cluster.id=${hazelcastClusterId}
+hazelcast.network.azure.group.name=${hazelcastGroupName}
+hazelcast.network.azure.subscription.id=${hazelcastSubscriptionId}
+EOT
+
+    chown "${BBS_USER}":"${BBS_GROUP}" "${file_temp}"
+    sudo -u "${BBS_USER}" mv -n "${file_temp}" "${file_target}"
+
+    log "Done generating 'bitbucket.properties' configuration file"
+}
+
+function bbs_configure {
+    log "Configuring Bitbucket Server application"
+
+    bbs_prepare_properties
+
+    log "Done configuring Bitbucket Server application"
+}
+
+function bbs_install {
+    log "Downloading and running Bitbucket Server installer"
+
+    bbs_download_installer
+    bbs_run_installer
+
+    log "Done downloading and running Bitbucket Server installer"
+}
+
 function install_common {
     ensure_prerequisites
     prepare_datadisks
@@ -229,6 +358,9 @@ function install_bbs {
     install_common
     bbs_install_nfs_client
     bbs_configure_shared_home
+
+    bbs_configure
+    bbs_install 
 
     log "Done configuring Bitbucket Server node!"
 }

@@ -119,6 +119,20 @@
                 "description": "Internal port that Bitbucket Server uses to accept HTTP connections"
             }
         },
+        "bbsHazelcastTag": {
+            "type": "string",
+            "defaultValue": "HAZELCAST",
+            "metadata": {
+                "description": "Hazelcast tag for nodes in Bitbucket Server cluster"
+            }
+        },
+        "bbsHazelcastPort": {
+            "type": "string",
+            "defaultValue": "5701",
+            "metadata": {
+                "description": "Internal port that Bitbucket Server uses for Hazelcast communication"
+            }
+        },
         "azureSqlTier": {
             "type": "string",
             "defaultValue": "P2",
@@ -242,6 +256,41 @@
             "metadata": {
                 "description": "VM type which used for forwarding HTTP traffic from Load Balancer to Application Gateway"
             }
+        },
+        "license": {
+            "type": "securestring",
+            "defaultValue": "AAABmw0ODAoPeNp9kV1P2zAUhu/9KyztrpJTF8oElSKtOIZVa5MuHxfb2IXrHqghsSPbKfTfzyRlbEPswjc+H3re53woO8AFtJhOMT2fTc5mpxN8vSrxCZ2co7RrNmCz28qBdTGZIGa0F9KnooFYgG1MDfrBfBK+Fs4poSNpGuS8cLtoqSRoB+Whhb6dZasVz9livnzb8Gdx3Vm5Ew4S4SF+piD0gtAp+s++Y4k/tcoe+rn16Uf6+YWWr4Sq38ctwO7BLpL48uv8C1myq5xcME5JNb3+fkQNOwUD7cHG3naAim7jpFWtV0YPP6PRKM1KcpXlZJ1nScXKRZaSquChEDMLAWqLNwfsd4CPuJhrabZgcWvNPUiPf+y8b29m4/Gdif5CHNfDBIFh4meEE4O18XirnLdq03kIm5XD3mDZOW+acK8IhdyBWQst37oZggU7ag+/I7Ccz0uekMtvz9jvGjsGCMoq/aDNo0YFT+PwyBmlKLN3Qisnejn8STRtDZiZphX6gHoVofDvdRN4Fcr3ou76rhdV6PVrYP0FXeTs4jAtAhUAhTqzG60AOVBVHPHdOoB1AaGgPLoCFE8e0Qqo9KwWUj8wUZbRtFt/mll4X02jr",
+            "metadata": {
+                "description": "Bitbucket Server license that is enable for use in Data Center mode"
+            }
+        },
+        "bitbucketAdminUsername": {
+            "type": "string",
+            "defaultValue": "ssh",
+            "metadata": {
+                "description": "Username for Bitbucket Server administrator user. By default it's the same as ssh user."
+            }
+        },
+        "bitbucketAdminPassword": {
+            "type": "securestring",
+            "defaultValue": "ssh",
+            "metadata": {
+                "description": "Password for Bitbucket Server administrator user. By default it's the same as ssh password."
+            }
+        },
+        "bitbucketAdminName": {
+            "type": "string",
+            "defaultValue": "John Doe",
+            "metadata": {
+                "description": "Bitbucket Server administorator full name."
+            }
+        },
+        "bitbucketAdminEmail": {
+            "type": "string",
+            "defaultValue": "admin@example.com",
+            "metadata": {
+                "description": "Bitbucket Server administrator email."
+            }
         }
     },
     "variables": {
@@ -272,11 +321,15 @@
                 "networkInterfaces": "2017-10-01",
                 "networkSecurityGroups": "2017-10-01",
                 "appGateways": "2017-10-01",
-                "loadBalancers": "2017-10-01"
+                "loadBalancers": "2017-10-01",
+                "routeTables": "2017-03-01"
             },
             "sql": {
                 "servers": "2015-05-01-preview",
                 "databases": "2014-04-01"
+            },
+            "authorization": {
+                "roleAssignments": "2017-05-01"
             }
         },
         "net": {
@@ -286,8 +339,16 @@
             },
             "ip": {
                 "name": "[concat(variables('namespace'), '-public-ip')]",
-                "addr": "10.0.2.99",
+                "addr": "10.0.4.99",
                 "dns": "[concat(variables('namespace'), variables('suffix'))]"
+            },
+            "routing": {
+                "table": {
+                    "name": "[concat(variables('namespace'), '-route-table')]"
+                },
+                "route": {
+                    "name": "[concat(variables('namespace'), '-route')]"
+                }
             },
             "nic": {
                 "jumpbox": {
@@ -315,9 +376,6 @@
                 },
                 "appgw": {
                     "name": "[concat(variables('namespace'), '-appgw-nsg')]"
-                },
-                "lb": {
-                    "name": "[concat(variables('namespace'), '-lb-nsg')]"
                 },
                 "bbs": {
                     "name": "[concat(variables('namespace'), '-bbs-nsg')]"
@@ -362,10 +420,6 @@
                     "name": "[concat(variables('namespace'), '-net-appgw')]",
                     "cidr": "[parameters('appgwNetCIDR')]"
                 },
-                "lb": {
-                    "name": "[concat(variables('namespace'), '-net-lb')]",
-                    "cidr": "[parameters('lbNetCIDR')]"
-                }, 
                 "bbs": {
                     "name": "[concat(variables('namespace'), '-net-bbs')]",
                     "cidr": "[parameters('bbsNetCIDR')]"
@@ -436,6 +490,9 @@
                     "offer": "UbuntuServer",
                     "sku": "16.04.0-LTS"
                 },
+                "hazelcastTag": {
+                    "[parameters('bbsHazelcastTag')]": "[parameters('bbsHazelcastPort')]"
+                },
                 "storage": {
                     "size": "[parameters('bbsDiskSize')]",
                     "type": "[parameters('bbsDiskStorageType')]",
@@ -462,6 +519,7 @@
         "sql": {
             "server": {
                 "name": "[concat(variables('namespace'), '-sql-server-', uniqueString(resourceGroup().id))]",
+                "user": "saadmin",
                 "password": "[if(equals(parameters('azureSqlPassword'),'generate'), concat('P', uniqueString(guid(variables('suffix'))), 'x', '!'), parameters('azureSqlPassword'))]"
             },
             "database": {
@@ -502,9 +560,63 @@
                     "WAF_Large": "WAF"
                 }
             }
-        }
+        },
+        "bitbucket": {
+            "license": "[parameters('license')]",
+            "admin": {
+                "username": "[if(equals(parameters('bitbucketAdminUsername'),'ssh'), parameters('adminUsername'), parameters('bitbucketAdminUsername'))]",
+                "password": "[if(equals(parameters('bitbucketAdminPassword'),'ssh'), parameters('adminPassword'), parameters('bitbucketAdminPassword'))]",
+                "fullName": "[parameters('bitbucketAdminName')]",
+                "email": "[parameters('bitbucketAdminEmail')]"
+            }
+        },
+        "env": {
+            "SQL": [
+                "[concat('SQL_HOST', '=\"', variables('sql').server.name, '\" ')]",
+                "[concat('SQL_USER', '=\"', variables('sql').server.user, '\" ')]",
+                "[concat('SQL_PASS', '=\"', variables('sql').server.password, '\" ')]"
+            ],
+            "BBS": [
+                "[concat('BBS_ADMIN', '=\"', variables('bitbucket').admin.username, '\" ')]",
+                "[concat('BBS_PASS', '=\"', variables('bitbucket').admin.password, '\" ')]",
+                "[concat('BBS_NAME', '=\"', variables('bitbucket').admin.fullName, '\" ')]",
+                "[concat('BBS_EMAIL', '=\"', variables('bitbucket').admin.email, '\" ')]",
+                "[concat('BBS_LICENSE', '=\"', variables('bitbucket').license, '\" ')]",
+                "[concat('BBS_HAZELCAST_PORT', '=\"', parameters('bbsHazelcastPort'), '\" ')]",
+                "[concat('BBS_HAZELCAST_CLUSTER_ID', '=\"', parameters('bbsHazelcastTag'), '\" ')]",
+                "[concat('BBS_HAZELCAST_GROUP_NAME', '=\"', resourceGroup().name, '\" ')]",
+                "[concat('BBS_HAZELCAST_SUBSCRIPTION_ID', '=\"', subscription().subscriptionId, '\" ')]"
+            ]
+        },
+        "data": {
+            "SQL": "[replace(replace(replace(replace(string(variables('env').SQL), '[\"', ''), '\"]', ''), '\",\"', ''), '\\\"', '\"')]",
+            "BBS": "[replace(replace(replace(replace(string(variables('env').BBS), '[\"', ''), '\"]', ''), '\",\"', ''), '\\\"', '\"')]"
+        },
+        "reader-role": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')]"
     },
     "resources": [
+        {
+            "type": "Microsoft.Network/routeTables",
+            "apiVersion": "[variables('api').network.routeTables]",
+            "name": "[variables('net').routing.table.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "resources": [
+                {
+                    "type": "routes",
+                    "apiVersion": "[variables('api').network.routeTables]",
+                    "name": "[variables('net').routing.route.name]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/routeTables', variables('net').routing.table.name)]"
+                    ],
+                    "properties": {
+                        "addressPrefix": "0.0.0.0/0",
+                        "nextHopType": "VirtualAppliance",
+                        "nextHopIpAddress": "[variables('net').ip.addr]"
+                    }
+                }
+            ]
+        },
         {
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "[variables('api').network.networkSecurityGroups]",
@@ -543,7 +655,7 @@
                             "destinationAddressPrefix": "VirtualNetwork",
                             "access": "Deny",
                             "direction": "Inbound",
-                            "priority": 101
+                            "priority": 1001
                         }
                     }
                 ]
@@ -598,47 +710,6 @@
             "apiVersion": "[variables('api').network.networkSecurityGroups]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
-            "name": "[variables('net').nsg.lb.name]",
-            "properties": {
-                "securityRules": [
-                    {
-                        "name": "allowInbound",
-                        "properties": {
-                            "description": "Allows incoming SSH traffic only from public subnet",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "7999",
-                            "sourceAddressPrefix": "[variables('net').subnets.public.cidr]",
-                            "destinationAddressPrefix": "[variables('net').subnets.lb.cidr]",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "priority": 100
-                        }
-                    },
-                    {
-                        "name": "allowOutbound",
-                        "properties": {
-                            "description": "Allows outgoing SSH traffic only from LB subnet towards BBS subnet",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "7999",
-                            "sourceAddressPrefix": "[variables('net').subnets.lb.cidr]",
-                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
-                            "access": "Allow",
-                            "direction": "Outbound",
-                            "priority": 101
-                        }
-                    },
-                    "[variables('net').nsg.rules.denyInbound]",
-                    "[variables('net').nsg.rules.denyOutbound]"
-                ]
-            }
-        },
-        {
-            "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "[variables('api').network.networkSecurityGroups]",
-            "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
             "name": "[variables('net').nsg.bbs.name]",
             "properties": {
                 "securityRules": [
@@ -659,11 +730,11 @@
                     {
                         "name": "allowLB",
                         "properties": {
-                            "description": "Allows incoming Git traffic from LB subnet",
+                            "description": "Allows incoming Git traffic from public subnet",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "7999",
-                            "sourceAddressPrefix": "[variables('net').subnets.lb.cidr]",
+                            "sourceAddressPrefix": "[variables('net').subnets.public.cidr]",
                             "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
                             "access": "Allow",
                             "direction": "Inbound",
@@ -677,7 +748,7 @@
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "22",
-                            "sourceAddressPrefix": "[variables('net').subnets.public.cidr]",
+                            "sourceAddressPrefix": "[variables('net').ip.addr]",
                             "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
                             "access": "Allow",
                             "direction": "Inbound",
@@ -703,6 +774,36 @@
                             "priority": 200
                         }
                     },
+                    {
+                        "name": "allowNAT",
+                        "properties": {
+                            "description": "Allows NAT traffic inside the subnet",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "destinationAddressPrefix": "Internet",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 300
+                        }
+                    },
+                    {
+                        "name": "allowHazelcast",
+                        "properties": {
+                            "description": "Allows Hazelcast traffic inside the subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRanges": [
+                                "[parameters('bbsHazelcastPort')]"
+                            ],
+                            "sourceAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 201
+                        }
+                    },
                     "[variables('net').nsg.rules.denyInbound]"
                 ]
             }
@@ -715,8 +816,8 @@
             "dependsOn": [
                 "[variables('net').nsg.public.name]",
                 "[variables('net').nsg.appgw.name]",
-                "[variables('net').nsg.lb.name]",
-                "[variables('net').nsg.bbs.name]"
+                "[variables('net').nsg.bbs.name]",
+                "[variables('net').routing.table.name]"
             ],
             "name": "[variables('net').vnet.name]",
             "properties": {
@@ -745,15 +846,6 @@
                         }
                     },
                     {
-                        "name": "[variables('net').subnets.lb.name]",
-                        "properties": {
-                            "addressPrefix": "[variables('net').subnets.lb.cidr]",
-                            "networkSecurityGroup": {
-                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.lb.name)]"
-                            }
-                        }
-                    },
-                    {
                         "name": "[variables('net').subnets.bbs.name]",
                         "properties": {
                             "addressPrefix": "[variables('net').subnets.bbs.cidr]",
@@ -764,7 +856,10 @@
                                 {
                                     "service": "Microsoft.Sql"
                                 }
-                            ]
+                            ],
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables', variables('net').routing.table.name)]"
+                            }
                         }
                     }
                 ]
@@ -804,8 +899,9 @@
                     {
                         "name": "[variables('net').lb.names.fendIpConfig]",
                         "properties": {
-                            "publicIPAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('net').ip.name)]"
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.public.name)]"
                             }
                         }
                     }
@@ -813,12 +909,6 @@
                 "backendAddressPools": [
                     {
                         "name": "[variables('net').lb.names.bendGit]"
-                    },
-                    {
-                        "name": "[variables('net').lb.names.bendSsh]"
-                    },
-                    {
-                        "name": "[variables('net').lb.names.bendHttp]"
                     }
                 ],
                 "loadBalancingRules": [
@@ -833,34 +923,6 @@
                             },
                             "frontendPort": 7999,
                             "backendPort": 7999,
-                            "protocol": "Tcp"
-                        }
-                    },
-                    {
-                        "name": "[variables('net').lb.names.ruleSsh]",
-                        "properties": {
-                            "frontendIPConfiguration": {
-                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/frontendIPConfigurations/', variables('net').lb.names.fendIpConfig)]"
-                            },
-                            "backendAddressPool": {
-                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendSsh)]"
-                            },
-                            "frontendPort": 22,
-                            "backendPort": 22,
-                            "protocol": "Tcp"
-                        }
-                    },
-                    {
-                        "name": "[variables('net').lb.names.ruleHttp]",
-                        "properties": {
-                            "frontendIPConfiguration": {
-                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/frontendIPConfigurations/', variables('net').lb.names.fendIpConfig)]"
-                            },
-                            "backendAddressPool": {
-                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendHttp)]"
-                            },
-                            "frontendPort": 80,
-                            "backendPort": 80,
                             "protocol": "Tcp"
                         }
                     }
@@ -886,11 +948,34 @@
                                 "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.public.name)]"
                             },
                             "privateIPAllocationMethod": "Dynamic",
-                            "loadBalancerBackendAddressPools": [
-                                {
-                                    "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendSsh)]"
-                                }
-                            ]
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('net').ip.name)]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "[variables('api').network.networkInterfaces]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nic.nat.name]",
+            "dependsOn": [
+                "[variables('net').vnet.name]",
+                "[variables('net').lb.name]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "[variables('net').nic.nat.ipConfig.name]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.bbs.name)]"
+                            },
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "[variables('net').ip.addr]"
                         }
                     }
                 ]
@@ -920,173 +1005,13 @@
             }
         },
         {
-            "type": "Microsoft.Network/networkInterfaces",
-            "apiVersion": "[variables('api').network.networkInterfaces]",
-            "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
-            "name": "[variables('net').nic.nat.name]",
-            "dependsOn": [
-                "[variables('net').vnet.name]",
-                "[variables('net').lb.name]"
-            ],
-            "properties": {
-                "ipConfigurations": [
-                    {
-                        "name": "[variables('net').nic.nat.ipConfig.name]",
-                        "properties": {
-                            "subnet": {
-                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.public.name)]"
-                            },
-                            "privateIPAllocationMethod": "Dynamic",
-                            "loadBalancerBackendAddressPools": [
-                                {
-                                    "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendHttp)]"
-                                }
-                            ]
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "[variables('api').compute.virtualMachines]",
-            "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
-            "dependsOn": [
-                "[variables('net').nic.jumpbox.name]"
-            ],
-            "name": "[variables('vm').jumpbox.name]",
-            "properties": {
-                "hardwareProfile": {
-                    "vmSize": "[variables('vm').jumpbox.size]"
-                },
-                "osProfile": {
-                    "computerName": "[variables('vm').jumpbox.hostname]",
-                    "adminUsername": "[parameters('adminUsername')]",
-                    "adminPassword": "[parameters('adminPassword')]",
-                    "linuxConfiguration": {
-                        "disablePasswordAuthentication": true,
-                        "ssh": {
-                            "publicKeys": [
-                                {
-                                    "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
-                                    "keyData": "[parameters('sshKey')]"
-                                }
-                            ]
-                        }
-                    }
-                },
-                "storageProfile": {
-                    "imageReference": {
-                        "publisher": "[variables('vm').jumpbox.image.publisher]",
-                        "offer": "[variables('vm').jumpbox.image.offer]",
-                        "sku": "[variables('vm').jumpbox.image.sku]",
-                        "version": "latest"
-                    },
-                    "osDisk": {
-                        "createOption": "FromImage"
-                    },
-                    "dataDisks": []
-                },
-                "networkProfile": {
-                    "networkInterfaces": [
-                        {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('net').nic.jumpbox.name)]"
-                        }
-                    ]
-                }
-            }
-        },
-        {
-            "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "[variables('api').compute.virtualMachines]",
-            "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
-            "dependsOn": [
-                "[variables('net').nic.nfs.name]"
-            ],
-            "name": "[variables('vm').nfs.name]",
-            "properties": {
-                "hardwareProfile": {
-                    "vmSize": "[variables('vm').nfs.size]"
-                },
-                "osProfile": {
-                    "computerName": "[variables('vm').nfs.hostname]",
-                    "adminUsername": "[parameters('adminUsername')]",
-                    "adminPassword": "[parameters('adminPassword')]",
-                    "linuxConfiguration": {
-                        "disablePasswordAuthentication": false,
-                        "ssh": {
-                            "publicKeys": [
-                                {
-                                    "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
-                                    "keyData": "[parameters('sshKey')]"
-                                }
-                            ]
-                        }
-                    }
-                },
-                "storageProfile": {
-                    "imageReference": {
-                        "publisher": "[variables('vm').nfs.image.publisher]",
-                        "offer": "[variables('vm').nfs.image.offer]",
-                        "sku": "[variables('vm').nfs.image.sku]",
-                        "version": "latest"
-                    },
-                    "osDisk": {
-                        "createOption": "FromImage"
-                    },
-                    "dataDisks": [
-                        {
-                            "lun": 0,
-                            "diskSizeGB": "[parameters('nfsDiskSize')]",
-                            "createOption": "Empty",
-                            "caching" : "None",
-                            "managedDisk": {
-                                "storageAccountType": "Premium_LRS"
-                            }
-                        }
-                    ]
-                },
-                "networkProfile": {
-                    "networkInterfaces": [
-                        {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('net').nic.nfs.name)]"
-                        }
-                    ]
-                }
-            },
-            "resources": [
-                {
-                    "type": "extensions",
-                    "apiVersion": "[variables('api').compute.vm.extensions]",
-                    "location": "[parameters('location')]",
-                    "dependsOn": [
-                        "[variables('vm').nfs.name]"
-                    ],
-                    "name": "script",
-                    "properties": {
-                        "publisher": "Microsoft.Azure.Extensions",
-                        "type": "CustomScript",
-                        "typeHandlerVersion": "2.0",
-                        "autoUpgradeMinorVersion": true,
-                        "settings": {
-                            "fileUris": "[variables('vm').bbs.scripts]",
-                            "commandToExecute": "bash install.sh nfs"
-                        }
-                    }
-                }
-            ]
-        },
-        {
             "type": "Microsoft.Sql/servers",
             "apiVersion": "[variables('api').sql.servers]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "name": "[variables('sql').server.name]",
             "properties": {
-                "administratorLogin": "saadmin",
+                "administratorLogin": "[variables('sql').server.user]",
                 "administratorLoginPassword": "[variables('sql').server.password]"
             },
             "resources": [
@@ -1119,15 +1044,14 @@
 
                 }
             ]
-        },   
+        },
         {
             "type": "Microsoft.Network/applicationGateways",
             "location": "[parameters('location')]",
             "apiVersion": "[variables('api').network.appGateways]",
             "tags": "[variables('tags')]",
             "dependsOn": [
-                "[variables('net').vnet.name]",
-                "[variables('net').lb.name]"
+                "[variables('net').vnet.name]"
             ],
             "name": "[variables('net').appGw.name]",
             "properties": {
@@ -1228,20 +1152,184 @@
             }
         },
         {
-            "type": "Microsoft.Compute/virtualMachineScaleSets",
-            "apiVersion": "[variables('api').compute.virtualMachineScaleSets]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "[variables('api').compute.virtualMachines]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
+                "[variables('net').nic.jumpbox.name]",
+                "[variables('net').nic.nat.name]",
+                "[variables('net').lb.name]",
+                "[variables('net').appGw.name]"
+            ],
+            "name": "[variables('vm').jumpbox.name]",
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('httpGatewaySize')]"
+                },
+                "osProfile": {
+                    "computerName": "[variables('vm').nat.hostname]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": true,
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                                    "keyData": "[parameters('sshKey')]"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": "[variables('image')]",
+                    "osDisk": {
+                        "createOption": "FromImage"
+                    },
+                    "dataDisks": []
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('net').nic.jumpbox.name)]",
+                            "properties": {
+                                "primary": true
+                            }
+                        },
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('net').nic.nat.name)]",
+                            "properties": {
+                                "primary": false
+                            }
+                        }
+                    ]
+                }
+            },
+            "resources": [
+                {
+                    "type": "extensions",
+                    "apiVersion": "[variables('api').compute.vm.extensions]",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[variables('vm').jumpbox.name]"
+                    ],
+                    "name": "script",
+                    "properties": {
+                        "publisher": "Microsoft.Azure.Extensions",
+                        "type": "CustomScript",
+                        "typeHandlerVersion": "2.0",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {
+                            "fileUris": "[variables('vm').nat.scripts]",
+                            "commandToExecute": "[concat('bash enable_nat.sh', ' ', reference(variables('net').appGw.name).frontendIPConfigurations[0].properties.privateIPAddress, ' ', reference(variables('net').lb.name).frontendIPConfigurations[0].properties.privateIPAddress)]"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "[variables('api').compute.virtualMachines]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[variables('net').nic.nfs.name]",
+                "[resourceId('Microsoft.Compute/virtualMachines/extensions', variables('vm').jumpbox.name, 'script')]"
+            ],
+            "name": "[variables('vm').nfs.name]",
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('vm').nfs.size]"
+                },
+                "osProfile": {
+                    "computerName": "[variables('vm').nfs.hostname]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false,
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                                    "keyData": "[parameters('sshKey')]"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[variables('vm').nfs.image.publisher]",
+                        "offer": "[variables('vm').nfs.image.offer]",
+                        "sku": "[variables('vm').nfs.image.sku]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "FromImage"
+                    },
+                    "dataDisks": [
+                        {
+                            "lun": 0,
+                            "diskSizeGB": "[parameters('nfsDiskSize')]",
+                            "createOption": "Empty",
+                            "caching" : "None",
+                            "managedDisk": {
+                                "storageAccountType": "Premium_LRS"
+                            }
+                        }
+                    ]
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('net').nic.nfs.name)]"
+                        }
+                    ]
+                }
+            },
+            "resources": [
+                {
+                    "type": "extensions",
+                    "apiVersion": "[variables('api').compute.vm.extensions]",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[variables('vm').nfs.name]"
+                    ],
+                    "name": "script",
+                    "properties": {
+                        "publisher": "Microsoft.Azure.Extensions",
+                        "type": "CustomScript",
+                        "typeHandlerVersion": "2.0",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {
+                            "fileUris": "[variables('vm').bbs.scripts]",
+                            "commandToExecute": "bash install.sh nfs"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "apiVersion": "[variables('api').compute.virtualMachineScaleSets]",
+            "location": "[parameters('location')]",
+            "tags": "[union(variables('tags'),variables('vm').bbs.hazelcastTag)]",
+            "dependsOn": [
                 "[variables('net').vnet.name]",
-                "[variables('net').appGw.name]",
+                "[variables('sql').database.name]",
                 "[variables('vm').nfs.name]",
-                "[variables('net').lb.name]"
+                "[variables('net').lb.name]",
+                "[resourceId('Microsoft.Compute/virtualMachines/extensions', variables('vm').jumpbox.name, 'script')]"
             ],
             "name": "[variables('vm').bbs.name]",
             "sku": {
                 "name": "[variables('vm').bbs.size]",
                 "capacity": "[variables('vm').bbs.count]"
+            },
+            "identity": {
+                "type": "SystemAssigned"
             },
             "properties": {
                 "upgradePolicy": {
@@ -1328,7 +1416,7 @@
                                     "autoUpgradeMinorVersion": true,
                                     "settings": {
                                         "fileUris": "[variables('vm').bbs.scripts]",
-                                        "commandToExecute": "[concat('NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' bash install.sh bbs')]"
+                                        "commandToExecute": "[concat(variables('data').SQL, variables('data').BBS, ' NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' bash install.sh bbs')]"
                                     }
                                 }
                             }
@@ -1338,84 +1426,23 @@
             }
         },
         {
-            "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "[variables('api').compute.virtualMachines]",
-            "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
-            "dependsOn": [
-                "[variables('net').nic.nat.name]",
-                "[variables('net').appGw.name]"
-            ],
-            "name": "[variables('vm').nat.name]",
-            "properties": {
-                "hardwareProfile": {
-                    "vmSize": "[parameters('httpGatewaySize')]"
-                },
-                "osProfile": {
-                    "computerName": "[variables('vm').nat.hostname]",
-                    "adminUsername": "[parameters('adminUsername')]",
-                    "adminPassword": "[parameters('adminPassword')]",
-                    "linuxConfiguration": {
-                        "disablePasswordAuthentication": true,
-                        "ssh": {
-                            "publicKeys": [
-                                {
-                                    "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
-                                    "keyData": "[parameters('sshKey')]"
-                                }
-                            ]
-                        }
-                    }
-                },
-                "storageProfile": {
-                    "imageReference": "[variables('image')]",
-                    "osDisk": {
-                        "createOption": "FromImage"
-                    },
-                    "dataDisks": []
-                },
-                "networkProfile": {
-                    "networkInterfaces": [
-                        {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('net').nic.nat.name)]",
-                            "properties": {
-                                "primary": true
-                            }
-                        }
-                    ]
-                }
-            },
-            "resources": [
-                {
-                    "type": "extensions",
-                    "apiVersion": "[variables('api').compute.vm.extensions]",
-                    "location": "[parameters('location')]",
-                    "dependsOn": [
-                        "[variables('vm').nat.name]"
-                    ],
-                    "name": "script",
-                    "properties": {
-                        "publisher": "Microsoft.Azure.Extensions",
-                        "type": "CustomScript",
-                        "typeHandlerVersion": "2.0",
-                        "autoUpgradeMinorVersion": true,
-                        "settings": {
-                            "fileUris": "[variables('vm').nat.scripts]",
-                            "commandToExecute": "[concat('bash enable_nat.sh', ' ', reference(variables('net').appGw.name).frontendIPConfigurations[0].properties.privateIPAddress)]"
-                        }
-                    }
-                }
-            ]
+          "type": "Microsoft.Authorization/roleAssignments",
+          "apiVersion": "[variables('api').authorization.roleAssignments]",
+          "dependsOn": [
+            "[variables('vm').bbs.name]"
+          ],
+          "name": "[guid(resourceGroup().id)]",
+          "properties": {
+            "roleDefinitionId": "[variables('reader-role')]",
+            "principalId": "[reference(concat(resourceId('Microsoft.Compute/virtualMachineScaleSets/', variables('vm').bbs.name),'/providers/Microsoft.ManagedIdentity/Identities/default'),'2015-08-31-PREVIEW').principalId]",
+            "scope": "[resourceGroup().id]"
+          }
         }
     ],
     "outputs": {
         "bitbucket": {
             "type": "string",
             "value": "[reference(variables('net').ip.name).dnsSettings.fqdn]"
-        },
-        "gateway": {
-            "type": "string",
-            "value": "[reference(variables('net').appGw.name).frontendIPConfigurations[0].properties.privateIPAddress]"
         },
         "jumpbox": {
             "type": "string",
@@ -1425,6 +1452,10 @@
             "type": "string",
             "value": "[reference(variables('net').nic.nat.name).ipConfigurations[0].properties.privateIPAddress]"
         },
+        "gateway": {
+            "type": "string",
+            "value": "[reference(variables('net').appGw.name).frontendIPConfigurations[0].properties.privateIPAddress]"
+        },
         "nfs": {
             "type": "string",
             "value": "[reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress]"
@@ -1432,6 +1463,10 @@
         "ssh": {
             "type": "string",
             "value": "[concat('ssh ', parameters('adminUsername'), '@', reference(variables('net').ip.name).dnsSettings.fqdn)]"
+        },
+        "cmd": {
+            "type": "string",
+            "value": "[concat(variables('data').SQL, ' NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' bash install.sh bbs')]"
         }
     }
 }
