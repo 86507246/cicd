@@ -287,6 +287,8 @@ function bbs_prepare_properties {
     local hazelcastGroupName="${BBS_HAZELCAST_GROUP_NAME}"
     local hazelcastSubscriptionId="${BBS_HAZELCAST_SUBSCRIPTION_ID}"
 
+    local esBaseUrl="${BBS_ES_BASE_URL}"
+
     local file_temp="${BBS_HOME}/bitbucket.properties"
     local file_target="${BBS_SHARED_HOME}/bitbucket.properties"
 
@@ -309,6 +311,8 @@ hazelcast.network.azure=true
 hazelcast.network.azure.cluster.id=${hazelcastClusterId}
 hazelcast.network.azure.group.name=${hazelcastGroupName}
 hazelcast.network.azure.subscription.id=${hazelcastSubscriptionId}
+
+plugin.search.elasticsearch.baseurl=${esBaseUrl}
 EOT
 
     chown "${BBS_USER}":"${BBS_GROUP}" "${file_temp}"
