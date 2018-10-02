@@ -1,0 +1,346 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "adminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Username for SSH access to Elasticsearch nodes."
+            }
+        },
+        "adminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Password for SSH access to Elasticsearch nodes."
+            }
+        },
+        "dataDiskSize": {
+            "type": "int",
+            "defaultValue": 32,
+            "metadata": {
+                "description": "Disk size of the Elasticsearch data nodes"
+            }
+        },
+        "dataNodeCount": {
+            "type": "int",
+            "defaultValue": 1,
+            "metadata": {
+                "description": "The number of Elasticsearch data nodes to be deployed."
+            }
+        },
+        "esTemplateBaseUrl" : {
+            "type": "string",
+            "metadata": {
+                "description": "The base URI where the official Elasticsearch artifacts are located."
+            },
+            "defaultValue": "https://raw.githubusercontent.com/elastic/azure-marketplace/master/src/"
+        },
+        "jumpboxIp": {
+            "type": "string",
+            "metadata": {
+                "description": "The jumpbox IP."
+            }
+        },
+        "lbIp": {
+            "type": "string",
+            "metadata": {
+                "description": "The Elasticsearch loadbalancer IP."
+            }
+        },
+        "location": {
+            "type": "string",
+            "metadata": {
+                "description": "Location where resources will be provisioned."
+            }
+        },
+        "namespace": {
+            "type": "string",
+            "metadata": {
+                "description": "The namespace prefix to be used for the Elasticsearch resources."
+            }
+        },
+        "netCIDR": {
+            "type": "string",
+            "metadata": {
+                "description": "The address space for the private subnet where Elasticsearch nodes are deployed."
+            }
+        },
+        "sshKey": {
+            "type": "string",
+            "metadata": {
+                "description": "SSH key to allow access to Elasticsearch nodes."
+            }
+        },
+        "tags": {
+            "type": "object",
+            "metadata": {
+                "description": "The tags for the Elasticsearch resources."
+            }
+        },
+        "version": {
+            "type": "string",
+            "defaultValue": "5.5.1",
+            "metadata": {
+                "description": "The Elasticsearch version."
+            }
+        },
+        "vmSizeDataNodes": {
+            "type": "string",
+            "defaultValue": "Standard_D4s_v3",
+            "metadata": {
+                "description": "Size of the Elasticsearch data nodes"
+            }
+        },
+        "vnetName": {
+            "type": "string",
+            "metadata": {
+                "description": "The virtual network name where Elasticsearch will be deployed."
+            }
+        }
+    },
+    "variables": {
+        "commonVmSettings": {
+            "credentials": {
+              "adminUsername": "[parameters('adminUsername')]",
+              "password": "[parameters('adminPassword')]",
+              "authenticationType": "sshPublicKey",
+              "sshPublicKey": "[parameters('sshKey')]"
+            },
+            "location": "[parameters('location')]",
+            "namespacePrefix": "[parameters('namespace')]",
+            "storageAccountName": "[concat('elastic', uniqueString(resourceGroup().id, deployment().name))]",
+            "subnet": "[variables('net').subnets.elasticsearch.name]",
+            "subnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), variables('net').subnets.elasticsearch.name)]"
+        },
+        "esSettings": {
+            "clusterName": "concat([parameters('namespace')], '-cluster')",
+            "heapSize": 0,
+            "httpCertBlob": "",
+            "httpCertPassword": "",
+            "httpCaCertBlob": "",
+            "httpCaCertPassword": "",
+            "installAdditionalPlugins": "",
+            "installPlugins": "No",
+            "securityAdminPwd": "",
+            "securityReadPwd": "",
+            "securityKibanaPwd": "",
+            "securityLogstashPwd": "",
+            "securityBootstrapPwd": "",
+            "samlMetadataUri": "",
+            "samlServiceProviderUri": "",
+            "transportCaCertBlob": "",
+            "transportCaCertPassword": "",
+            "transportCertPassword": "",
+            "version": "[parameters('version')]",
+            "yamlConfiguration": ""
+        },
+        "topologySettings": {
+            "dataLoadBalancerBackEndPools": [{
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers','es-internal-lb'),'/backendAddressPools/LBBE')]"
+            }],
+            "dataNodesAreMasterEligible": "Yes",
+            "dataNodeStorageSettings": {
+                "accountType": "Standard_LRS",
+                "diskSize": "[parameters('dataDiskSize')]",
+                "dataDisks": 1
+            },
+            "jumpbox": "No",
+            "kibana": "No",
+            "kibanaCertBlob": "",
+            "kibanaKeyBlob": "",
+            "kibanaKeyPassphrase": "",
+            "kibanaYaml": "",
+            "vmClientNodeCount": 0,
+            "vmDataNodeCount": "[parameters('dataNodeCount')]",
+            "vmDataNodeStorageAccountType": "Standard_LRS",
+            "vmHostNamePrefix": "[parameters('namespace')]",
+            "vmSizeDataNodes": "[parameters('vmSizeDataNodes')]",
+            "vmSizeKibana": "Standard_A6",
+            "vNetLoadBalancerIp": ""
+        },
+        "networkSettings": {
+            "https": "No",
+            "location": "[parameters('location')]",
+            "name": "[parameters('vNetName')]",
+            "resourceGroup": "[resourceGroup().name]",
+            "subnet": {
+                "addressPrefix": "[parameters('netCIDR')]",
+                "loadbalancerIp": "[parameters('lbIp')]",
+                "name": "[variables('net').subnets.elasticsearch.name]"
+            }
+        },
+        "net": {
+            "lb": {
+                "elasticsearch": {
+                    "name": "[concat(parameters('namespace'), '-loadbalancer')]"
+                }
+            },
+            "nsg" : {
+                "elasticsearch": {
+                    "name": "[concat(parameters('namespace'), '-nsg')]"
+                }
+            },
+            "subnets": {
+                "elasticsearch": {
+                    "name": "[concat(parameters('namespace'), '-net')]",
+                    "cidr": "[parameters('netCIDR')]"
+                }
+            }
+        },
+        "vm": {
+            "elasticsearch" : {
+                "name": "[concat(parameters('namespace'), '-virtual-machines')]"
+            }
+        }
+    },
+    "resources": [
+        {
+            "name": "[variables('net').nsg.elasticsearch.name]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2017-10-01",
+            "location": "[parameters('location')]",
+            "tags": "[parameters('tags')]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allowBBS",
+                        "properties": {
+                            "access": "Allow",
+                            "description": "Allows incoming traffic from BBS nodes",
+                            "direction": "Inbound",
+                            "protocol": "Tcp",
+                            "sourceAddressPrefix": "VirtualNetwork",
+                            "sourcePortRange": "*",
+                            "destinationAddressPrefix": "[variables('net').subnets.elasticsearch.cidr]",
+                            "destinationPortRanges": [
+                                "9200",
+                                "9300"
+                            ],
+                            "priority": 101
+                        }
+                    },
+                    {
+                        "name": "allowSSH",
+                        "properties": {
+                            "access": "Allow",
+                            "description": "Allows incoming SSH traffic from jumpbox to ES data nodes",
+                            "direction": "Inbound",
+                            "protocol": "Tcp",
+                            "sourceAddressPrefix": "[parameters('jumpboxIp')]",
+                            "sourcePortRange": "*",
+                            "destinationAddressPrefix": "[variables('net').subnets.elasticsearch.cidr]",
+                            "destinationPortRange": "22",
+                            "priority": 102
+                        }
+                    },
+                    {
+                        "name": "denyInbound",
+                        "properties": {
+                            "access": "Deny",
+                            "description": "Deny All",
+                            "direction": "Inbound",
+                            "protocol": "*",
+                            "sourceAddressPrefix": "*",
+                            "sourcePortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "destinationPortRange": "*",
+                            "priority": 1001
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name":"[concat(parameters('vnetName'), '/', variables('net').subnets.elasticsearch.name)]",
+            "type":"Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion":"2018-02-01",
+            "location": "[parameters('location')]",
+            "dependsOn":[
+                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.elasticsearch.name)]"
+            ],
+            "properties":{
+                "addressPrefix":"[variables('net').subnets.elasticsearch.cidr]",
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.elasticsearch.name)]"
+                }
+            }
+         },
+        {
+            "name": "[variables('net').lb.elasticsearch.name]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), variables('net').subnets.elasticsearch.name)]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('esTemplateBaseUrl'), 'loadbalancers/internal-lb-resources.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "applicationGatewaySettings" : {
+                        "value": {
+                        }
+                    },
+                    "elasticTags": {
+                        "value": "[parameters('tags')]"
+                    },
+                    "networkSettings": {
+                        "value": "[variables('networkSettings')]"
+                    }
+                }
+            }
+        },
+        {
+            "name": "[variables('vm').elasticsearch.name]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "dependsOn": [
+                "[variables('net').lb.elasticsearch.name]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('esTemplateBaseUrl'), 'settings/ubuntuSettings.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "templateBaseUrl": {
+                        "value": "[parameters('esTemplateBaseUrl')]"
+                    },
+                    "azureCloudStorageAccount": {
+                        "value": {
+                            "install": "No"
+                        }
+                    },
+                    "commonVmSettings": {
+                        "value": "[variables('commonVmSettings')]"
+                    },
+                    "esSettings": {
+                        "value": "[variables('esSettings')]"
+                    },
+                    "elasticTags": {
+                        "value": "[parameters('tags')]"
+                    },
+                    "kibanaIp": {
+                        "value": ""
+                    },
+                    "networkSettings": {
+                        "value": "[variables('networkSettings')]"
+                    },
+                    "sharedStorageAccount": {
+                        "value": {
+                            "name": "",
+                            "key": "",
+                            "suffix": ""
+                        }
+                    },
+                    "topologySettings": {
+                        "value": "[variables('topologySettings')]"
+                    }
+                }
+            }
+        }
+    ]
+}

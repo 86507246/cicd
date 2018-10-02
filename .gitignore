@@ -8,6 +8,6 @@ target
 .vscode
 .createDeployResult
 .deployment
-azuredeploy.parameters.local.json
+*.parameters.local.json
 .DS_Store
 npm-debug.log
