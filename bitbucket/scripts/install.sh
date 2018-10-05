@@ -277,6 +277,7 @@ function bbs_prepare_properties {
 
     local license="${BBS_LICENSE}"
     local baseUrl="${BBS_URL}"
+    local sshBaseUrl="${BBS_SSH_URL}"
     local adminUser="${BBS_ADMIN}"
     local adminPass="${BBS_PASS}"
     local adminName="${BBS_NAME}"
@@ -305,6 +306,8 @@ setup.sysadmin.username=${adminUser}
 setup.sysadmin.password=${adminPass}
 setup.sysadmin.displayName=${adminName}
 setup.sysadmin.emailAddress=${adminEmail}
+
+plugin.ssh.baseurl=${sshBaseUrl}
 
 hazelcast.port=${hazelcastPort}
 hazelcast.network.azure=true
