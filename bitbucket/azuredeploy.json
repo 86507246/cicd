@@ -365,10 +365,6 @@
                 "name": "[concat(variables('namespace'), '-vnet')]",
                 "cidr": "[parameters('vnetCIDR')]"
             },
-            "jumpBox": {
-                "publicIP": "[concat(variables('namespace'), '-jumpbox-public-ip')]",
-                "dns": "[concat(variables('namespace'), '-jumpbox-', variables('suffix'))]"
-            },
             "nic": {
                 "jumpbox": {
                     "name": "[concat(variables('namespace'), '-jumpbox-nic')]",
@@ -445,7 +441,6 @@
                     "interval": "[parameters('appGatewayProbeInterval')]",
                     "timeout": 10,
                     "unhealthyThreshold": 3
-
                 },
                 "tier": "[variables('lookup').appGw.sizeToTier[concat('Standard_', parameters('appGatewaySize'))]]",
                 "size": "[concat('Standard_', parameters('appGatewaySize'))]",
@@ -499,7 +494,7 @@
                 }
             },
             "bbs": {
-                "name": "[concat(variables('namespace'), 'bbs-nodes')]", 
+                "name": "[concat(variables('namespace'), 'bbs-nodes')]",
                 "size": "[parameters('bbsSize')]",
                 "count": "[parameters('bbsNodeCount')]",
                 "hostname": "[parameters('bbsNodePrefix')]",
@@ -509,7 +504,7 @@
                     "sku": "16.04.0-LTS"
                 },
                 "role": {
-                    "name": "[guid(resourceGroup().id)]"  
+                    "name": "[guid(resourceGroup().id)]"
                 },
                 "hazelcastTag": {
                     "[parameters('bbsHazelcastTag')]": "[parameters('bbsHazelcastPort')]"
@@ -875,7 +870,7 @@
                     "dataDiskSize": {
                         "value": "[variables('elasticsearch').dataDiskSize]"
                     },
-                    "esTemplateBaseUrl" : {
+                    "esTemplateBaseUrl": {
                         "value": "[variables('elasticsearch').templateBaseUrl]"
                     },
                     "jumpboxIp": {
@@ -908,22 +903,6 @@
                     "vnetName": {
                         "value": "[variables('net').vnet.name]"
                     }
-                }
-            }
-        },
-        {
-            "type": "Microsoft.Network/publicIPAddresses",
-            "apiVersion": "[variables('api').network.publicIPAddresses]",
-            "name": "[variables('net').jumpBox.publicIP]",
-            "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
-            "sku": {
-                "name": "Standard"
-            },
-            "properties": {
-                "publicIPAllocationMethod": "Static",
-                "dnsSettings": {
-                    "domainNameLabel": "[variables('net').jumpBox.dns]"
                 }
             }
         },
@@ -985,6 +964,9 @@
                 "backendAddressPools": [
                     {
                         "name": "[variables('net').lb.names.bendGit]"
+                    },
+                    {
+                        "name": "[variables('net').lb.names.bendSsh]"
                     }
                 ],
                 "loadBalancingRules": [
@@ -999,6 +981,20 @@
                             },
                             "frontendPort": 7999,
                             "backendPort": 7999,
+                            "protocol": "Tcp"
+                        }
+                    },
+                    {
+                        "name": "[variables('net').lb.names.ruleSsh]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/frontendIPConfigurations/', variables('net').lb.names.fendIpConfig)]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendSsh)]"
+                            },
+                            "frontendPort": 22,
+                            "backendPort": 22,
                             "protocol": "Tcp"
                         }
                     }
@@ -1023,9 +1019,11 @@
                             "subnet": {
                                 "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.public.name)]"
                             },
-                            "publicIPAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('net').jumpBox.publicIP)]"
-                            }
+                            "loadBalancerBackendAddressPools": [
+                                {
+                                    "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendSsh)]"
+                                }
+                            ]
                         }
                     }
                 ]
@@ -1090,7 +1088,6 @@
                         "virtualNetworkSubnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.bbs.name)]",
                         "ignoreMissingVnetServiceEndpoint": false
                     }
-
                 }
             ]
         },
@@ -1293,7 +1290,7 @@
                             "lun": 0,
                             "diskSizeGB": "[parameters('nfsDiskSize')]",
                             "createOption": "Empty",
-                            "caching" : "None",
+                            "caching": "None",
                             "managedDisk": {
                                 "storageAccountType": "Premium_LRS"
                             }
@@ -1386,7 +1383,7 @@
                                 "lun": 0,
                                 "diskSizeGB": "[variables('vm').bbs.storage.size]",
                                 "createOption": "Empty",
-                                "caching" : "[variables('vm').bbs.storage.caching]",
+                                "caching": "[variables('vm').bbs.storage.caching]",
                                 "managedDisk": {
                                     "storageAccountType": "[variables('vm').bbs.storage.type]"
                                 }
@@ -1469,11 +1466,11 @@
         },
         "ssh": {
             "type": "string",
-            "value": "[concat('ssh ', parameters('adminUsername'), '@', reference(variables('net').jumpBox.publicIP).dnsSettings.fqdn)]"
+            "value": "[concat('ssh ', parameters('adminUsername'), '@', reference(variables('net').lb.names.publicIP).dnsSettings.fqdn)]"
         },
         "jumpbox": {
             "type": "string",
-            "value": "[reference(variables('net').jumpBox.publicIP).dnsSettings.fqdn]"
+            "value": "[reference(variables('net').lb.names.publicIP).dnsSettings.fqdn]"
         },
         "nfs": {
             "type": "string",
