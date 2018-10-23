@@ -1,0 +1,226 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "baseUrl": {
+            "type": "string",
+            "metadata": {
+                "description": "Base URL for Marketplace",
+                "artifactsBaseUrl": ""
+            }
+        },
+        "provisioningStorageToken": {
+            "type": "securestring",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Scripts storage access token"
+            }
+        },
+        "cname": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "CNAME to use"
+            }
+        },
+        "jiraVmSize": {
+            "type": "string",
+            "defaultValue": "Standard_DS3_v2",
+            "metadata": {
+                "description": "The size of the virtual machine used for each JIRA node."
+            }
+        },
+        "natVmSize": {
+            "type": "string",
+            "defaultValue": "Standard_DS2_v2",
+            "metadata": {
+                "description": "The size of the virtual machine used for the NAT box."
+            }
+        },
+        "jumpboxSshKey": {
+            "type": "string",
+            "metadata": {
+                "description": "The public key for the jumpbox SSH user"
+            }
+        },
+        "nodeSshUser": {
+            "type": "string",
+            "defaultValue": "jiraadmin",
+            "metadata": {
+                "description": "The username used to SSH into each JIRA node from the jumpbox."
+            }
+        },
+        "nodeSshPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password used to SSH into each JIRA node from the jumpbox."
+            }
+        },
+        "dbUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Database username"
+            }
+        },
+        "dbPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Database password"
+            }
+        },
+        "userName": {
+            "type": "string",
+            "defaultValue": "admin"
+        },
+        "userCredential": {
+            "type": "securestring"
+        },
+        "userFullname": {
+            "type": "string",
+            "defaultValue": "Admin Admin"
+        },
+        "userEmail": {
+            "type": "string",
+            "defaultValue": "admin@example.com"
+        },
+        "applicationTitle": {
+            "type": "string",
+            "defaultValue": "Atlassian Jira"
+        },
+        "clusterSize": {
+            "type": "int",
+            "allowedValues": [
+                2,
+                3,
+                4,
+                5,
+                6
+            ],
+            "defaultValue": 2,
+            "metadata": {
+                "description": "The number of JIRA nodes in the cluster"
+            }
+        }
+    },
+    "variables": {
+        "vpcTemplate": {
+            "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-vpc.json')]"
+        },
+        "jiraTemplate": {
+            "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-jira.json')]"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "vpcTemplate",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('vpcTemplate').templateUrl]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "natVmSize": {
+                        "value": "[parameters('natVmSize')]"
+                    },
+                    "jumpboxSshKey": {
+                        "value": "[parameters('jumpboxSshKey')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "jiraTemplate",
+            "dependsOn": [
+                "vpcTemplate"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('jiraTemplate').templateUrl]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "baseUrl": {
+                        "value": "[parameters('baseUrl')]"
+                    },
+                    "provisioningStorageToken": {
+                        "value": "[parameters('provisioningStorageToken')]"
+                    },
+                    "clusterSize": {
+                        "value": "[parameters('clusterSize')]"
+                    },
+                    "jiraVmSize": {
+                        "value": "[parameters('jiraVmSize')]"
+                    },
+                    "dbUsername": {
+                        "value": "[parameters('dbUsername')]"
+                    },
+                    "dbPassword": {
+                        "value": "[parameters('dbPassword')]"
+                    },
+                    "applicationTitle": {
+                        "value": "[parameters('applicationTitle')]"
+                    },
+                    "nodeSshUser": {
+                        "value": "[parameters('nodeSshUser')]"
+                    },
+                    "nodeSshPassword": {
+                        "value": "[parameters('nodeSshPassword')]"
+                    },
+                    "cname": {
+                        "value": "[parameters('cname')]"
+                    },
+                    "userName": {
+                        "value": "[parameters('userName')]"
+                    },
+                    "userCredential": {
+                        "value": "[parameters('userCredential')]"
+                    },
+                    "userEmail": {
+                        "value": "[parameters('userEmail')]"
+                    },
+                    "userFullname": {
+                        "value": "[parameters('userFullname')]"
+                    },
+                    "vnetName": {
+                        "value": "[reference('vpcTemplate').outputs.vnetName.value]"
+                    },
+                    "appSubnetName": {
+                        "value": "[reference('vpcTemplate').outputs.appSubnetName.value]"
+                    },
+                    "natName": {
+                        "value": "[reference('vpcTemplate').outputs.natName.value]"
+                    },
+                    "natDns": {
+                        "value": "[reference('vpcTemplate').outputs.natDns.value]"
+                    },
+                    "natPublicEndpoint": {
+                        "value": "[reference('vpcTemplate').outputs.natPublicEndpoint.value]"
+                    },
+                    "natPublicIpAddress": {
+                        "value": "[reference('vpcTemplate').outputs.natPublicIpAddress.value]"
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "jiraUrl": {
+            "type": "string",
+            "value": "[reference('vpcTemplate').outputs.natPublicEndpoint.value]"
+        },
+        "sshUrl": {
+            "type": "string",
+            "value": "[reference('vpcTemplate').outputs.sshUri.value]"
+        },
+        "jdbcUrl": {
+            "type": "string",
+            "value": "[reference('jiraTemplate').outputs.jdbcUrl.value]"
+        }
+    }
+}

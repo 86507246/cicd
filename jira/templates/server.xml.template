@@ -12,6 +12,8 @@
   <Service name="Catalina">
 
     <Connector port="${server.app.port}"
+               relaxedPathChars='[]|'
+               relaxedQueryChars='[]|{}^&#x5c;&#x60;&quot;&lt;&gt;'
                maxThreads="150"
                minSpareThreads="25"
                connectionTimeout="20000"
