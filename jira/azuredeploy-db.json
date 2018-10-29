@@ -1,0 +1,122 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]"
+        },
+        "dbServerName": {
+            "type": "string",
+            "metadata": {
+                "description": "DB Server Name"
+            }
+        },
+        "dbUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Database username"
+            }
+        },
+        "dbPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Database password"
+            }
+        },
+        "clusterSize": {
+            "type": "int",
+            "allowedValues": [
+                2,
+                3,
+                4,
+                5,
+                6
+            ],
+            "defaultValue": 2,
+            "metadata": {
+                "description": "The number of JIRA nodes in the cluster"
+            }
+        }
+    },
+    "variables": {
+        "namespace": "jira",
+        "sql": {
+            "server": {
+                "name": "[parameters('dbServerName')]",
+                "username": "[parameters('dbUsername')]",
+                "password": "[parameters('dbPassword')]"
+            },
+            "database": {
+                "name": "[concat(variables('namespace'), 'sqldatabase')]",
+                "edition": "[variables('lookup').dbTierToDbEdition[variables('lookup').clusterSizeToDbTier[string(parameters('clusterSize'))]]]",
+                "collation": "SQL_Latin1_General_CP437_CI_AI",
+                "maxSizeBytes": "107374182400",
+                "schema": "jiraschema"
+            },
+            "tier": "[variables('lookup').clusterSizeToDbTier[string(parameters('clusterSize'))]]"
+        },
+        "lookup": {
+            "clusterSizeToDbTier": {
+                "1": "P2",
+                "2": "P2",
+                "3": "P2",
+                "4": "P4",
+                "5": "P4",
+                "6": "P4"
+            },
+            "dbTierToDbEdition": {
+                "P2": "Premium",
+                "P4": "Premium",
+                "P6": "Premium"
+            }
+        },
+        "tags": {
+            "vendor": "Atlassian",
+            "product": "JIRA",
+            "provider": "2F0AF47A-92C7-413A-9009-C3815BFF7AF6"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Sql/servers",
+            "apiVersion": "2015-05-01-preview",
+            "name": "[variables('sql').server.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "properties": {
+                "version": "12.0",
+                "administratorLogin": "[variables('sql').server.username]",
+                "administratorLoginPassword": "[variables('sql').server.password]"
+            },
+            "resources": [
+                {
+                    "type": "databases",
+                    "apiVersion": "2015-05-01-preview",
+                    "name": "[variables('sql').database.name]",
+                    "location": "[parameters('location')]",
+                    "tags": "[variables('tags')]",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', variables('sql').server.name)]"
+                    ],
+                    "properties": {
+                        "edition": "[variables('sql').database.edition]",
+                        "collation": "[variables('sql').database.collation]",
+                        "maxSizeBytes": "[variables('sql').database.maxSizeBytes]",
+                        "requestedServiceObjectiveName": "[variables('sql').tier]"
+                    }
+                }
+            ]
+        }
+    ],
+    "outputs": {
+        "serverName": {
+            "type": "string",
+            "value": "[reference(variables('sql').server.name).fullyQualifiedDomainName]"
+        },
+        "jdbcUrl": {
+            "type": "string",
+            "value": "[concat('jdbc:sqlserver://', reference(variables('sql').server.name).fullyQualifiedDomainName, ':1433;database=', variables('sql').database.name, ';user=', variables('sql').server.username, '@', variables('sql').server.name, ';password=', variables('sql').server.password)]"
+        }
+    }
+}

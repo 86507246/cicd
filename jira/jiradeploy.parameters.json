@@ -3,10 +3,10 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "baseUrl": {
-            "value": "https://jiradcresources.blob.core.windows.net/master/"
+            "value": "https://smontgomerysa.blob.core.windows.net/jiradeploy/"
         },
         "provisioningStorageToken": {
-            "value": "?sv=2017-04-17&si=public-access&sr=c&sig=P15kxinQOKEJruc4gxMmmKL3EpPZMg137i96w%2BKGB8E%3D"
+            "value": "?sv=2017-11-09&ss=bfqt&srt=sco&sp=rwdlacup&se=2028-10-24T23:00:00Z&st=2018-10-24T23:00:00Z&spr=https,http&sig=vGvcjMRxHZFlD69KxUytEkuWwG8ojUehkgdRupyLVME%3D"
         },
         "jiraVmSize": {
             "value": "Standard_DS3_v2"
@@ -17,8 +17,11 @@
         "clusterSize": {
             "value": 2
         },
+        "cname": {
+            "value": ""
+        },
         "jumpboxSshKey": {
-            "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCr5jPN1V0CTNhR5aFn2XlzQWPS5dKjPpeLK6+Wdla2FcNyOjKdfHuK8JPP7SdRZunDTI3REMtJbFDb8V37UokBRXC9Nwjbxm5gROypKzpr+Vtgu8YmULYcVJiuferLOPQ/oACJJMN2W6552eH9LjP6UcXVyflcufeo9mxXX/sppfrNY5a6LmK2MqOVRD2NXze9VSdRr/QhX0aikVagamoLQADUBpmedMDvX51yJs7VzXaexpIIqTPfrGzLlM9tpKQMsbj+qnAYArHSWLu6hSeE6l60sdekgmtZSN17eTYJHqSMlcFJJaxvp72VVzhrucJMQxURgA2gY2NlVQSGjq+t adam@lezajsk"
+            "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDzHL0anA/uLc70WunKBtY9TckYliFDB68jXsHb9z5os/8gcTacocaFzFlx/e6C2kJNeBh2IA1CZ5rInE6ice2B7dyuwP7JCSmZHk7ybMtRiE0SPy8yk0BwNnMTDctnStTG6VdLAm3tja7h6q84g/hlzyDQs4r66agKNdm4NOxoVxMsXK3OwLRfIrhPjEBiEHYuLg77LB60O9AKzKvJOe2SlMhfuX1+RTJys6SPhf88YTo9xBwu8eXaGYrUawpQtW8ik6PL3PdBT4wMx9JJCTd7w3EKvbf9qgnc4wDaoFC3fIUgmaVfIkCMx7yTAoL0P5TIDkX46IR7hWVjOU6eyKrz monty@monty-XPS-15-9570"
         },
         "dbUsername": {
             "value": "jira"
@@ -40,6 +43,9 @@
         },
         "applicationTitle": {
             "value": "Atlassian Jira"
+        },
+        "nodeSshUser": {
+            "value": "jiraadmin"
         },
         "nodeSshPassword": {
             "value": "JIRA@dmin"
