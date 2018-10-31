@@ -2,16 +2,21 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "location": {
+            "type": "string",
+            "defaultValue": "northeurope"
+        },
         "baseUrl": {
             "type": "string",
+            "defaultValue": "https://jiradcresources.blob.core.windows.net/master/",
             "metadata": {
                 "description": "Base URL for Marketplace",
                 "artifactsBaseUrl": ""
             }
         },
         "provisioningStorageToken": {
-            "type": "securestring",
-            "defaultValue": "",
+            "type": "string",
+            "defaultValue": "?sv=2017-04-17&si=public-access&sr=c&sig=P15kxinQOKEJruc4gxMmmKL3EpPZMg137i96w%2BKGB8E%3D",
             "metadata": {
                 "description": "Scripts storage access token"
             }
@@ -39,6 +44,7 @@
         },
         "jumpboxSshKey": {
             "type": "string",
+            "defaultValue": "",
             "metadata": {
                 "description": "The public key for the jumpbox SSH user"
             }
@@ -52,28 +58,33 @@
         },
         "nodeSshPassword": {
             "type": "securestring",
+            "defaultValue": "JIRA@dmin",
             "metadata": {
                 "description": "The password used to SSH into each JIRA node from the jumpbox."
             }
         },
         "dbUsername": {
             "type": "string",
+            "defaultValue": "jira",
             "metadata": {
                 "description": "Database username"
             }
         },
         "dbPassword": {
             "type": "securestring",
+            "defaultValue": ".JkvjxaD;K)LKA*7YpbLyWJLPmocWxrcn69",
             "metadata": {
                 "description": "Database password"
             }
         },
         "userName": {
             "type": "string",
-            "defaultValue": "admin"
+            "defaultValue": "admin",
+            "minLength": 5
         },
         "userCredential": {
-            "type": "securestring"
+            "type": "securestring",
+            "defaultValue": "admin"
         },
         "userFullname": {
             "type": "string",
@@ -99,7 +110,8 @@
             "defaultValue": 2,
             "metadata": {
                 "description": "The number of JIRA nodes in the cluster"
-            }
+            },
+            "minValue": 2
         }
     },
     "variables": {
@@ -113,15 +125,18 @@
     "resources": [
         {
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2015-01-01",
             "name": "vpcTemplate",
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[variables('vpcTemplate').templateUrl]",
+                    "uri": "[concat(variables('vpcTemplate').templateUrl, parameters('provisioningStorageToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
                     "natVmSize": {
                         "value": "[parameters('natVmSize')]"
                     },
@@ -133,7 +148,7 @@
         },
         {
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2015-01-01",
             "name": "jiraTemplate",
             "dependsOn": [
                 "vpcTemplate"
@@ -141,10 +156,13 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[variables('jiraTemplate').templateUrl]",
+                    "uri": "[concat(variables('jiraTemplate').templateUrl, parameters('provisioningStorageToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
                     "baseUrl": {
                         "value": "[parameters('baseUrl')]"
                     },
