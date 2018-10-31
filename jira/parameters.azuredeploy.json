@@ -8,47 +8,8 @@
         "provisioningStorageToken": {
             "value": "?sv=2017-11-09&ss=bfqt&srt=sco&sp=rwdlacup&se=2028-10-24T23:00:00Z&st=2018-10-24T23:00:00Z&spr=https,http&sig=vGvcjMRxHZFlD69KxUytEkuWwG8ojUehkgdRupyLVME%3D"
         },
-        "jiraVmSize": {
-            "value": "Standard_DS3_v2"
-        },
-        "natVmSize": {
-            "value": "Standard_DS2_v2"
-        },
-        "clusterSize": {
-            "value": 2
-        },
-        "cname": {
-            "value": ""
-        },
         "jumpboxSshKey": {
             "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDzHL0anA/uLc70WunKBtY9TckYliFDB68jXsHb9z5os/8gcTacocaFzFlx/e6C2kJNeBh2IA1CZ5rInE6ice2B7dyuwP7JCSmZHk7ybMtRiE0SPy8yk0BwNnMTDctnStTG6VdLAm3tja7h6q84g/hlzyDQs4r66agKNdm4NOxoVxMsXK3OwLRfIrhPjEBiEHYuLg77LB60O9AKzKvJOe2SlMhfuX1+RTJys6SPhf88YTo9xBwu8eXaGYrUawpQtW8ik6PL3PdBT4wMx9JJCTd7w3EKvbf9qgnc4wDaoFC3fIUgmaVfIkCMx7yTAoL0P5TIDkX46IR7hWVjOU6eyKrz monty@monty-XPS-15-9570"
-        },
-        "dbUsername": {
-            "value": "jira"
-        },
-        "dbPassword": {
-            "value": ".JkvjxaD;K)LKA*7YpbLyWJLPmocWxrcn69"
-        },
-        "userName": {
-            "value": "admin"
-        },
-        "userFullname": {
-            "value": "Admin Admin"
-        },
-        "userEmail": {
-            "value": "admin@example.com"
-        },
-        "userCredential": {
-            "value": "admin"
-        },
-        "applicationTitle": {
-            "value": "Atlassian Jira"
-        },
-        "nodeSshUser": {
-            "value": "jiraadmin"
-        },
-        "nodeSshPassword": {
-            "value": "JIRA@dmin"
         }
     }
 }

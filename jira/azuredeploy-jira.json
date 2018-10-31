@@ -10,7 +10,7 @@
             }
         },
         "provisioningStorageToken": {
-            "type": "securestring",
+            "type": "string",
             "defaultValue": "",
             "metadata": {
                 "description": "Scripts storage access token"
@@ -347,13 +347,13 @@
     },
     "resources": [
         {
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2015-01-01",
             "name": "dbTemplate",
             "type": "Microsoft.Resources/deployments",
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[variables('dbTemplate').templateUrl]",
+                    "uri": "[concat(variables('dbTemplate').templateUrl, parameters('provisioningStorageToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
