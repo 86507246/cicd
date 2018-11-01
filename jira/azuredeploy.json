@@ -214,12 +214,6 @@
                     "natName": {
                         "value": "[reference('vpcTemplate').outputs.natName.value]"
                     },
-                    "natDns": {
-                        "value": "[reference('vpcTemplate').outputs.natDns.value]"
-                    },
-                    "natPublicEndpoint": {
-                        "value": "[reference('vpcTemplate').outputs.natPublicEndpoint.value]"
-                    },
                     "natPublicIpAddress": {
                         "value": "[reference('vpcTemplate').outputs.natPublicIpAddress.value]"
                     }
@@ -228,7 +222,11 @@
         }
     ],
     "outputs": {
-        "jiraUrl": {
+        "appEndpoint": {
+            "type": "string",
+            "value": "[reference('jiraTemplate').outputs.jiraAppEndpoint.value]"
+        },
+        "bastionUrl": {
             "type": "string",
             "value": "[reference('vpcTemplate').outputs.natPublicEndpoint.value]"
         },

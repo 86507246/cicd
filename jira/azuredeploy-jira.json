@@ -113,12 +113,6 @@
         "natName": {
             "type": "string"
         },
-        "natDns": {
-            "type": "string"
-        },
-        "natPublicEndpoint": {
-            "type": "string"
-        },
         "natPublicIpAddress": {
             "type": "string"
         }
@@ -160,7 +154,6 @@
                 },
                 {
                     "name": "SERVER_PROXY_PORT",
-
                     "value": "80"
                 },
                 {
@@ -233,7 +226,7 @@
                 },
                 {
                     "name": "BASEURL",
-                    "value": "[parameters('natDns')]"
+                    "value": "[variables('applicationGateway').publicIpName]"
                 }
             ],
             "settings": [
@@ -299,6 +292,7 @@
         },
         "applicationGateway": {
             "name": "[concat(variables('namespace'), 'appgateway')]",
+            "publicIpName": "[concat(variables('namespace'), '-app-', uniqueString(resourceGroup().id))]",
             "frontend": {
                 "subnet": {
                     "name": "[concat(variables('namespace'), 'appgwsubnet')]",
@@ -306,7 +300,10 @@
                 },
                 "ipConfiguration": {
                     "name": "[concat(variables('namespace'), 'appgwfeipconfig')]",
-                    "address": "10.0.1.99"
+                    "private" : {
+                        "name": "[concat(variables('namespace'), 'appgwfeipconfig-private')]",
+                        "address": "10.0.1.99"
+                    }
                 },
                 "portConfiguration": {
                     "name": "[concat(variables('namespace'), 'appgwfeports')]",
@@ -412,7 +409,24 @@
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', parameters('natPublicEndpoint'), ' ', reference('dbTemplate').outputs.serverName.value, ' 2>&1 > ./jira.prepare.log')]"
+                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', reference(variables('applicationGateway').publicIpName).dnsSettings.fqdn, ' ', reference('dbTemplate').outputs.serverName.value, ' 2>&1 > ./jira.prepare.log')]"
+                }
+            }
+        },
+        {
+            "apiVersion": "2018-08-01",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[variables('applicationGateway').publicIpName]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Basic"
+            },
+            "zones": [],
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic",
+                "idleTimeoutInMinutes": 4,
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('applicationGateway').publicIpName]"
                 }
             }
         },
@@ -421,6 +435,10 @@
             "apiVersion": "2018-08-01",
             "name": "[variables('applicationGateway').name]",
             "location": "[parameters('location')]",
+            "zones": [],
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('applicationGateway').publicIpName)]"
+            ],
             "properties": {
                 "sku": {
                     "name": "[parameters('applicationGatewaySize')]",
@@ -441,7 +459,16 @@
                     {
                         "name": "[variables('applicationGateway').frontend.ipConfiguration.name]",
                         "properties": {
-                            "privateIPAddress": "[variables('applicationGateway').frontend.ipConfiguration.address]",
+                            "PublicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses/', variables('applicationGateway').publicIpName)]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "[variables('applicationGateway').frontend.ipConfiguration.private.name]",
+                        "type": "Microsoft.Network/applicationGateways/frontendIPConfigurations",
+                        "properties": {
+                            "privateIPAddress": "[variables('applicationGateway').frontend.ipConfiguration.private.address]",
                             "privateIPAllocationMethod": "Static",
                             "subnet": {
                                 "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '/subnets/', variables('applicationGateway').frontend.subnet.name)]"
@@ -691,6 +718,10 @@
         "jdbcUrl": {
             "type": "string",
             "value": "[reference('dbTemplate').outputs.jdbcUrl.value]"
+        },
+        "jiraAppEndpoint": {
+            "type": "string",
+            "value": "[reference(variables('applicationGateway').publicIpName).dnsSettings.fqdn]"
         }
     }
 }
