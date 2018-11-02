@@ -92,6 +92,22 @@
             "type": "string",
             "defaultValue": "Atlassian Jira"
         },
+        "applicationGatewayClusterSize": {
+            "type": "int",
+            "allowedValues": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+            ],
+            "defaultValue": 1,
+            "minValue": 1,
+            "metadata": {
+                "description": "The number of nodes for the App Gateway cluster"
+            }
+        },
         "applicationGatewaySize": {
             "type": "string",
             "allowedValues": [
@@ -110,10 +126,10 @@
         "appSubnetName": {
             "type": "string"
         },
-        "natName": {
+        "jumpboxName": {
             "type": "string"
         },
-        "natPublicIpAddress": {
+        "jumpboxPublicIpAddress": {
             "type": "string"
         }
     },
@@ -353,7 +369,7 @@
                         "value": "[parameters('location')]"
                     },
                     "applicationGatewayClusterSize": {
-                        "value": "[parameters('clusterSize')]"
+                        "value": "[parameters('applicationGatewayClusterSize')]"
                     },
                     "applicationGatewaySize": {
                         "value": "[parameters('applicationGatewaySize')]"
@@ -379,7 +395,7 @@
         {
             "type": "Microsoft.Compute/virtualMachines/extensions",
             "apiVersion": "2018-06-01",
-            "name": "[concat(parameters('natName'), '/prepare-install-script')]",
+            "name": "[concat(parameters('jumpboxName'), '/prepare-install-script')]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
@@ -581,8 +597,8 @@
                 "dbTemplate"
             ],
             "properties": {
-                "startIpAddress": "[parameters('natPublicIpAddress')]",
-                "endIpAddress": "[parameters('natPublicIpAddress')]"
+                "startIpAddress": "[parameters('jumpboxPublicIpAddress')]",
+                "endIpAddress": "[parameters('jumpboxPublicIpAddress')]"
             }
         }
     ],
