@@ -144,7 +144,7 @@
                         "name": "nfsDiskSize",
                         "type": "Microsoft.Common.DropDown",
                         "label": "Disk size",
-                        "toolTip": "Pick size of bitbucket home directory.",
+                        "toolTip": "Pick size of Bitbucket home directory.",
                         "defaultValue": "128",
                         "constraints": {
                             "allowedValues": [
@@ -243,7 +243,7 @@
                         "constraints": {
                             "required": true,
                             "regex": "^(?!admin$|administrator$|sa$|root$|dbmanager$|loginmanager$|dbo$|guest$|information_schema$|sys$|db_accessadmin$|db_backupoperator$|db_datareader$|db_datawriter$|db_ddladmin$|db_denydatareader$|db_denydatawriter$|db_owner$|db_securityadmin$|public$)[a-zA-Z][a-zA-Z0-9]{1,9}$",
-                            "validationMessage": "This username needs to be a SQL Identifier - it can't be a typical username like admin, adminstrator, sa, root, dbmanager, loginmanager, dbo, guest, or public. It also can't begin with numbers or symbols, and can't include whitespaces, unicode characters, or non-alphabetic characters."
+                            "validationMessage": "This username needs to be a SQL Identifier - it can't be a typical username like admin, adminstrator, sa, root, dbmanager, loginmanager, dbo, guest, or public. It can't begin with numbers or symbols, and can't include whitespaces, unicode characters, or non-alphabetic characters."
                         },
                         "visible": "[equals('no', steps('database').autogeneratePassword)]"
                     },
@@ -264,7 +264,7 @@
                     {
                         "name": "sqlTier",
                         "type": "Microsoft.Common.DropDown",
-                        "label": "Azure SQL Tier",
+                        "label": "Azure SQL tier",
                         "toolTip": "Pick the Azure SQL tier to run the database",
                         "defaultValue": "P2",
                         "constraints": {
@@ -388,9 +388,9 @@
                     },
                     {
                         "name": "esVMSize",
-                        "label": "Elasticsearch instace size",
+                        "label": "Elasticsearch instance size",
                         "type": "Microsoft.Compute.SizeSelector",
-                        "toolTip": "Pick the virtual machine size to use for Elasticsearch server.",
+                        "toolTip": "Pick the virtual machine size to use for the Elasticsearch server.",
                         "recommendedSizes": [
                             "Standard_E8-4s_v3",
                             "Standard_L4s",
@@ -423,7 +423,7 @@
                 "bladeTitle": "Jumpbox access",
                 "label": "Set up jumpbox SSH access",
                 "subLabel": {
-                    "preValidation": "Provide configuration for jumpbox SSH access",
+                    "preValidation": "Provide the configuration for jumpbox SSH access",
                     "postValidation": "Done"
                 },
                 "elements": [
