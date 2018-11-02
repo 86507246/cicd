@@ -408,6 +408,7 @@ function prepare_env {
     done
 
   echo "export STORAGE_KEY='${1}'" >> setenv.sh
+  echo "export BASEURL='${2}'" >> setenv.sh
 }
 
 function prepare_varfile {
@@ -662,7 +663,7 @@ function install_jira {
 }
 
 install_jq
-prepare_env $1
+prepare_env $1 $3
 source setenv.sh
 
 if [ "$2" == "prepare" ]; then

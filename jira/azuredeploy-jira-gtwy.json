@@ -1,0 +1,209 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]"
+        },
+        "applicationGatewayClusterSize": {
+            "type": "int",
+            "allowedValues": [
+                2,
+                3,
+                4,
+                5,
+                6
+            ],
+            "defaultValue": 2,
+            "metadata": {
+                "description": "The number of JIRA nodes in the cluster"
+            }
+        },
+        "applicationGatewaySize": {
+            "type": "string",
+            "allowedValues": [
+                "Standard_Small",
+                "Standard_Medium",
+                "Standard_Large"
+            ],
+            "defaultValue": "Standard_Medium",
+            "metadata": {
+                "description": "The application gateway size"
+            }
+        },
+        "vnetName": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "namespace": "jira",
+        "applicationGateway": {
+            "name": "[concat(variables('namespace'), 'appgateway')]",
+            "publicIpName": "[concat(variables('namespace'), '-app-', uniqueString(resourceGroup().id))]",
+            "frontend": {
+                "subnet": {
+                    "name": "[concat(variables('namespace'), 'appgwsubnet')]",
+                    "prefix": "10.0.1.0/24"
+                },
+                "ipConfiguration": {
+                    "name": "[concat(variables('namespace'), 'appgwfeipconfig')]",
+                    "private" : {
+                        "name": "[concat(variables('namespace'), 'appgwfeipconfig-private')]",
+                        "address": "10.0.1.99"
+                    }
+                },
+                "portConfiguration": {
+                    "name": "[concat(variables('namespace'), 'appgwfeports')]",
+                    "value": "80"
+                },
+                "httpListener": {
+                    "name": "[concat(variables('namespace'), 'appgwlistener')]"
+                }
+            },
+            "backend": {
+                "addressPool": {
+                    "name": "[concat(variables('namespace'), 'appgwaddrpool')]"
+                },
+                "httpConfiguration": {
+                    "name": "[concat(variables('namespace'), 'appgwhttpconfig')]"
+                },
+                "port": "8080"
+            }
+        }
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-08-01",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[variables('applicationGateway').publicIpName]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Basic"
+            },
+            "zones": [],
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic",
+                "idleTimeoutInMinutes": 4,
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('applicationGateway').publicIpName]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/applicationGateways",
+            "apiVersion": "2018-08-01",
+            "name": "[variables('applicationGateway').name]",
+            "location": "[parameters('location')]",
+            "zones": [],
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('applicationGateway').publicIpName)]"
+            ],
+            "properties": {
+                "sku": {
+                    "name": "[parameters('applicationGatewaySize')]",
+                    "tier": "Standard",
+                    "capacity": "[parameters('applicationGatewayClusterSize')]"
+                },
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "[concat(variables('namespace'), 'appgwipconfig')]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '/subnets/', variables('applicationGateway').frontend.subnet.name)]"
+                            }
+                        }
+                    }
+                ],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.ipConfiguration.name]",
+                        "properties": {
+                            "PublicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses/', variables('applicationGateway').publicIpName)]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "[variables('applicationGateway').frontend.ipConfiguration.private.name]",
+                        "type": "Microsoft.Network/applicationGateways/frontendIPConfigurations",
+                        "properties": {
+                            "privateIPAddress": "[variables('applicationGateway').frontend.ipConfiguration.private.address]",
+                            "privateIPAllocationMethod": "Static",
+                            "subnet": {
+                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '/subnets/', variables('applicationGateway').frontend.subnet.name)]"
+                            }
+                        }
+                    }
+                ],
+                "frontendPorts": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.portConfiguration.name]",
+                        "properties": {
+                            "Port": "[variables('applicationGateway').frontend.portConfiguration.value]"
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "[variables('applicationGateway').backend.addressPool.name]"
+                    }
+                ],
+                "backendHttpSettingsCollection": [
+                    {
+                        "name": "[variables('applicationGateway').backend.httpConfiguration.name]",
+                        "properties": {
+                            "Port": "[variables('applicationGateway').backend.port]",
+                            "Protocol": "Http",
+                            "CookieBasedAffinity": "Enabled"
+                        }
+                    }
+                ],
+                "httpListeners": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.httpListener.name]",
+                        "properties": {
+                            "FrontendIPConfiguration": {
+                                "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendIPConfigurations/', variables('applicationGateway').frontend.ipConfiguration.name)]"
+                            },
+                            "FrontendPort": {
+                                "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendPorts/', variables('applicationGateway').frontend.portConfiguration.name)]"
+                            },
+                            "Protocol": "Http",
+                            "SslCertificate": null
+                        }
+                    }
+                ],
+                "requestRoutingRules": [
+                    {
+                        "Name": "[concat(variables('namespace'), 'appgwroutes')]",
+                        "properties": {
+                            "RuleType": "Basic",
+                            "httpListener": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/httpListeners/', variables('applicationGateway').frontend.httpListener.name)]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
+                            },
+                            "backendHttpSettings": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendHttpSettingsCollection/', variables('applicationGateway').backend.httpConfiguration.name)]"
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "outputs": {
+        "gtwyIpEndpoint": {
+            "type": "string",
+            "value": "[reference(variables('applicationGateway').publicIpName).dnsSettings.fqdn]"
+        },
+        "gtwyName": {
+            "type": "string", "value": "[variables('applicationGateway').name]"
+        },
+        "gtwyAddressPoolName": {
+            "type": "string", "value": "[variables('applicationGateway').backend.addressPool.name]"
+        }
+    }
+}
