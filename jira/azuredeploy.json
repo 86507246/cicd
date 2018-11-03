@@ -35,11 +35,11 @@
                 "description": "The size of the virtual machine used for each JIRA node."
             }
         },
-        "natVmSize": {
+        "jumpboxVmSize": {
             "type": "string",
-            "defaultValue": "Standard_DS2_v2",
+            "defaultValue": "Standard_B1s",
             "metadata": {
-                "description": "The size of the virtual machine used for the NAT box."
+                "description": "The size of the virtual machine used for the jumpbox box."
             }
         },
         "jumpboxSshKey": {
@@ -137,8 +137,8 @@
                     "location": {
                         "value": "[parameters('location')]"
                     },
-                    "natVmSize": {
-                        "value": "[parameters('natVmSize')]"
+                    "jumpboxVmSize": {
+                        "value": "[parameters('jumpboxVmSize')]"
                     },
                     "jumpboxSshKey": {
                         "value": "[parameters('jumpboxSshKey')]"
@@ -211,26 +211,24 @@
                     "appSubnetName": {
                         "value": "[reference('vpcTemplate').outputs.appSubnetName.value]"
                     },
-                    "natName": {
-                        "value": "[reference('vpcTemplate').outputs.natName.value]"
+                    "jumpboxName": {
+                        "value": "[reference('vpcTemplate').outputs.jumpboxName.value]"
                     },
-                    "natDns": {
-                        "value": "[reference('vpcTemplate').outputs.natDns.value]"
-                    },
-                    "natPublicEndpoint": {
-                        "value": "[reference('vpcTemplate').outputs.natPublicEndpoint.value]"
-                    },
-                    "natPublicIpAddress": {
-                        "value": "[reference('vpcTemplate').outputs.natPublicIpAddress.value]"
+                    "jumpboxPublicIpAddress": {
+                        "value": "[reference('vpcTemplate').outputs.jumpboxPublicIpAddress.value]"
                     }
                 }
             }
         }
     ],
     "outputs": {
-        "jiraUrl": {
+        "appEndpoint": {
             "type": "string",
-            "value": "[reference('vpcTemplate').outputs.natPublicEndpoint.value]"
+            "value": "[reference('jiraTemplate').outputs.jiraAppEndpoint.value]"
+        },
+        "bastionUrl": {
+            "type": "string",
+            "value": "[reference('vpcTemplate').outputs.jumpboxPublicEndpoint.value]"
         },
         "sshUrl": {
             "type": "string",

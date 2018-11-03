@@ -92,6 +92,22 @@
             "type": "string",
             "defaultValue": "Atlassian Jira"
         },
+        "applicationGatewayClusterSize": {
+            "type": "int",
+            "allowedValues": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+            ],
+            "defaultValue": 1,
+            "minValue": 1,
+            "metadata": {
+                "description": "The number of nodes for the App Gateway cluster"
+            }
+        },
         "applicationGatewaySize": {
             "type": "string",
             "allowedValues": [
@@ -110,16 +126,10 @@
         "appSubnetName": {
             "type": "string"
         },
-        "natName": {
+        "jumpboxName": {
             "type": "string"
         },
-        "natDns": {
-            "type": "string"
-        },
-        "natPublicEndpoint": {
-            "type": "string"
-        },
-        "natPublicIpAddress": {
+        "jumpboxPublicIpAddress": {
             "type": "string"
         }
     },
@@ -128,6 +138,9 @@
         "namespace": "jira",
         "dbTemplate": {
             "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-db.json')]"
+        },
+        "appGtwyTemplate": {
+            "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-jira-gtwy.json')]"
         },
         "tags": {
             "vendor": "Atlassian",
@@ -160,7 +173,6 @@
                 },
                 {
                     "name": "SERVER_PROXY_PORT",
-
                     "value": "80"
                 },
                 {
@@ -230,10 +242,6 @@
                 {
                     "name": "APPLICATION_TITLE",
                     "value": "[parameters('applicationTitle')]"
-                },
-                {
-                    "name": "BASEURL",
-                    "value": "[parameters('natDns')]"
                 }
             ],
             "settings": [
@@ -297,35 +305,6 @@
             },
             "license": "AAAB8A0ODAoPeNp9Ul1vmzAUfedXWNrLFgmSknaVIiEtA2/L1EAEZB9a9+CYm8QtsS3btMt+/Yyh6gddEDyY63PuueeeN9+hQgVIFF6iSTg7n87OL9DnZYnCydmlt1MAfC+kBBVcMQpcA66YYYJHOC1xvsoXBfbS5rABlW3XGpSOwgsvFtwQalJygEg3UgplPhBTE60Z4QEVB++GKRIMcKtG0T3RkBADUSvAn5zZ1+tbl0cJjjPOlkucx4v51UMJ/5FMHR1uNZ2+//IgAS8Jq09pkEpUDTVBe/C12Jp7oiCwSHYHkVENnLpm+5EYuAHVXS2ajaaKSWeQ+/OKga9N4Xr83+DRaJRmpf8py/1VniXruFxkqb8usC1EsQI7doU2R2T2gHoWhDkVFShkld8ANejX3hh5PRuPdyJ45sO47hA+dIjfAUoE4sKgimmj2KYxYJmZRkYg2mgjDnZdgWedtZNzwunQfasrzvG8xIn/8WcrkoA6iBr4rXixhF7uIonW/JaLe37K70Fg3N3BFnAa2c//4Z5TfIUhqoVtSa3By9SOcKaJc7+ypD51rD752yjwnM+29DKcvX3frKQWGD7buSOQiuk+TAk8BuTrIp+joteC3rZjoG6Od9czhO9I3biG3QSDSJ6I01MFT3GPnN35Hw9baBMwLAIUarbD2ZcwPRpegxJGdSMJtiQjn/QCFGulFcz4pDzNWDZGR6RTwSNU/ARaX02nf"
         },
-        "applicationGateway": {
-            "name": "[concat(variables('namespace'), 'appgateway')]",
-            "frontend": {
-                "subnet": {
-                    "name": "[concat(variables('namespace'), 'appgwsubnet')]",
-                    "prefix": "10.0.1.0/24"
-                },
-                "ipConfiguration": {
-                    "name": "[concat(variables('namespace'), 'appgwfeipconfig')]",
-                    "address": "10.0.1.99"
-                },
-                "portConfiguration": {
-                    "name": "[concat(variables('namespace'), 'appgwfeports')]",
-                    "value": "80"
-                },
-                "httpListener": {
-                    "name": "[concat(variables('namespace'), 'appgwlistener')]"
-                }
-            },
-            "backend": {
-                "addressPool": {
-                    "name": "[concat(variables('namespace'), 'appgwaddrpool')]"
-                },
-                "httpConfiguration": {
-                    "name": "[concat(variables('namespace'), 'appgwhttpconfig')]"
-                },
-                "port": "8080"
-            }
-        },
         "data": {
             "storage": "[concat(' STORAGE_ATL_ENV_DATA=\"', base64(string(variables('env').storage)), '\" ')]",
             "server": "[concat(' SERVER_ATL_ENV_DATA=\"', base64(string(variables('env').server)), '\" ')]",
@@ -376,6 +355,32 @@
             }
         },
         {
+            "apiVersion": "2015-01-01",
+            "name": "appGtwyTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('appGtwyTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "applicationGatewayClusterSize": {
+                        "value": "[parameters('applicationGatewayClusterSize')]"
+                    },
+                    "applicationGatewaySize": {
+                        "value": "[parameters('applicationGatewaySize')]"
+                    },
+                    "vnetName": {
+                        "value": "[parameters('vnetName')]"
+                    }
+                }
+            }
+        },
+        {
             "type": "Microsoft.Storage/storageAccounts",
             "apiVersion": "2018-02-01",
             "name": "[variables('jira').storage.name]",
@@ -390,7 +395,7 @@
         {
             "type": "Microsoft.Compute/virtualMachines/extensions",
             "apiVersion": "2018-06-01",
-            "name": "[concat(parameters('natName'), '/prepare-install-script')]",
+            "name": "[concat(parameters('jumpboxName'), '/prepare-install-script')]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
@@ -412,98 +417,8 @@
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', parameters('natPublicEndpoint'), ' ', reference('dbTemplate').outputs.serverName.value, ' 2>&1 > ./jira.prepare.log')]"
+                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value, ' ', reference('dbTemplate').outputs.serverName.value, ' 2>&1 > ./jira.prepare.log')]"
                 }
-            }
-        },
-        {
-            "type": "Microsoft.Network/applicationGateways",
-            "apiVersion": "2018-08-01",
-            "name": "[variables('applicationGateway').name]",
-            "location": "[parameters('location')]",
-            "properties": {
-                "sku": {
-                    "name": "[parameters('applicationGatewaySize')]",
-                    "tier": "Standard",
-                    "capacity": "[parameters('clusterSize')]"
-                },
-                "gatewayIPConfigurations": [
-                    {
-                        "name": "[concat(variables('namespace'), 'appgwipconfig')]",
-                        "properties": {
-                            "subnet": {
-                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '/subnets/', variables('applicationGateway').frontend.subnet.name)]"
-                            }
-                        }
-                    }
-                ],
-                "frontendIPConfigurations": [
-                    {
-                        "name": "[variables('applicationGateway').frontend.ipConfiguration.name]",
-                        "properties": {
-                            "privateIPAddress": "[variables('applicationGateway').frontend.ipConfiguration.address]",
-                            "privateIPAllocationMethod": "Static",
-                            "subnet": {
-                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '/subnets/', variables('applicationGateway').frontend.subnet.name)]"
-                            }
-                        }
-                    }
-                ],
-                "frontendPorts": [
-                    {
-                        "name": "[variables('applicationGateway').frontend.portConfiguration.name]",
-                        "properties": {
-                            "Port": "[variables('applicationGateway').frontend.portConfiguration.value]"
-                        }
-                    }
-                ],
-                "backendAddressPools": [
-                    {
-                        "name": "[variables('applicationGateway').backend.addressPool.name]"
-                    }
-                ],
-                "backendHttpSettingsCollection": [
-                    {
-                        "name": "[variables('applicationGateway').backend.httpConfiguration.name]",
-                        "properties": {
-                            "Port": "[variables('applicationGateway').backend.port]",
-                            "Protocol": "Http",
-                            "CookieBasedAffinity": "Enabled"
-                        }
-                    }
-                ],
-                "httpListeners": [
-                    {
-                        "name": "[variables('applicationGateway').frontend.httpListener.name]",
-                        "properties": {
-                            "FrontendIPConfiguration": {
-                                "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendIPConfigurations/', variables('applicationGateway').frontend.ipConfiguration.name)]"
-                            },
-                            "FrontendPort": {
-                                "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendPorts/', variables('applicationGateway').frontend.portConfiguration.name)]"
-                            },
-                            "Protocol": "Http",
-                            "SslCertificate": null
-                        }
-                    }
-                ],
-                "requestRoutingRules": [
-                    {
-                        "Name": "[concat(variables('namespace'), 'appgwroutes')]",
-                        "properties": {
-                            "RuleType": "Basic",
-                            "httpListener": {
-                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/httpListeners/', variables('applicationGateway').frontend.httpListener.name)]"
-                            },
-                            "backendAddressPool": {
-                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
-                            },
-                            "backendHttpSettings": {
-                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendHttpSettingsCollection/', variables('applicationGateway').backend.httpConfiguration.name)]"
-                            }
-                        }
-                    }
-                ]
             }
         },
         {
@@ -512,7 +427,7 @@
             "location": "[parameters('location')]",
             "apiVersion": "2018-06-01",
             "dependsOn": [
-                "[concat('Microsoft.Network/applicationGateways/', variables('applicationGateway').name)]"
+                "appGtwyTemplate"
             ],
             "sku": {
                 "name": "[variables('jira').cluster.vm.size]",
@@ -638,7 +553,7 @@
                                                 },
                                                 "ApplicationGatewayBackendAddressPools": [
                                                     {
-                                                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
+                                                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', reference('appGtwyTemplate').outputs.gtwyName.value), '/backendAddressPools/', reference('appGtwyTemplate').outputs.gtwyAddressPoolName.value)]"
                                                     }
                                                 ]
                                             }
@@ -682,8 +597,8 @@
                 "dbTemplate"
             ],
             "properties": {
-                "startIpAddress": "[parameters('natPublicIpAddress')]",
-                "endIpAddress": "[parameters('natPublicIpAddress')]"
+                "startIpAddress": "[parameters('jumpboxPublicIpAddress')]",
+                "endIpAddress": "[parameters('jumpboxPublicIpAddress')]"
             }
         }
     ],
@@ -691,6 +606,10 @@
         "jdbcUrl": {
             "type": "string",
             "value": "[reference('dbTemplate').outputs.jdbcUrl.value]"
+        },
+        "jiraAppEndpoint": {
+            "type": "string",
+            "value": "[reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value]"
         }
     }
 }
