@@ -99,12 +99,33 @@ function nfs_bind_directory {
     log "Bound [directory=${NFS_DISK_MOUNT}] to [directory=${NFS_SHARED_HOME}]"
 }
 
+function nfs_create_installer_dir {
+    log "Creating NFS installer directory:${NFS_INSTALLER_DIR}"
+
+    mkdir -p "${NFS_INSTALLER_DIR}"
+
+    log "Done creating NFS installer directory:${NFS_INSTALLER_DIR}!"
+}
+
 function nfs_create_shared_home {
     log "Creating NFS shard home [directory=${NFS_SHARED_HOME}]"
 
     mkdir -p "${NFS_SHARED_HOME}"
 
     log "Done creating NFS shared home  [directory=${NFS_SHARED_HOME}]!"
+}
+
+function nfs_prepare_installer_dir {
+    log "Preparing installer directory"
+
+    nfs_create_installer_dir
+
+    log "Updating [owner=${BBS_USER}":"${BBS_GROUP}] for [directory=${NFS_INSTALLER_DIR}]"
+    chown "${BBS_USER}":"${BBS_GROUP}" "${NFS_INSTALLER_DIR}"
+
+    log "Installer directory is ready!"
+
+    bbs_download_installer
 }
 
 function nfs_prepare_shared_home {
@@ -135,6 +156,7 @@ function nfs_configure_exports {
 #
 
 ${NFS_SHARED_HOME} *(rw,subtree_check,root_squash)
+${NFS_INSTALLER_DIR} *(rw,subtree_check,root_squash)
 EOT
 }
 
@@ -158,6 +180,15 @@ function bbs_install_nfs_client {
     log "Done installing NFS client"
 }
 
+function bbs_create_installer_dir {
+    log "Creating Bitbucket Server installer directory:${NFS_INSTALLER_DIR}"
+
+    mkdir -p "${NFS_INSTALLER_DIR}"
+    chown "${BBS_USER}":"${BBS_GROUP}" "${NFS_INSTALLER_DIR}"
+
+    log "Done creating Bitbucket Server installer directory:${NFS_INSTALLER_DIR}!"
+}
+
 function bbs_create_shared_home {
     log "Creating Bitbucket Server shared home [directory=${BBS_SHARED_HOME}]"
 
@@ -165,6 +196,18 @@ function bbs_create_shared_home {
     chown "${BBS_USER}":"${BBS_GROUP}" "${BBS_SHARED_HOME}"
 
     log "Done creating Bitbucket Server shared home [directory=${BBS_SHARED_HOME}]!"
+}
+
+function bbs_mount_installer_dir {
+    local msg_header="Mounting BitBucket Server installer directory"
+    local msg_source="[server=${BBS_NFS_SERVER_IP}, directory=${NFS_INSTALLER_DIR}]"
+    local msg_target="[directory=${NFS_INSTALLER_DIR}]"
+    local msg_opts="[options=${BBS_SHARED_HOME_MOUNT_OPTS}]"
+    log "${msg_header} ${msg_source} to ${msg_target} with ${msg_opts}"
+
+    mount -t nfs "${BBS_NFS_SERVER_IP}":"${NFS_INSTALLER_DIR}" -o "${BBS_SHARED_HOME_MOUNT_OPTS}" "${NFS_INSTALLER_DIR}"
+
+    log "Done mounting BitBucket Server installer directory [server=${BBS_NFS_SERVER_IP}, directory=${NFS_INSTALLER_DIR}] to [directory=${NFS_INSTALLER_DIR}]!"
 }
 
 function bbs_mount_shared_home {
@@ -179,7 +222,23 @@ function bbs_mount_shared_home {
     log "Done mounting BitBucket Server shared home [server=${BBS_NFS_SERVER_IP}, directory=${NFS_SHARED_HOME}] to [directory=${BBS_SHARED_HOME}]!"
 }
 
-function bbs_update_fstab {
+function bbs_update_fstab_installer_dir {
+    log "Updating /etc/fstab with installer directory mount:"
+    log "    from [server=${BBS_NFS_SERVER_IP}, directory=${NFS_INSTALLER_DIR}]"
+    log "    to [directory=${NFS_INSTALLER_DIR}]"
+    log "    with [options=${BBS_SHARED_HOME_MOUNT_OPTS}]"
+
+    local source="${BBS_NFS_SERVER_IP}:${NFS_INSTALLER_DIR}"
+    local target="${NFS_INSTALLER_DIR}"
+    local opts="${BBS_SHARED_HOME_MOUNT_OPTS}"
+    local type="nfs"
+
+    printf "\n${source}\t${target}\t${type}\t${opts}\t0 0" >> /etc/fstab
+
+    log "Done updating /etc/fstab for installer directory!"
+}
+
+function bbs_update_fstab_shared_home {
     log "Updating /etc/fstab with shared home mount:"
     log "    from [server=${BBS_NFS_SERVER_IP}, directory=${NFS_SHARED_HOME}]"
     log "    to [directory=${BBS_SHARED_HOME}]"
@@ -192,7 +251,17 @@ function bbs_update_fstab {
 
     printf "\n${source}\t${target}\t${type}\t${opts}\t0 0" >> /etc/fstab
 
-    log "Done updating /etc/fstab!"
+    log "Done updating /etc/fstab for shared home!"
+}
+
+function bbs_configure_installer_dir {
+    log "Configuring Bitbucket Server installer directory:${BBS_SHARED_HOME}"
+
+    bbs_create_installer_dir
+    bbs_mount_installer_dir
+    bbs_update_fstab_installer_dir
+
+    log "Done configuring Bitbucket Server installer directory:${BBS_SHARED_HOME}!"
 }
 
 function bbs_configure_shared_home {
@@ -200,7 +269,7 @@ function bbs_configure_shared_home {
 
     bbs_create_shared_home
     bbs_mount_shared_home
-    bbs_update_fstab
+    bbs_update_fstab_shared_home
 
     log "Done configuring Bitbucket Server shared home [directory=${BBS_SHARED_HOME}]!"
 }
@@ -213,7 +282,7 @@ function bbs_download_installer {
     local file="${BBS_INSTALLER_FILE}"
 
     local url="${base}/${bucket}/${path}/${version}/${file}"
-    local target="installer"
+    local target="${NFS_INSTALLER_DIR}/installer"
 
     log "Downloading Bitbucket Server installer [base=${base}, bucket=${bucket}, path=${path}, version=${version}, file=${file}] from [url=${url}]"
 
@@ -335,7 +404,9 @@ function bbs_configure {
 function bbs_install {
     log "Downloading and running Bitbucket Server installer"
 
-    bbs_download_installer
+    log "Copy Bitbucket Server installer"
+    cp "${NFS_INSTALLER_DIR}/installer" .
+
     bbs_run_installer
 
     log "Done downloading and running Bitbucket Server installer"
@@ -354,17 +425,19 @@ function install_nfs {
 
     nfs_install_server
     nfs_prepare_shared_home
+    nfs_prepare_installer_dir
     nfs_configure
 
     log "Done configuring NFS node!"
 }
 
 function install_bbs {
-    log "Configuration Bitbucket Server node..."
+    log "Configuring Bitbucket Server node..."
 
     install_common
     bbs_install_nfs_client
     bbs_configure_shared_home
+    bbs_configure_installer_dir
 
     bbs_configure
     bbs_install
