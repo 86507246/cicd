@@ -609,7 +609,11 @@
         },
         "jiraAppEndpoint": {
             "type": "string",
-            "value": "[reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value]"
+            "value": "[concat('http://', reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value)]"
+        },
+        "gtwyIpName": {
+            "type": "string",
+            "value": "[reference('appGtwyTemplate').outputs.gtwyIpName.value]"
         }
     }
 }
