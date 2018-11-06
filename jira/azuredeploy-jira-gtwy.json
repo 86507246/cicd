@@ -200,6 +200,10 @@
             "type": "string",
             "value": "[reference(variables('applicationGateway').publicIpName).dnsSettings.fqdn]"
         },
+        "gtwyIpName": {
+            "type": "string",
+            "value": "[variables('applicationGateway').publicIpName]"
+        },
         "gtwyName": {
             "type": "string", "value": "[variables('applicationGateway').name]"
         },

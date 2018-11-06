@@ -120,6 +120,9 @@
         },
         "jiraTemplate": {
             "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-jira.json')]"
+        },
+        "domainTemplate": {
+            "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-domain.json')]"
         }
     },
     "resources": [
@@ -219,12 +222,39 @@
                     }
                 }
             }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2015-01-01",
+            "name": "domainTemplate",
+            "dependsOn": [
+                "jiraTemplate"
+            ],
+            "condition": "[greater(length(parameters('cname')), 0)]",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('domainTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "cname": {
+                        "value": "[parameters('cname')]"
+                    },
+                    "gtwyIpName": {
+                        "value": "[reference('jiraTemplate').outputs.gtwyIpName.value]"
+                    },
+                    "prefix": {
+                        "value": "jira"
+                    }
+                }
+            } 
         }
     ],
     "outputs": {
         "appEndpoint": {
             "type": "string",
-            "value": "[reference('jiraTemplate').outputs.jiraAppEndpoint.value]"
+            "value": "[if(greater(length(parameters('cname')), 0), reference('domainTemplate').outputs.alias.value, reference('jiraTemplate').outputs.jiraAppEndpoint.value)]"
         },
         "bastionUrl": {
             "type": "string",
