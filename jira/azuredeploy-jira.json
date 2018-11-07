@@ -350,6 +350,12 @@
                     },
                     "dbUsername": {
                         "value": "[parameters('dbUsername')]"
+                    },
+                    "vnetName": {
+                        "value": "[parameters('vnetName')]"
+                    },
+                    "appSubnetName": {
+                        "value": "[parameters('appSubnetName')]"
                     }
                 }
             }

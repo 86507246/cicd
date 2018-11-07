@@ -37,6 +37,16 @@
             "metadata": {
                 "description": "The number of JIRA nodes in the cluster"
             }
+        },
+        "vnetName": {
+            "type": "string"
+        },
+        "appSubnetName": {
+            "type": "string"
+        },
+        "clusterDbAccessNetworkRule": {
+            "type": "string",
+            "defaultValue": "allowClusterDbAccess"
         }
     },
     "variables": {
@@ -106,6 +116,18 @@
                         "requestedServiceObjectiveName": "[variables('sql').tier]"
                     }
                 }
+            ]
+        },
+        {
+            "type": "Microsoft.Sql/servers/virtualNetworkRules",
+            "name": "[concat(parameters('dbServerName'), '/', parameters('clusterDbAccessNetworkRule'))]",
+            "apiVersion": "2015-05-01-preview",
+            "properties": {
+                "virtualNetworkSubnetId": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '/subnets/', parameters('appSubnetName'))]",
+                "ignoreMissingVnetServiceEndpoint": false
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('dbServerName'))]"
             ]
         }
     ],

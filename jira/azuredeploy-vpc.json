@@ -176,7 +176,15 @@
                             },
                             "routeTable": {
                                 "id": "[resourceId('Microsoft.Network/routeTables', variables('routing').outbound.name)]"
-                            }
+                            },
+                            "serviceEndpoints": [
+                                {
+                                    "service": "Microsoft.Sql",
+                                    "locations": [
+                                        "[parameters('location')]"
+                                    ]
+                                }
+                            ]
                         }
                     },
                     {
