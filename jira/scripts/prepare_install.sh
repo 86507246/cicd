@@ -26,24 +26,6 @@ function error {
   exit 3
 }
 
-
-function enable_nat {
-  atl_log enable_nat "Enabling NAT"
-  sysctl -w net.ipv4.ip_forward=1 >> /etc/sysctl.conf
-
-  iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-
-  iptables -t nat -A PREROUTING -p tcp -i eth0 --dport 80 -j DNAT --to-destination 10.0.1.99
-  iptables -A FORWARD -i eth0 -p tcp -d 10.0.1.99 --dport 80 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
-
-  iptables -A FORWARD -i eth1 -o eth0 -j ACCEPT
-
-  atl_log enable_nat "Persisting iptables rules"
-
-  iptables-save > /etc/iptables.conf
-  echo "iptables-restore -n < /etc/iptables.conf" >> /etc/rc.local
-}
-
 function enable_rc_local {
   atl_log enable_rc_local "Enabling rc.local execution on system startup"
   systemd enable rc-local.service
