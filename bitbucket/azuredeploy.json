@@ -195,7 +195,6 @@
             "type": "string",
             "defaultValue": "Standard_L4s",
             "allowedValues": [
-                "Standard_B1s",
                 "Standard_D8s_v3",
                 "Standard_DS4_v2",
                 "Standard_E8-4s_v3",
@@ -254,7 +253,6 @@
         "httpGatewaySize": {
             "type": "string",
             "allowedValues": [
-                "Standard_B1s",
                 "Standard_D2s_v3",
                 "Standard_D4s_v3",
                 "Standard_D8s_v3",
@@ -262,7 +260,7 @@
                 "Standard_D32s_v3",
                 "Standard_D64s_v3"
             ],
-            "defaultValue": "Standard_B1s",
+            "defaultValue": "Standard_D2s_v3",
             "metadata": {
                 "description": "VM type which used for forwarding HTTP traffic from Load Balancer to Application Gateway"
             }
