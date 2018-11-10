@@ -112,6 +112,14 @@
                 "description": "The number of JIRA nodes in the cluster"
             },
             "minValue": 2
+        },
+        "sslBase64EncodedPfxCertificate": {
+            "type": "string",
+            "defaultValue": ""
+        },
+        "sslPfxCertificatePassword": {
+            "type": "string",
+            "defaultValue": ""
         }
     },
     "variables": {
@@ -194,7 +202,7 @@
                         "value": "[parameters('nodeSshPassword')]"
                     },
                     "cname": {
-                        "value": "[parameters('cname')]"
+                        "value": "[if(greater(length(parameters('cname')), 0), concat('jira.', parameters('cname')), parameters('cname'))]"
                     },
                     "userName": {
                         "value": "[parameters('userName')]"
@@ -219,6 +227,12 @@
                     },
                     "jumpboxPublicIpAddress": {
                         "value": "[reference('vpcTemplate').outputs.jumpboxPublicIpAddress.value]"
+                    },
+                    "sslBase64EncodedPfxCertificate": {
+                        "value": "[parameters('sslBase64EncodedPfxCertificate')]"
+                    },
+                    "sslPfxCertificatePassword": {
+                        "value": "[parameters('sslPfxCertificatePassword')]"
                     }
                 }
             }
