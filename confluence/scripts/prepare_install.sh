@@ -577,14 +577,8 @@ function prepare_installer {
 # Adoptopenjdk8 has a known bug with fontconfig missing, which will cause installer to fail
 # Details see https://github.com/AdoptOpenJDK/openjdk-build/issues/693
 function prepare_fontconfig {
-  log "Checking if fontconfig package has been downloaded already"
-
-  if [ dpkg -s fontconfig &> /dev/null ]; then
-    log "fontconfig is installed successfully"
-  else
-    log "No fontconfig has been found, installing fontconfig..."
-    apt update && apt install -y fontconfig
-  fi
+  log "Installing fontconfig package..."
+  apt update && apt install -y fontconfig
 
   log "Font config is ready!"
 }
