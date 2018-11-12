@@ -153,6 +153,7 @@
         "appGtwyTemplate": {
             "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-jira-gtwy.json')]"
         },
+        "isSslSpecified": "[not(empty(parameters('sslBase64EncodedPfxCertificate')))]",
         "tags": {
             "vendor": "Atlassian",
             "product": "JIRA",
@@ -184,11 +185,11 @@
                 },
                 {
                     "name": "SERVER_PROXY_PORT",
-                    "value": "80"
+                    "value": "[if(variables('isSslSpecified'), '443', '80')]"
                 },
                 {
                     "name": "SERVER_APP_SCHEME",
-                    "value": "http"
+                    "value": "[if(variables('isSslSpecified'), 'https', 'http')]"
                 },
                 {
                     "name": "SERVER_CLUSTER_NAME",
@@ -200,7 +201,7 @@
                 },
                 {
                     "name": "SERVER_SECURE_FLAG",
-                    "value": false
+                    "value": "[if(variables('isSslSpecified'), 'true', 'false')]"
                 }
             ],
             "db": [
@@ -437,7 +438,7 @@
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value, ' ', reference('dbTemplate').outputs.serverName.value, ' 2>&1 > ./jira.prepare.log')]"
+                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', if(not(empty(parameters('cname'))), parameters('cname'), reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value), ' ', reference('dbTemplate').outputs.serverName.value, ' ', if(variables('isSslSpecified'), 'https', 'http'), ' 2>&1 > ./jira.prepare.log')]"
                 }
             }
         },
