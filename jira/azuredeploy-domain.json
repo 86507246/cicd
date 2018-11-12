@@ -54,7 +54,7 @@
     "outputs": {
         "alias": {
             "type": "string",
-            "value": "[concat('http://', parameters('prefix'), '.', parameters('cname'))]"
+            "value": "[concat(parameters('prefix'), '.', parameters('cname'))]"
         }
     }
 }

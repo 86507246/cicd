@@ -126,11 +126,22 @@
         "appSubnetName": {
             "type": "string"
         },
+        "gtwySubnetName": {
+            "type": "string"
+        },
         "jumpboxName": {
             "type": "string"
         },
         "jumpboxPublicIpAddress": {
             "type": "string"
+        },
+        "sslBase64EncodedPfxCertificate": {
+            "type": "string",
+            "defaultValue": ""
+        },
+        "sslPfxCertificatePassword": {
+            "type": "string",
+            "defaultValue": ""
         }
     },
     "variables": {
@@ -142,6 +153,7 @@
         "appGtwyTemplate": {
             "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-jira-gtwy.json')]"
         },
+        "isSslSpecified": "[not(empty(parameters('sslBase64EncodedPfxCertificate')))]",
         "tags": {
             "vendor": "Atlassian",
             "product": "JIRA",
@@ -173,11 +185,11 @@
                 },
                 {
                     "name": "SERVER_PROXY_PORT",
-                    "value": "80"
+                    "value": "[if(variables('isSslSpecified'), '443', '80')]"
                 },
                 {
                     "name": "SERVER_APP_SCHEME",
-                    "value": "http"
+                    "value": "[if(variables('isSslSpecified'), 'https', 'http')]"
                 },
                 {
                     "name": "SERVER_CLUSTER_NAME",
@@ -189,7 +201,7 @@
                 },
                 {
                     "name": "SERVER_SECURE_FLAG",
-                    "value": false
+                    "value": "[if(variables('isSslSpecified'), 'true', 'false')]"
                 }
             ],
             "db": [
@@ -382,6 +394,15 @@
                     },
                     "vnetName": {
                         "value": "[parameters('vnetName')]"
+                    },
+                    "gtwySubnetName": {
+                        "value": "[parameters('gtwySubnetName')]"
+                    },
+                    "sslBase64EncodedPfxCertificate": {
+                        "value": "[parameters('sslBase64EncodedPfxCertificate')]"
+                    },
+                    "sslPfxCertificatePassword": {
+                        "value": "[parameters('sslPfxCertificatePassword')]"
                     }
                 }
             }
@@ -423,7 +444,7 @@
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value, ' ', reference('dbTemplate').outputs.serverName.value, ' 2>&1 > ./jira.prepare.log')]"
+                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', if(not(empty(parameters('cname'))), parameters('cname'), reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value), ' ', reference('dbTemplate').outputs.serverName.value, ' ', if(variables('isSslSpecified'), 'https', 'http'), ' 2>&1 > ./jira.prepare.log')]"
                 }
             }
         },
@@ -441,8 +462,8 @@
                 "capacity": "[parameters('clusterSize')]"
             },
             "properties": {
-                "overprovision": "false",
-                "singlePlacementGroup": "false",
+                "overprovision": false,
+                "singlePlacementGroup": false,
                 "upgradePolicy": {
                     "mode": "Manual"
                 },
@@ -549,7 +570,7 @@
                             {
                                 "name": "[concat(variables('namespace'), 'scaleset-nic')]",
                                 "properties": {
-                                    "primary": "true",
+                                    "primary": true,
                                     "ipConfigurations": [
                                         {
                                             "name": "[concat(variables('namespace'), 'scalset-ipconfig')]",
@@ -615,7 +636,7 @@
         },
         "jiraAppEndpoint": {
             "type": "string",
-            "value": "[concat('http://', reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value)]"
+            "value": "[reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value]"
         },
         "gtwyIpName": {
             "type": "string",
