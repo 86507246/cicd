@@ -36,6 +36,9 @@
         "vnetName": {
             "type": "string"
         },
+        "gtwySubnetName": {
+            "type": "string"
+        },
         "sslBase64EncodedPfxCertificate": {
             "type": "string",
             "defaultValue": ""
@@ -48,11 +51,11 @@
     "variables": {
         "namespace": "jira",
         "applicationGateway": {
-            "name": "[concat(variables('namespace'), 'appgateway')]",
+            "name": "[if(empty(parameters('sslBase64EncodedPfxCertificate')), concat(variables('namespace'), 'appgateway'), concat(variables('namespace'), 'appgateway-https'))]",
             "publicIpName": "[concat(variables('namespace'), '-appgtwyip-', uniqueString(resourceGroup().id))]",
             "frontend": {
                 "subnet": {
-                    "name": "[concat(variables('namespace'), 'appgwsubnet')]"
+                    "name": "[parameters('gtwySubnetName')]"
                 },
                 "ipConfiguration": {
                     "name": "[concat(variables('namespace'), 'appgwfeipconfig')]",
@@ -87,6 +90,19 @@
             },
             "sslCert": {
                 "name": "[concat(variables('namespace'), 'appgwyHttpsListenerCert')]"
+            },
+            "sku": {
+                "name": "[parameters('applicationGatewaySize')]",
+                "tier": "Standard",
+                "capacity": "[parameters('applicationGatewayClusterSize')]"
+            },
+            "redirect": {
+                "rule": {
+                    "name": "[concat(variables('namespace'), 'httpToHttpsRedirectRule')]"
+                },
+                "config": {
+                    "name": "[concat(variables('namespace'), 'httpToHttpsRedirectConfig')]"
+                }
             }
         }
     },
@@ -111,18 +127,14 @@
         {
             "type": "Microsoft.Network/applicationGateways",
             "apiVersion": "2018-08-01",
-            "name": "[variables('applicationGateway').name]",
+            "name": "[concat(variables('namespace'), 'appgateway')]",
             "location": "[parameters('location')]",
-            "zones": [],
+            "condition": "[empty(parameters('sslPfxCertificatePassword'))]",
             "dependsOn": [
                 "[concat('Microsoft.Network/publicIPAddresses/', variables('applicationGateway').publicIpName)]"
             ],
             "properties": {
-                "sku": {
-                    "name": "[parameters('applicationGatewaySize')]",
-                    "tier": "Standard",
-                    "capacity": "[parameters('applicationGatewayClusterSize')]"
-                },
+                "sku": "[variables('applicationGateway').sku]",
                 "gatewayIPConfigurations": [
                     {
                         "name": "[concat(variables('namespace'), 'appgwipconfig')]",
@@ -212,89 +224,176 @@
             }
         },
         {
-            "apiVersion": "2015-01-01",
-            "name": "applyHttpsToGatewayTemplate",
-            "type": "Microsoft.Resources/deployments",
-            "condition": "[greater(length(parameters('sslBase64EncodedPfxCertificate')), 0)]",
+            "name": "[concat(variables('namespace'), 'appgateway-https')]",
+            "type": "Microsoft.Network/applicationGateways",
+            "condition": "[not(empty(parameters('sslPfxCertificatePassword')))]",
+            "apiVersion": "2018-08-01",
+            "location": "[parameters('location')]",
             "dependsOn": [
-                "[concat('Microsoft.Network/applicationGateways/', variables('applicationGateway').name)]"
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('applicationGateway').publicIpName)]"
             ],
             "properties": {
-                "mode": "Incremental",
-                "template": {
-                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-                    "contentVersion": "1.0.0.0",
-                    "resources": [
-                        {
-                            "type": "Microsoft.Network/applicationGateways",
-                            "apiVersion": "2018-08-01",
-                            "name": "[variables('applicationGateway').name]",
-                            "location": "[parameters('location')]",
-                            "properties": {
-                                "sku": "[reference(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name)).sku]",
-                                "gatewayIPConfigurations": "[reference(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name)).gatewayIPConfigurations]",
-                                "backendAddressPools": "[reference(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name)).backendAddressPools]",
-                                "backendHttpSettingsCollection": "[reference(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name)).backendHttpSettingsCollection]",
-                                "frontendIPConfigurations": "[reference(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name)).frontendIPConfigurations]",
-                                "sslCertificates": [
-                                    {
-                                        "name": "jirappgtwyHttpsListenerCert",
-                                        "properties": {
-                                            "data": "[parameters('sslBase64EncodedPfxCertificate')]",
-                                            "password": "[parameters('sslPfxCertificatePassword')]"
-                                        },
-                                        "type": "Microsoft.Network/applicationGateways/sslCertificates"
-                                    }
-                                ],
-                                "frontendPorts": [
-                                    {
-                                        "name": "[variables('applicationGateway').frontend.portHttpsConfiguration.name]",
-                                        "properties": {
-                                            "port": "[variables('applicationGateway').frontend.portHttpsConfiguration.value]"
-                                        },
-                                        "type": "Microsoft.Network/applicationGateways/frontendPorts"
-                                    }
-                                ],
-                                "httpListeners": [
-                                    {
-                                        "type": "Microsoft.Network/applicationGateways/httpListeners",
-                                        "name": "[variables('applicationGateway').frontend.httpsListener.name]",
-                                        "properties": {
-                                            "frontendIPConfiguration": {
-                                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendIPConfigurations/', variables('applicationGateway').frontend.ipConfiguration.name)]"
-                                            },
-                                            "frontendPort": {
-                                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendPorts/', variables('applicationGateway').frontend.portHttpsConfiguration.name)]"
-                                            },
-                                            "protocol": "Https",
-                                            "sslCertificate": {
-                                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/sslCertificates/', variables('applicationGateway').sslCert.name)]"
-                                            },
-                                            "requireServerNameIndication": false
-                                        }
-                                    }
-                                ],
-                                "requestRoutingRules": [
-                                    {
-                                        "name": "[concat(variables('namespace'), 'appgwhttpsroute')]",
-                                        "properties": {
-                                            "ruleType": "Basic",
-                                            "httpListener": {
-                                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/httpListeners/', variables('applicationGateway').frontend.httpsListener.name)]"
-                                            },
-                                            "backendAddressPool": {
-                                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
-                                            },
-                                            "backendHttpSettings": {
-                                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendHttpSettingsCollection/', variables('applicationGateway').backend.httpConfiguration.name)]"
-                                            }
-                                        }
-                                    }
-                                ]
+                "sku": "[variables('applicationGateway').sku]",
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "[concat(variables('namespace'), 'appgwipconfig')]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), variables('applicationGateway').frontend.subnet.name)]"
+                            }
+                        },
+                        "type": "Microsoft.Network/applicationGateways/gatewayIPConfigurations"
+                    }
+                ],
+                "sslCertificates": [
+                    {
+                        "name": "[variables('applicationGateway').sslCert.name]",
+                        "properties": {
+                            "data": "[parameters('sslBase64EncodedPfxCertificate')]",
+                            "password": "[parameters('sslPfxCertificatePassword')]"
+                        },
+                        "type": "Microsoft.Network/applicationGateways/sslCertificates"
+                    }
+                ],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.ipConfiguration.name]",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses/', variables('applicationGateway').publicIpName)]"
                             }
                         }
-                    ]
-                }
+                    },
+                    {
+                        "name": "[variables('applicationGateway').frontend.ipConfiguration.private.name]",
+                        "type": "Microsoft.Network/applicationGateways/frontendIPConfigurations",
+                        "properties": {
+                            "privateIPAddress": "[variables('applicationGateway').frontend.ipConfiguration.private.address]",
+                            "privateIPAllocationMethod": "Static",
+                            "subnet": {
+                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '/subnets/', variables('applicationGateway').frontend.subnet.name)]"
+                            }
+                        }
+                    }
+                ],
+                "frontendPorts": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.portConfiguration.name]",
+                        "type": "Microsoft.Network/applicationGateways/frontendPorts",
+                        "properties": {
+                            "port": "[variables('applicationGateway').frontend.portConfiguration.value]"
+                        }
+                    },
+                    {
+                        "name": "[variables('applicationGateway').frontend.portHttpsConfiguration.name]",
+                        "properties": {
+                            "port": "[variables('applicationGateway').frontend.portHttpsConfiguration.value]"
+                        },
+                        "type": "Microsoft.Network/applicationGateways/frontendPorts"
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "[variables('applicationGateway').backend.addressPool.name]",
+                        "type": "Microsoft.Network/applicationGateways/backendAddressPools"
+                    }
+                ],
+                "backendHttpSettingsCollection": [
+                    {
+                        "name": "[variables('applicationGateway').backend.httpConfiguration.name]",
+                        "properties": {
+                            "Port": "[variables('applicationGateway').backend.port]",
+                            "Protocol": "Http",
+                            "CookieBasedAffinity": "Enabled",
+                            "pickHostNameFromBackendAddress": false,
+                            "affinityCookieName": "ApplicationGatewayAffinity",
+                            "requestTimeout": 30
+                        },
+                        "type": "Microsoft.Network/applicationGateways/backendHttpSettingsCollection"
+                    }
+                ],
+                "httpListeners": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.httpListener.name]",
+                        "properties": {
+                            "FrontendIPConfiguration": {
+                                "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendIPConfigurations/', variables('applicationGateway').frontend.ipConfiguration.name)]"
+                            },
+                            "FrontendPort": {
+                                "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendPorts/', variables('applicationGateway').frontend.portConfiguration.name)]"
+                            },
+                            "Protocol": "Http",
+                            "requireServerNameIndication": false
+                        }
+                    },
+                    {
+                        "type": "Microsoft.Network/applicationGateways/httpListeners",
+                        "name": "[variables('applicationGateway').frontend.httpsListener.name]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendIPConfigurations/', variables('applicationGateway').frontend.ipConfiguration.name)]"
+                            },
+                            "frontendPort": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendPorts/', variables('applicationGateway').frontend.portHttpsConfiguration.name)]"
+                            },
+                            "protocol": "Https",
+                            "sslCertificate": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/sslCertificates/', variables('applicationGateway').sslCert.name)]"
+                            },
+                            "requireServerNameIndication": false
+                        }
+                    }
+                ],
+                "requestRoutingRules": [
+                    {
+                        "name": "[concat(variables('namespace'), 'appgwhttpsroute')]",
+                        "properties": {
+                            "ruleType": "Basic",
+                            "httpListener": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/httpListeners/', variables('applicationGateway').frontend.httpsListener.name)]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
+                            },
+                            "backendHttpSettings": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendHttpSettingsCollection/', variables('applicationGateway').backend.httpConfiguration.name)]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "[variables('applicationGateway').redirect.rule.name]",
+                        "properties": {
+                            "ruleType": "Basic",
+                            "httpListener": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/httpListeners/', variables('applicationGateway').frontend.httpListener.name)]"
+                            },
+                            "redirectConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/redirectConfigurations/', variables('applicationGateway').redirect.config.name)]"
+                            }
+                        },
+                        "type": "Microsoft.Network/applicationGateways/requestRoutingRules"
+                    }
+                ],
+                "redirectConfigurations": [
+                    {
+                        "name": "[variables('applicationGateway').redirect.config.name]",
+                        "properties": {
+                            "redirectType": "Permanent",
+                            "targetListener": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/httpListeners/', variables('applicationGateway').frontend.httpsListener.name)]"
+                            },
+                            "includePath": true,
+                            "includeQueryString": true,
+                            "requestRoutingRules": [
+                                {
+                                    "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/requestRoutingRules/', variables('applicationGateway').redirect.rule.name)]"
+                                }
+                            ]
+                        },
+                        "type": "Microsoft.Network/applicationGateways/redirectConfigurations"
+                    }
+                ]
             }
         }
     ],

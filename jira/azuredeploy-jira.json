@@ -126,6 +126,9 @@
         "appSubnetName": {
             "type": "string"
         },
+        "gtwySubnetName": {
+            "type": "string"
+        },
         "jumpboxName": {
             "type": "string"
         },
@@ -385,6 +388,9 @@
                     "vnetName": {
                         "value": "[parameters('vnetName')]"
                     },
+                    "gtwySubnetName": {
+                        "value": "[parameters('gtwySubnetName')]"
+                    },
                     "sslBase64EncodedPfxCertificate": {
                         "value": "[parameters('sslBase64EncodedPfxCertificate')]"
                     },
@@ -623,7 +629,7 @@
         },
         "jiraAppEndpoint": {
             "type": "string",
-            "value": "[concat('http://', reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value)]"
+            "value": "[reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value]"
         },
         "gtwyIpName": {
             "type": "string",
