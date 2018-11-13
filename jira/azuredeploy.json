@@ -135,6 +135,20 @@
     },
     "resources": [
         {
+            "comments": "Azure tracking GUID for Jira - ensure right one being used for the delivery channel ie via Azure Marketplace, BitBucket Quickstart etc",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2015-01-01",
+            "name": "pid-a717b299-5535-534f-aecb-a702a63c94bd",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": []
+                }
+            }
+        },
+        {
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2015-01-01",
             "name": "vpcTemplate",
