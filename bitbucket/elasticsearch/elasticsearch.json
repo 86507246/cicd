@@ -114,7 +114,7 @@
             "subnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), variables('net').subnets.elasticsearch.name)]"
         },
         "esSettings": {
-            "clusterName": "concat([parameters('namespace')], '-cluster')",
+            "clusterName": "[concat(parameters('namespace'), '-cluster')]",
             "heapSize": 0,
             "httpCertBlob": "",
             "httpCertPassword": "",

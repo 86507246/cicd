@@ -187,10 +187,6 @@
                 "description": "A branch in the repository to download scripts from. We want to be able to override it during development."
             }
         },
-        "applicationTitle": {
-            "type": "string",
-            "defaultValue": "Atlassian Bitbucket Server"
-        },
         "nfsVmSize": {
             "type": "string",
             "defaultValue": "Standard_L4s",
@@ -1344,7 +1340,8 @@
                 "[variables('net').vnet.name]",
                 "[variables('sql').database.name]",
                 "[variables('vm').nfs.name]",
-                "[variables('net').lb.name]"
+                "[variables('net').lb.name]",
+                "[variables('elasticsearch').name]"
             ],
             "name": "[variables('vm').bbs.name]",
             "sku": {
@@ -1358,7 +1355,7 @@
                 "upgradePolicy": {
                     "mode": "Automatic"
                 },
-                "overprovision": "false",
+                "overprovision": false,
                 "virtualMachineProfile": {
                     "osProfile": {
                         "computerNamePrefix": "[variables('vm').bbs.hostname]",

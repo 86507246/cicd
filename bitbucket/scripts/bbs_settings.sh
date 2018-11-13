@@ -7,7 +7,7 @@ BBS_GID="9079"
 BBS_HOME="${ATL_HOME}/bitbucket"
 BBS_SHARED_HOME="${BBS_HOME}/shared"
 
-BBS_SHARED_HOME_MOUNT_OPTS="lookupcache=pos,noatime,intr,rsize=32768,wsize=32768"
+BBS_SHARED_HOME_MOUNT_OPTS="lookupcache=pos,noatime,intr,rsize=32768,wsize=32768,nfsvers=3"
 
 BBS_INSTALLER_BASE="${BBS_BASE:-https://s3.amazonaws.com}"
 BBS_INSTALLER_BUCKET="${BBS_BUCKET:-atlassian-software}"

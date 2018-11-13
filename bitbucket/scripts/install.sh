@@ -180,6 +180,16 @@ function bbs_install_nfs_client {
     log "Done installing NFS client"
 }
 
+function install_latest_git {
+    log "Install latest version of git from PPA"
+
+    apt-add-repository -y ppa:git-core/ppa
+    apt-get update
+    apt-get install -y git
+
+    log "Latest version of git has been installed"
+}
+
 function bbs_create_installer_dir {
     log "Creating Bitbucket Server installer directory:${NFS_INSTALLER_DIR}"
 
@@ -233,7 +243,7 @@ function bbs_update_fstab_installer_dir {
     local opts="${BBS_SHARED_HOME_MOUNT_OPTS}"
     local type="nfs"
 
-    printf "\n${source}\t${target}\t${type}\t${opts}\t0 0" >> /etc/fstab
+    printf "\n${source}\t${target}\t${type}\t${opts}\t0 0\n" >> /etc/fstab
 
     log "Done updating /etc/fstab for installer directory!"
 }
@@ -435,6 +445,7 @@ function install_bbs {
     log "Configuring Bitbucket Server node..."
 
     install_common
+    install_latest_git
     bbs_install_nfs_client
     bbs_configure_shared_home
     bbs_configure_installer_dir
