@@ -573,6 +573,16 @@ function prepare_installer {
   log "Installer is ready!"
 }
 
+# Check if fontconfig has been installed.
+# Adoptopenjdk8 has a known bug with fontconfig missing, which will cause installer to fail
+# Details see https://github.com/AdoptOpenJDK/openjdk-build/issues/693
+function prepare_fontconfig {
+  log "Installing fontconfig package..."
+  apt update && apt install -y fontconfig
+
+  log "Font config is ready!"
+}
+
 function perform_install {
   log "Ready to perform installation"
 
@@ -934,6 +944,7 @@ function install_confluence {
   prepare_datadisks
   prepare_varfile
   prepare_installer
+  prepare_fontconfig
   perform_install
   configure_confluence
   remount_share
@@ -948,6 +959,7 @@ function install_synchrony {
   mount_share
   prepare_varfile
   prepare_installer
+  prepare_fontconfig
   perform_install
   install_synchrony_service
   remount_share
