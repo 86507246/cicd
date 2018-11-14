@@ -770,7 +770,8 @@
                                 "111",
                                 "2049",
                                 "1110",
-                                "4045"
+                                "4045",
+                                "32764-32769"
                             ],
                             "sourceAddressPrefix": "[variables('net').subnets.bbs.cidr]",
                             "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",

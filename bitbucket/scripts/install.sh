@@ -1,4 +1,5 @@
-#!/usr/bin/env bash 
+#!/usr/bin/env bash
+set -euo pipefail 
 
 source ./log.sh
 source ./settings.sh
@@ -142,6 +143,22 @@ function nfs_prepare_shared_home {
     log "Shared home directory is ready!"
 }
 
+function nfs_configure_ports {
+    log "Setting statd port"
+    printf "\nSTATDOPTS=\"--port 32765 --outgoing-port 32766\"\n" >> /etc/default/nfs-common
+
+    log "Setting mountd port"
+    printf "\nRPCMOUNTDOPTS=\"-p 32767\"\n" >> /etc/default/nfs-kernel-server
+
+    log "Setting quotad port"
+    printf "\nRPCRQUOTADOPTS=\"-p 32769\"\n" >> /etc/default/quota
+
+    log "Setting lockd port"
+    printf "\nfs.nfs.nfs_callback_tcpport = 32764\n" >> /etc/sysctl.d/nfs-static-ports.conf
+    printf "fs.nfs.nlm_tcpport = 32768\n" >> /etc/sysctl.d/nfs-static-ports.conf
+    printf "fs.nfs.nlm_udpport = 32768\n" >> /etc/sysctl.d/nfs-static-ports.conf
+}
+
 function nfs_configure_exports {
     cat <<EOT >> "/etc/exports"
 # /etc/exports: the access control list for filesystems which may be exported
@@ -163,9 +180,12 @@ EOT
 function nfs_configure {
     log "Configuring NFS server..."
 
+    nfs_configure_ports
     nfs_configure_exports
 
     log "Restarting NFS server"
+    sysctl --system
+    systemctl restart nfs-config
     systemctl restart nfs-server
 
     log "NFS server configuration has been completed!"
