@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail 
+set -euo pipefail
 
 source ./log.sh
 source ./settings.sh
@@ -462,6 +462,9 @@ function install_nfs {
 }
 
 function install_bbs {
+    # NFS_SERVER_IP comes from outside
+    BBS_NFS_SERVER_IP="${NFS_SERVER_IP}"
+
     log "Configuring Bitbucket Server node..."
 
     install_common
