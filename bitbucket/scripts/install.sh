@@ -187,6 +187,11 @@ function nfs_configure {
     sysctl --system
     systemctl restart nfs-config
     systemctl restart nfs-server
+    systemctl restart rpc-statd.service
+
+    log "Start NFS server on system startup"
+    systemctl enable nfs-server
+    systemctl enable rpc-statd.service
 
     log "NFS server configuration has been completed!"
 }
