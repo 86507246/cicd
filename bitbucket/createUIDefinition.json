@@ -144,7 +144,7 @@
                         "name": "nfsDiskSize",
                         "type": "Microsoft.Common.DropDown",
                         "label": "Disk size",
-                        "toolTip": "Pick size of Bitbucket home directory.",
+                        "toolTip": "Pick size of Bitbucket home directory in GB.",
                         "defaultValue": "128",
                         "constraints": {
                             "allowedValues": [
