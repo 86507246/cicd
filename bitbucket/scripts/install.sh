@@ -340,7 +340,7 @@ function bbs_prepare_installer_settings {
 
     log "Preparing installer configuration"
 
-    cat <<EOT >> "${BBS_INSTALER_VARS}"
+    cat <<EOT >> "${BBS_INSTALLER_VARS}"
 app.bitbucketHome=${home}
 app.defaultInstallDir=/opt/atlassian/bitbucket/${version}
 app.install.service\$Boolean=true
@@ -359,7 +359,7 @@ function bbs_run_installer {
     log "Running Bitbucket Server installer"
 
     bbs_prepare_installer_settings
-    ./installer -q -varfile "${BBS_INSTALER_VARS}"
+    ./installer -q -varfile "${BBS_INSTALLER_VARS}"
     
     log "Done running Bitbucket Server installer"
 }
