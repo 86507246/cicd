@@ -436,7 +436,7 @@
                 "probe": {
                     "interval": "[parameters('appGatewayProbeInterval')]",
                     "timeout": 10,
-                    "unhealthyThreshold": 3
+                    "unhealthyThreshold": 1
                 },
                 "tier": "[variables('lookup').appGw.sizeToTier[concat('Standard_', parameters('appGatewaySize'))]]",
                 "size": "[concat('Standard_', parameters('appGatewaySize'))]",
@@ -1153,7 +1153,7 @@
                             "port": "[parameters('bbsHttpPort')]",
                             "protocol": "Http",
                             "cookieBasedAffinity": "Enabled",
-                            "affinityCookieName": "BITBUCKETSESSIONID"
+                            "affinityCookieName": "AZURESESSIONID"
                         }
                     }
                 ],
