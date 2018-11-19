@@ -37,13 +37,6 @@
                 "description": "Address space for the private subnet with Application Gateways"
             }
         },
-        "lbNetCIDR": {
-            "type": "string",
-            "defaultValue": "10.0.3.0/24",
-            "metadata": {
-                "description": "Address space for the private subnet with SSH Load Balancers"
-            }
-        },
         "bbsNetCIDR": {
             "type": "string",
             "defaultValue": "10.0.4.0/24",
@@ -331,31 +324,6 @@
             "sku": "[variables('vm').jumpbox.image.sku]",
             "version": "latest"
         },
-        "api": {
-            "compute": {
-                "virtualMachines": "2018-06-01",
-                "virtualMachineScaleSets": "2018-06-01",
-                "vm": {
-                    "extensions": "2018-06-01"
-                }
-            },
-            "network": {
-                "publicIPAddresses": "2017-10-01",
-                "virtualNetworks": "2017-10-01",
-                "networkInterfaces": "2017-10-01",
-                "networkSecurityGroups": "2017-10-01",
-                "appGateways": "2017-10-01",
-                "loadBalancers": "2017-10-01",
-                "routeTables": "2017-03-01"
-            },
-            "sql": {
-                "servers": "2015-05-01-preview",
-                "databases": "2014-04-01"
-            },
-            "authorization": {
-                "roleAssignments": "2017-05-01"
-            }
-        },
         "net": {
             "vnet": {
                 "name": "[concat(variables('namespace'), '-vnet')]",
@@ -624,7 +592,7 @@
         },
         {
             "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "[variables('api').network.networkSecurityGroups]",
+            "apiVersion": "2017-10-01",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "name": "[variables('net').nsg.public.name]",
@@ -668,7 +636,7 @@
         },
         {
             "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "[variables('api').network.networkSecurityGroups]",
+            "apiVersion": "2017-10-01",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "name": "[variables('net').nsg.appgw.name]",
@@ -712,7 +680,7 @@
         },
         {
             "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "[variables('api').network.networkSecurityGroups]",
+            "apiVersion": "2017-10-01",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "name": "[variables('net').nsg.bbs.name]",
@@ -802,7 +770,7 @@
         },
         {
             "type": "Microsoft.Network/virtualNetworks",
-            "apiVersion": "[variables('api').network.virtualNetworks]",
+            "apiVersion": "2017-10-01",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
@@ -915,7 +883,7 @@
         },
         {
             "type": "Microsoft.Network/publicIPAddresses",
-            "apiVersion": "[variables('api').network.publicIPAddresses]",
+            "apiVersion": "2017-10-01",
             "name": "[variables('net').lb.names.publicIP]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
@@ -931,7 +899,7 @@
         },
         {
             "type": "Microsoft.Network/publicIPAddresses",
-            "apiVersion": "[variables('api').network.publicIPAddresses]",
+            "apiVersion": "2017-10-01",
             "name": "[variables('net').appGw.names.publicIP]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
@@ -947,7 +915,7 @@
         },
         {
             "type": "Microsoft.Network/loadBalancers",
-            "apiVersion": "[variables('api').network.loadBalancers]",
+            "apiVersion": "2017-10-01",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
@@ -1010,7 +978,7 @@
         },
         {
             "type": "Microsoft.Network/networkInterfaces",
-            "apiVersion": "[variables('api').network.networkInterfaces]",
+            "apiVersion": "2017-10-01",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "name": "[variables('net').nic.jumpbox.name]",
@@ -1038,7 +1006,7 @@
         },
         {
             "type": "Microsoft.Network/networkInterfaces",
-            "apiVersion": "[variables('api').network.networkInterfaces]",
+            "apiVersion": "2017-10-01",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "name": "[variables('net').nic.nfs.name]",
@@ -1060,7 +1028,7 @@
         },
         {
             "type": "Microsoft.Sql/servers",
-            "apiVersion": "[variables('api').sql.servers]",
+            "apiVersion": "2015-05-01-preview",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "name": "[variables('sql').server.name]",
@@ -1071,7 +1039,7 @@
             "resources": [
                 {
                     "type": "databases",
-                    "apiVersion": "[variables('api').sql.databases]",
+                    "apiVersion": "2014-04-01",
                     "name": "[variables('sql').database.name]",
                     "location": "[parameters('location')]",
                     "tags": "[variables('tags')]",
@@ -1086,7 +1054,7 @@
                 },
                 {
                     "type": "virtualNetworkRules",
-                    "apiVersion": "[variables('api').sql.servers]",
+                    "apiVersion": "2015-05-01-preview",
                     "name": "[variables('sql').endpoint.name]",
                     "dependsOn": [
                         "[variables('sql').server.name]"
@@ -1101,7 +1069,7 @@
         {
             "type": "Microsoft.Network/applicationGateways",
             "location": "[parameters('location')]",
-            "apiVersion": "[variables('api').network.appGateways]",
+            "apiVersion": "2017-10-01",
             "tags": "[variables('tags')]",
             "dependsOn": [
                 "[variables('net').vnet.name]"
@@ -1205,7 +1173,7 @@
         },
         {
             "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "[variables('api').compute.virtualMachines]",
+            "apiVersion": "2018-06-01",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
@@ -1254,7 +1222,7 @@
         },
         {
             "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "[variables('api').compute.virtualMachines]",
+            "apiVersion": "2018-06-01",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
@@ -1313,7 +1281,7 @@
             "resources": [
                 {
                     "type": "extensions",
-                    "apiVersion": "[variables('api').compute.vm.extensions]",
+                    "apiVersion": "2018-06-01",
                     "location": "[parameters('location')]",
                     "dependsOn": [
                         "[variables('vm').nfs.name]"
@@ -1334,7 +1302,7 @@
         },
         {
             "type": "Microsoft.Compute/virtualMachineScaleSets",
-            "apiVersion": "[variables('api').compute.virtualMachineScaleSets]",
+            "apiVersion": "2018-06-01",
             "location": "[parameters('location')]",
             "tags": "[union(variables('tags'),variables('vm').bbs.hazelcastTag)]",
             "dependsOn": [
@@ -1432,7 +1400,7 @@
                     "name": "[concat(variables('vm').bbs.name, '-extension')]",
                     "type": "extensions",
                     "location": "[parameters('location')]",
-                    "apiVersion": "[variables('api').compute.virtualMachineScaleSets]",
+                    "apiVersion": "2018-06-01",
                     "dependsOn": [
                         "[variables('vm').bbs.name]",
                         "[variables('vm').bbs.role.name]"
@@ -1452,7 +1420,7 @@
         },
         {
             "type": "Microsoft.Authorization/roleAssignments",
-            "apiVersion": "[variables('api').authorization.roleAssignments]",
+            "apiVersion": "2017-05-01",
             "dependsOn": [
                 "[variables('vm').bbs.name]"
             ],
