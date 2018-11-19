@@ -62,10 +62,15 @@ def main():
       'SERVER_ID'
   ]
 
+  misc_env_variables = [
+    'APPINSIGHTS_INSTRUMENTATION_KEY'
+  ]
+
   env_variables = ( \
     dbconfig_xml_env_variables + \
     server_xml_env_variables + \
-    db_sql_env_variables
+    db_sql_env_variables + \
+    misc_env_variables
   )
 
   parameters = get_parameters(env_variables)
