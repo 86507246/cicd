@@ -552,11 +552,11 @@ function install_appinsights {
 
 function download_appinsights_jars {
   atl_log download_appinsights_jars "Downloading MS AppInsight Jars"
-  APPINSIGHTS_VAR='2.2.1'
-  JARS="applicationinsights-core-${APPINSIGHTS_VAR}.jar applicationinsights-agent-${APPINSIGHTS_VAR}.jar applicationinsights-web-${APPINSIGHTS_VAR}.jar" 
+  APPINSIGHTS_VER='2.2.1'
+  JARS="applicationinsights-core-${APPINSIGHTS_VER}.jar applicationinsights-web-${APPINSIGHTS_VER}.jar" 
   for aJar in $(echo $JARS)
   do
-     curl -LO https://github.com/Microsoft/ApplicationInsights-Java/releases/download/${APPINSIGHTS_VAR}/${aJar}
+     curl -LO https://github.com/Microsoft/ApplicationInsights-Java/releases/download/${APPINSIGHTS_VER}/${aJar}
      atl_log download_appinsights_jars "Copying appinsights jar: ${aJar} to ${1}"
      cp -fp ${aJar} ${1}
   done 
