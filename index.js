@@ -193,7 +193,16 @@ function applyTasks (gulp) {
   })
 
   gulp.task('publish-bitbucket', () => {
-    publish()
+    publish((pkg) => {
+      shell.mkdir('-p', path.resolve(pkg.target, 'scripts'))
+      shell.cp(
+        path.resolve(pkg.source, 'scripts', '*'),
+        path.resolve(pkg.target, 'scripts'))
+      shell.mkdir('-p', path.resolve(pkg.target, 'elasticsearch'))
+      shell.cp(
+        path.resolve(pkg.source, 'elasticsearch', 'elasticsearch.json'),
+        path.resolve(pkg.target, 'elasticsearch'))
+    })
   })
 
   gulp.task('publish', () => runSequence('check-zip-cli', `publish-${product()}`))

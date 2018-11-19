@@ -121,6 +121,12 @@
                         "recommendedSizes": [
                             "Standard_E8-4s_v3"
                         ],
+                        "constraints": {
+                            "excludedSizes": [
+                                "Standard_B1s",
+                                "Standard_B1ms"
+                            ]
+                        },
                         "osPlatform": "Linux",
                         "imageReference": {
                             "publisher": "Canonical",
@@ -192,12 +198,15 @@
                         ],
                         "constraints": {
                             "allowedSizes": [
-                                "Standard_B1s",
-                                "Standard_D8s_v3",
                                 "Standard_DS4_v2",
-                                "Standard_E8-4s_v3",
+                                "Standard_D8s_v3",
+                                "Standard_D16_v3",
                                 "Standard_L4s",
-                                "Standard_L8s"
+                                "Standard_L8s",
+                                "Standard_L16s",
+                                "Standard_L32s",
+                                "Standard_E8-4s_v3",
+                                "Standard_E16s_v3"
                             ]
                         },
                         "osPlatform": "Linux",
@@ -387,6 +396,51 @@
                         "visible": true
                     },
                     {
+                        "name": "esNodeCount",
+                        "type": "Microsoft.Common.DropDown",
+                        "label": "Node count",
+                        "toolTip": "Pick how many Elasticsearch data nodes to be deployed.",
+                        "defaultValue": "1",
+                        "constraints": {
+                            "allowedValues": [
+                                {
+                                    "label": "1",
+                                    "value": "1"
+                                },
+                                {
+                                    "label": "2",
+                                    "value": "2"
+                                },
+                                {
+                                    "label": "3",
+                                    "value": "3"
+                                },
+                                {
+                                    "label": "4",
+                                    "value": "4"
+                                },
+                                {
+                                    "label": "5",
+                                    "value": "5"
+                                },
+                                {
+                                    "label": "6",
+                                    "value": "6"
+                                },
+                                {
+                                    "label": "7",
+                                    "value": "7"
+                                },
+                                {
+                                    "label": "8",
+                                    "value": "8"
+                                }
+                            ],
+                            "required": true
+                        },
+                        "visible": true
+                    },
+                    {
                         "name": "esVMSize",
                         "label": "Elasticsearch instance size",
                         "type": "Microsoft.Compute.SizeSelector",
@@ -399,22 +453,13 @@
                             "Standard_D8s_v3",
                             "Standard_DS4_v2"
                         ],
-                        "constraints": {
-                            "allowedSizes": [
-                                "Standard_B1s",
-                                "Standard_D8s_v3",
-                                "Standard_DS4_v2",
-                                "Standard_E8-4s_v3",
-                                "Standard_L4s",
-                                "Standard_L8s"
-                            ]
-                        },
                         "osPlatform": "Linux",
                         "imageReference": {
                             "publisher": "Canonical",
                             "offer": "UbuntuServer",
                             "sku": "16.04-LTS"
-                        }
+                        },
+                        "count": "[steps('elasticsearch').esNodeCount]"
                     }
                 ]
             },
@@ -459,11 +504,6 @@
                         "constraints": {
                             "required": true
                         }
-                    },
-                    {
-                        "name": "branch",
-                        "type": "Microsoft.Common.TextBox",
-                        "label": "Branch"
                     }
                 ]
             }
@@ -483,9 +523,9 @@
             "azureSqlTier": "[steps('database').sqlTier]",
             "esDataDiskSize": "[int(steps('elasticsearch').esDiskSize)]",
             "esNodeSize": "[steps('elasticsearch').esVMSize]",
+            "esDataNodeCount": "[int(steps('elasticsearch').esNodeCount)]",
             "adminUsername": "[steps('jumpbox').username]",
-            "sshKey": "[steps('jumpbox').credentials.sshPublicKey]",
-            "scriptsBranch": "[steps('jumpbox').branch]"
+            "sshKey": "[steps('jumpbox').credentials.sshPublicKey]"
         }
     }
 }
