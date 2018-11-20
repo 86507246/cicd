@@ -102,7 +102,7 @@
                 5,
                 6
             ],
-            "defaultValue": 1,
+            "defaultValue": 2,
             "minValue": 1,
             "metadata": {
                 "description": "The number of nodes for the App Gateway cluster"
@@ -142,6 +142,10 @@
         "sslPfxCertificatePassword": {
             "type": "string",
             "defaultValue": ""
+        },
+        "enableApplicationInsights": {
+            "type": "bool",
+            "defaultValue": true
         }
     },
     "variables": {
@@ -152,6 +156,9 @@
         },
         "appGtwyTemplate": {
             "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-jira-gtwy.json')]"
+        },
+        "appInsightsTemplate": {
+            "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-app-insights.json')]"
         },
         "isSslSpecified": "[not(empty(parameters('sslBase64EncodedPfxCertificate')))]",
         "tags": {
@@ -374,6 +381,24 @@
         },
         {
             "apiVersion": "2015-01-01",
+            "name": "appInsightsTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[parameters('enableApplicationInsights')]",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('appInsightsTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-01-01",
             "name": "appGtwyTemplate",
             "type": "Microsoft.Resources/deployments",
             "properties": {
@@ -440,11 +465,12 @@
                         "[concat(variables('jira').resources.url, 'hydrate_jira_config.py', variables('jira').resources.token)]",
                         "[concat(variables('jira').resources.url, 'dbconfig.xml.template', variables('jira').resources.token)]",
                         "[concat(variables('jira').resources.url, 'jira_db.sql.template', variables('jira').resources.token)]",
-                        "[concat(variables('jira').resources.url, 'server.xml.template', variables('jira').resources.token)]"
+                        "[concat(variables('jira').resources.url, 'server.xml.template', variables('jira').resources.token)]",
+                        "[concat(variables('jira').resources.url, 'ApplicationInsights.xml.template', variables('jira').resources.token)]"
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', if(not(empty(parameters('cname'))), parameters('cname'), reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value), ' ', reference('dbTemplate').outputs.serverName.value, ' ', if(variables('isSslSpecified'), 'https', 'http'), ' 2>&1 > ./jira.prepare.log')]"
+                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', if(not(empty(parameters('cname'))), parameters('cname'), reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value), ' ', reference('dbTemplate').outputs.serverName.value, ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.instrumentkey.value, ' '), ' 2>&1 > ./jira.prepare.log')]"
                 }
             }
         },
@@ -454,7 +480,8 @@
             "location": "[parameters('location')]",
             "apiVersion": "2018-06-01",
             "dependsOn": [
-                "appGtwyTemplate"
+                "appGtwyTemplate",
+                "[concat('Microsoft.Compute/virtualMachines/',parameters('jumpboxName'),'/extensions/prepare-install-script')]"
             ],
             "sku": {
                 "name": "[variables('jira').cluster.vm.size]",
@@ -602,11 +629,12 @@
                                     "settings": {
                                         "fileUris": [
                                             "[concat(uri(variables('scripts').url, variables('scripts').prepare.name), variables('scripts').token)]",
+                                            "[concat(uri(variables('scripts').url, 'appinsights_transform_web_xml.xsl'), variables('scripts').token)]",
                                             "[concat(uri(variables('scripts').url, variables('scripts').disk.name), variables('scripts').token)]"
                                         ]
                                     },
                                     "protectedSettings": {
-                                        "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' install 2>&1 > ./jira.install.log')]"
+                                        "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' install ', if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.instrumentkey.value, ' '), ' 2>&1 > ./jira.install.log')]"
                                     }
                                 }
                             }
@@ -641,6 +669,14 @@
         "gtwyIpName": {
             "type": "string",
             "value": "[reference('appGtwyTemplate').outputs.gtwyIpName.value]"
+        },
+        "prepareCmdArgs": {
+            "type": "string",
+            "value": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', if(not(empty(parameters('cname'))), parameters('cname'), reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value), ' ', reference('dbTemplate').outputs.serverName.value, ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.instrumentkey.value, 'NOAPPINSIGHTS'), ' 2>&1 > ./jira.prepare.log')]"
+        },
+        "installJiraCmdArgs": {
+            "type": "string",
+            "value": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' install ', if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.instrumentkey.value, 'NOAPPINSIGHTS'), ' 2>&1 > ./jira.install.log')]"
         }
     }
 }

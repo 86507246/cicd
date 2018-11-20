@@ -285,7 +285,7 @@ function hydrate_shared_config {
   export SERVER_PROXY_NAME="${SERVER_CNAME:-${SERVER_AZURE_DOMAIN}}"
   export DB_TRUSTED_HOST=$(get_trusted_dbhost)
 
-  local template_files=(dbconfig.xml.template server.xml.template)
+  local template_files=(dbconfig.xml.template server.xml.template ApplicationInsights.xml.template)
   local output_file=""
   for template_file in ${template_files[@]};
   do
@@ -535,6 +535,33 @@ function install_mssql_driver {
   atl_log install_mssql_driver 'MS JDBC driver has been copied.'
 }
 
+function install_appinsights {
+  atl_log install_appinsights "Installation MS App Insights"
+  atl_log install_jira "Have AppInsights Key? ${APPINSIGHTS_INSTRUMENTATION_KEY}"
+  if [ -n ${APPINSIGHTS_INSTRUMENTATION_KEY} ] 
+  then 
+     apt-get -qqy install xsltproc
+     download_appinsights_jars ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/lib
+
+     cp -fp ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/web.xml ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/web.xml.orig
+     xsltproc -o ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/web.xml ./appinsights_transform_web_xml.xsl ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/web.xml
+
+     cp -fp ${ATL_JIRA_SHARED_HOME}/ApplicationInsights.xml ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/classes
+  fi
+}
+
+function download_appinsights_jars {
+  atl_log download_appinsights_jars "Downloading MS AppInsight Jars"
+  APPINSIGHTS_VER='2.2.1'
+  JARS="applicationinsights-core-${APPINSIGHTS_VER}.jar applicationinsights-web-${APPINSIGHTS_VER}.jar" 
+  for aJar in $(echo $JARS)
+  do
+     curl -LO https://github.com/Microsoft/ApplicationInsights-Java/releases/download/${APPINSIGHTS_VER}/${aJar}
+     atl_log download_appinsights_jars "Copying appinsights jar: ${aJar} to ${1}"
+     cp -fp ${aJar} ${1}
+  done 
+}
+
 function configure_cluster {
   atl_log configure_cluster "Configuring JIRA cluster node"
 
@@ -599,10 +626,15 @@ function configure_jira {
   install_mssql_driver
   atl_log configure_jira "Done configuring database driver!"
 
+  atl_log configure_jira "Configuring app insights..."
+  install_appinsights
+  atl_log configure_jira "Done app insights!"
+
   configure_jira_ram
 
   chown -R jira:jira "/datadisks/disk1"
   chown -R jira:jira "${ATL_JIRA_HOME}"
+  chown -R jira:jira "${ATL_JIRA_INSTALL_DIR}"
 }
 
 function remount_share {
@@ -627,7 +659,6 @@ function prepare_datadisks {
 function prepare_install {
   enable_rc_local
   tune_tcp_keepalive_for_azure
-  enable_nat
   prepare_share
   download_installer
   preserve_installer
@@ -656,6 +687,8 @@ function install_jira {
   /etc/init.d/jira start
 }
 
+atl_log main "Got args: $@"
+
 install_jq
 prepare_env $1 $3 $5
 source setenv.sh
@@ -663,15 +696,18 @@ source setenv.sh
 if [ "$2" == "prepare" ]; then
   export SERVER_AZURE_DOMAIN="${3}"
   export DB_SERVER_NAME="${4}"
+  export APPINSIGHTS_INSTRUMENTATION_KEY="${6}"
   prepare_install
 fi
 
 if [ "$2" == "install" ]; then
+  export APPINSIGHTS_INSTRUMENTATION_KEY="${3}"
   install_jira
 fi
 
 if [ "$2" == "uninstall" ]; then
   if [ "$3" == "--yes-i-want-to-lose-everything" ]; then
+    atl_log main "Uninstalling fully..."
     rm -rf "${ATL_JIRA_INSTALL_DIR}"
     rm -rf "${ATL_JIRA_HOME}"
     rm /etc/init.d/jira
