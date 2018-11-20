@@ -118,9 +118,37 @@
                         "name": "allow_ssh_from_jumpbox",
                         "properties": {
                             "description": "Allow ssh trafic from single node in internal subnet",
-                            "protocol": "TCP",
+                            "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "sourceAddressPrefix": "[reference(variables('jumpbox').ip.name).ipAddress]",
+                            "destinationPortRange": "22",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 102,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2018-08-01",
+            "name": "[variables('jumpbox').nsg.name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses', '/', variables('jumpbox').ip.name)]"
+            ],
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allow_ssh_from_jumpbox",
+                        "properties": {
+                            "description": "Allow ssh trafic to the jumpbox",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
                             "destinationPortRange": "22",
                             "destinationAddressPrefix": "*",
                             "access": "Allow",
@@ -186,7 +214,10 @@
                     {
                         "name": "[variables('jumpbox').subnet.name]",
                         "properties": {
-                            "addressPrefix": "[variables('jumpbox').subnet.prefix]"
+                            "addressPrefix": "[variables('jumpbox').subnet.prefix]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('jumpbox').nsg.name)]"
+                            }
                         }
                     }
                 ]
@@ -203,6 +234,9 @@
                 "[concat('Microsoft.Network/virtualNetworks/', variables('vnet').name)]"
             ],
             "properties": {
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('jumpbox').nsg.name)]"
+                },
                 "ipConfigurations": [
                     {
                         "name": "public-access",
