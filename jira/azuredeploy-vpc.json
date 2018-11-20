@@ -145,7 +145,7 @@
                     {
                         "name": "allow_ssh_from_jumpbox",
                         "properties": {
-                            "description": "Allow ssh trafic from single node in internal subnet",
+                            "description": "Allow ssh trafic to the jumpbox",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "sourceAddressPrefix": "*",
