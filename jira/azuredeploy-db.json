@@ -85,9 +85,27 @@
             "vendor": "Atlassian",
             "product": "JIRA",
             "provider": "2F0AF47A-92C7-413A-9009-C3815BFF7AF6"
+        },
+        "workspace": {
+            "name": "[concat(variables('namespace'), '-OmsWorkspace-', uniqueString(resourceGroup().id))]",
+            "sku": "free",
+            "retentionInDays": 7
         }
     },
     "resources": [
+        {
+            "type": "Microsoft.OperationalInsights/workspaces",
+            "name": "[variables('workspace').name]",
+            "apiVersion": "2015-11-01-preview",
+            "location": "[parameters('location')]",
+            "scale": null,
+            "properties": {
+                "sku": {
+                    "name": "[variables('workspace').sku]"
+                },
+                "retentionInDays": "[variables('workspace').retentionInDays]"
+            }
+        },
         {
             "type": "Microsoft.Sql/servers",
             "apiVersion": "2015-05-01-preview",
@@ -114,7 +132,106 @@
                         "collation": "[variables('sql').database.collation]",
                         "maxSizeBytes": "[variables('sql').database.maxSizeBytes]",
                         "requestedServiceObjectiveName": "[variables('sql').tier]"
-                    }
+                    },
+                    "resources": [
+                        {
+                            "comments": "DiagnosticSettings have to be within the nested, nested SQL DB - https://david-obrien.net/2018/06/azure-sql-diagnostics/. NB diagnostic hangs around too ie doesn't get deleted on RG deletion.",
+                            "type": "providers/diagnosticSettings",
+                            "name": "Microsoft.Insights/diagnostic_primary",
+                            "apiVersion": "2017-05-01-preview",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Sql/servers/databases', variables('sql').server.name, variables('sql').database.name)]"
+                            ],
+                            "properties": {
+                                "name": "sqlSaveToWorkspace",
+                                "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name)]",
+                                "logs": [
+                                    {
+                                      "category": "Blocks",
+                                      "enabled": true,
+                                      "retentionPolicy": {
+                                        "days": "[variables('workspace').retentionInDays]",
+                                        "enabled": false
+                                      }
+                                    },
+                                    {
+                                      "category": "QueryStoreWaitStatistics",
+                                      "enabled": true,
+                                      "retentionPolicy": {
+                                        "days": "[variables('workspace').retentionInDays]",
+                                        "enabled": false
+                                      }
+                                    },
+                                    {
+                                      "category": "Errors",
+                                      "enabled": true,
+                                      "retentionPolicy": {
+                                        "days": "[variables('workspace').retentionInDays]",
+                                        "enabled": false
+                                      }
+                                    },
+                                    {
+                                      "category": "QueryStoreRuntimeStatistics",
+                                      "enabled": true,
+                                      "retentionPolicy": {
+                                        "days": "[variables('workspace').retentionInDays]",
+                                        "enabled": false
+                                      }
+                                    },
+                                    {
+                                      "category": "DatabaseWaitStatistics",
+                                      "enabled": true,
+                                      "retentionPolicy": {
+                                        "days": "[variables('workspace').retentionInDays]",
+                                        "enabled": false
+                                      }
+                                    },
+                                    {
+                                      "category": "Timeouts",
+                                      "enabled": true,
+                                      "retentionPolicy": {
+                                        "days": "[variables('workspace').retentionInDays]",
+                                        "enabled": false
+                                      }
+                                    },
+                                    {
+                                      "category": "SQLInsights",
+                                      "enabled": true,
+                                      "retentionPolicy": {
+                                        "days": "[variables('workspace').retentionInDays]",
+                                        "enabled": false
+                                      }
+                                    },
+                                    {
+                                      "category": "AutomaticTuning",
+                                      "enabled": true,
+                                      "retentionPolicy": {
+                                        "days": "[variables('workspace').retentionInDays]",
+                                        "enabled": false
+                                      }
+                                    },
+                                    {
+                                      "category": "Deadlocks",
+                                      "enabled": true,
+                                      "retentionPolicy": {
+                                        "days": "[variables('workspace').retentionInDays]",
+                                        "enabled": false
+                                      }
+                                    }
+                                  ],
+                                  "metrics": [
+                                    {
+                                      "category": "AllMetrics",
+                                      "enabled": true,
+                                      "retentionPolicy": {
+                                        "enabled": false,
+                                        "days": "[variables('workspace').retentionInDays]"
+                                      }
+                                    }
+                                  ]
+                            }
+                        }
+                    ]
                 }
             ]
         },
@@ -139,6 +256,10 @@
         "jdbcUrl": {
             "type": "string",
             "value": "[concat('jdbc:sqlserver://', reference(variables('sql').server.name).fullyQualifiedDomainName, ':1433;database=', variables('sql').database.name, ';user=', variables('sql').server.username, '@', variables('sql').server.name, ';password=', variables('sql').server.password)]"
+        },
+        "workspaceName": {
+            "type": "string",
+            "value": "[variables('workspace').name]"
         }
     }
 }

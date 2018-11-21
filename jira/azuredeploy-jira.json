@@ -384,6 +384,9 @@
             "name": "appInsightsTemplate",
             "type": "Microsoft.Resources/deployments",
             "condition": "[parameters('enableApplicationInsights')]",
+            "dependsOn": [
+                "dbTemplate"
+            ],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
@@ -393,6 +396,9 @@
                 "parameters": {
                     "location": {
                         "value": "[parameters('location')]"
+                    },
+                    "workspaceName": {
+                        "value": "[reference('dbTemplate').outputs.workspaceName]"
                     }
                 }
             }
