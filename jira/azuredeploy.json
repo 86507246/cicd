@@ -4,7 +4,17 @@
     "parameters": {
         "location": {
             "type": "string",
-            "defaultValue": "northeurope"
+            "defaultValue": "westeurope",
+            "allowedValues": [
+                "eastus",
+                "westeurope",
+                "southeastasia",
+                "centralindia",
+                "canadacentral"
+            ],
+            "metadata": {
+                "description": "Azure region to deploy to. NB allowable regions are those that currently support preview functionality used within this Jira template"
+            }
         },
         "baseUrl": {
             "type": "string",

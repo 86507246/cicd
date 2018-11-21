@@ -4,29 +4,76 @@
     "parameters": {
         "location": {
             "type": "string",
-            "defaultValue": "northeurope"
+            "defaultValue": "westeurope"
         }
     },
     "variables": {
         "namespace": "jira",
-        "name": "[concat(variables('namespace'), 'AppInsights')]",
-        "type": "java"
+        "appinsights": {
+            "name": "[concat(variables('namespace'), '-AppInsights-', uniqueString(resourceGroup().id))]",
+            "type": "java"
+        },
+        "workspace": {
+            "name": "[concat(variables('namespace'), '-OmsWorkspace-', uniqueString(resourceGroup().id))]",
+            "sku": "free",
+            "retentionInDays": 7
+        },
+        "solutionTypes": "AzureSQLAnalytics",
+        "sqlanalytics": {
+            "name": "[concat(variables('solutionTypes'), '(', variables('workspace').name, ')')]"
+        }
     },
     "resources": [
         {
-            "name": "[variables('name')]",
+            "name": "[variables('appinsights').name]",
             "type": "Microsoft.Insights/components",
             "location": "[parameters('location')]",
             "apiVersion": "2014-04-01",
             "properties": {
-                "ApplicationId": "[variables('name')]",
-                "Application_Type": "[variables('type')]"
+                "ApplicationId": "[variables('appinsights').name]",
+                "Application_Type": "[variables('appinsights').type]"
             }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces",
+            "name": "[variables('workspace').name]",
+            "apiVersion": "2015-11-01-preview",
+            "location": "[parameters('location')]",
+            "scale": null,
+            "properties": {
+                "sku": {
+                    "name": "[variables('workspace').sku]"
+                },
+                "retentionInDays": "[variables('workspace').retentionInDays]"
+            }
+        },
+        {
+            "comments": "name has to match the plan name or get into issues - see https://github.com/Azure/azure-quickstart-templates/issues/3172",
+            "type": "Microsoft.OperationsManagement/solutions",
+            "name": "[variables('sqlanalytics').name]",
+            "apiVersion": "2015-11-01-preview",
+            "location": "[parameters('location')]",
+            "plan": {
+                "name": "[variables('sqlanalytics').name]",
+                "product": "[concat('OMSGallery/', variables('solutionTypes'))]",
+                "promotionCode": "",
+                "publisher": "Microsoft"
+            },
+            "properties": {
+                "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name)]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.OperationalInsights/workspaces/', variables('workspace').name)]"
+            ]
         }
     ],
     "outputs": {
         "instrumentkey": {
-            "value": "[reference(variables('name')).InstrumentationKey]",
+            "value": "[reference(variables('appinsights').name).InstrumentationKey]",
+            "type": "string"
+        },
+        "omsWorkspace": {
+            "value": "[variables('workspace').name]",
             "type": "string"
         }
     }
