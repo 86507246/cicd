@@ -434,15 +434,16 @@
         },
         {
             "type": "Microsoft.Storage/storageAccounts",
-            "apiVersion": "2018-02-01",
+            "apiVersion": "2018-07-01",
             "name": "[variables('jira').storage.name]",
             "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
             "sku": {
-                "name": "Standard_LRS"
+                "name": "Standard_GRS",
+                "tier": "Standard"
             },
-            "kind": "Storage",
-            "properties": {}
+            "kind": "StorageV2",
+            "properties": {},
+            "tags": "[variables('tags')]"
         },
         {
             "type": "Microsoft.Compute/virtualMachines/extensions",
