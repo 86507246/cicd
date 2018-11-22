@@ -398,7 +398,7 @@
                         "value": "[parameters('location')]"
                     },
                     "workspaceName": {
-                        "value": "[reference('dbTemplate').outputs.workspaceName]"
+                        "value": "[reference('dbTemplate').outputs.workspaceName.value]"
                     }
                 }
             }
