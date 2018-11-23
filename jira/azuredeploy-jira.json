@@ -149,6 +149,9 @@
         }
     },
     "variables": {
+        "url": "[if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/'))]",
+        "scriptsUrl": "[concat(variables('url'), 'scripts/')]",
+        "templatesUrl": "[concat(variables('url'), 'templates/')]",
         "dbServerName": "[concat(variables('namespace'), 'sqlserver', uniqueString(resourceGroup().id))]",
         "namespace": "jira",
         "dbTemplate": {
@@ -294,10 +297,6 @@
             "storage": {
                 "name": "[concat(variables('namespace'), 'storage', uniqueString(resourceGroup().id))]"
             },
-            "resources": {
-                "url": "[if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/'))]",
-                "token": "[parameters('provisioningStorageToken')]"
-            },
             "cluster": {
                 "name": "[concat(variables('namespace'), 'cluster')]",
                 "tier": "Standard",
@@ -332,8 +331,6 @@
             "settings": "[concat(' SETTINGS_ATL_ENV_DATA=\"', base64(string(variables('env').settings)), '\" ')]"
         },
         "scripts": {
-            "url": "[if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/'))]",
-            "token": "[parameters('provisioningStorageToken')]",
             "prepare": {
                 "name": "prepare_install.sh",
                 "env": "[concat(variables('data').storage, variables('data').server, variables('data').db, variables('data').sql, variables('data').settings)]"
@@ -467,12 +464,12 @@
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "fileUris": [
-                        "[concat(variables('jira').resources.url, 'prepare_install.sh', variables('jira').resources.token)]",
-                        "[concat(variables('jira').resources.url, 'hydrate_jira_config.py', variables('jira').resources.token)]",
-                        "[concat(variables('jira').resources.url, 'dbconfig.xml.template', variables('jira').resources.token)]",
-                        "[concat(variables('jira').resources.url, 'jira_db.sql.template', variables('jira').resources.token)]",
-                        "[concat(variables('jira').resources.url, 'server.xml.template', variables('jira').resources.token)]",
-                        "[concat(variables('jira').resources.url, 'ApplicationInsights.xml.template', variables('jira').resources.token)]"
+                        "[concat(variables('scriptsUrl'), 'prepare_install.sh', parameters('provisioningStorageToken'))]",
+                        "[concat(variables('scriptsUrl'), 'hydrate_jira_config.py', parameters('provisioningStorageToken'))]",
+                        "[concat(variables('templatesUrl'), 'dbconfig.xml.template', parameters('provisioningStorageToken'))]",
+                        "[concat(variables('templatesUrl'), 'jira_db.sql.template', parameters('provisioningStorageToken'))]",
+                        "[concat(variables('templatesUrl'), 'server.xml.template', parameters('provisioningStorageToken'))]",
+                        "[concat(variables('templatesUrl'), 'ApplicationInsights.xml.template', parameters('provisioningStorageToken'))]"
                     ]
                 },
                 "protectedSettings": {
@@ -634,9 +631,9 @@
                                     "autoUpgradeMinorVersion": true,
                                     "settings": {
                                         "fileUris": [
-                                            "[concat(uri(variables('scripts').url, variables('scripts').prepare.name), variables('scripts').token)]",
-                                            "[concat(uri(variables('scripts').url, 'appinsights_transform_web_xml.xsl'), variables('scripts').token)]",
-                                            "[concat(uri(variables('scripts').url, variables('scripts').disk.name), variables('scripts').token)]"
+                                            "[concat(uri(variables('scriptsUrl'), variables('scripts').prepare.name), parameters('provisioningStorageToken'))]",
+                                            "[concat(uri(variables('scriptsUrl'), 'appinsights_transform_web_xml.xsl'), parameters('provisioningStorageToken'))]",
+                                            "[concat(uri(variables('scriptsUrl'), variables('scripts').disk.name), parameters('provisioningStorageToken'))]"
                                         ]
                                     },
                                     "protectedSettings": {
