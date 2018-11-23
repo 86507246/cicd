@@ -73,6 +73,17 @@
                 "description": "Database password"
             }
         },
+        "dbTier": {
+            "type": "string",
+            "allowedValues": [
+                "Standard",
+                "Premium"
+            ],
+            "defaultValue": "Premium",
+            "metadata": {
+                "description": "The database service tier"
+            }
+        },
         "userName": {
             "type": "string",
             "defaultValue": "admin"
@@ -369,6 +380,9 @@
                     },
                     "dbUsername": {
                         "value": "[parameters('dbUsername')]"
+                    },
+                    "dbTier": {
+                        "value": "[parameters('dbTier')]"
                     },
                     "vnetName": {
                         "value": "[parameters('vnetName')]"
