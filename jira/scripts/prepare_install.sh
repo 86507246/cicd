@@ -285,7 +285,7 @@ function hydrate_shared_config {
   export SERVER_PROXY_NAME="${SERVER_CNAME:-${SERVER_AZURE_DOMAIN}}"
   export DB_TRUSTED_HOST=$(get_trusted_dbhost)
 
-  local template_files=(dbconfig.xml.template server.xml.template ApplicationInsights.xml.template)
+  local template_files=(dbconfig.xml.template server.xml.template ApplicationInsights.xml.template jira-collectd.conf.template)
   local output_file=""
   for template_file in ${template_files[@]};
   do
@@ -537,7 +537,7 @@ function install_mssql_driver {
 
 function install_appinsights {
   atl_log install_appinsights "Installation MS App Insights"
-  atl_log install_jira "Have AppInsights Key? ${APPINSIGHTS_INSTRUMENTATION_KEY}"
+  atl_log install_appinsights "Have AppInsights Key? ${APPINSIGHTS_INSTRUMENTATION_KEY}"
   if [ -n ${APPINSIGHTS_INSTRUMENTATION_KEY} ] 
   then 
      apt-get -qqy install xsltproc
@@ -547,19 +547,52 @@ function install_appinsights {
      xsltproc -o ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/web.xml ./appinsights_transform_web_xml.xsl ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/web.xml
 
      cp -fp ${ATL_JIRA_SHARED_HOME}/ApplicationInsights.xml ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/classes
+
+     atl_log install_appinsights "Switching on Jira JMX"
+     echo "jira.monitoring.jmx.enabled=true" >> ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/classes/jira-features.properties
+     echo "jira.monitoring.jmx.enabled=true" >> ${ATL_JIRA_HOME}/jira-config.properties
+
+     cp -fp ${ATL_JIRA_INSTALL_DIR}/bin/setenv.sh ${ATL_JIRA_INSTALL_DIR}/bin/setenv.sh.orig
+     sed 's/export CATALINA_OPTS/CATALINA_OPTS="${CATALINA_OPTS} -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Djava.rmi.server.hostname=127.0.0.1 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"\nexport CATALINA_OPTS/' ${ATL_JIRA_INSTALL_DIR}/bin/setenv.sh.orig > ${ATL_JIRA_INSTALL_DIR}/bin/setenv.sh
+  fi
+}
+
+function install_appinsights_collectd {
+  # Have moved collectd to run after Jira startup - doesn't start up well with all the mounting/remounting/Jira not being up.
+  if [ -n ${APPINSIGHTS_INSTRUMENTATION_KEY} ]
+  then
+    atl_log install_appinsights_collectd "Configuring collectd to publish Jira JMX"
+    apt-get -qqy install collectd
+    cp -fp ${ATL_JIRA_SHARED_HOME}/jira-collectd.conf /etc/collectd/collectd.conf
+    chmod +r /etc/collectd/collectd.conf
+
+    atl_log download_appinsights_jars "Copying collectd appinsights jar to /usr/share/collectd/java"
+    cp -fp applicationinsights-collectd*.jar /usr/share/collectd/java/
+
+    atl_log install_appinsights_collectd "Starting collectd..."
+    /etc/init.d/collectd start
+    /etc/init.d/collectd status
+    
+    # Bouncing collectd - cgroups issue with Azure wagent
+    sleep 5
+    /etc/init.d/collectd restart
+    /etc/init.d/collectd status
   fi
 }
 
 function download_appinsights_jars {
   atl_log download_appinsights_jars "Downloading MS AppInsight Jars"
   APPINSIGHTS_VER='2.2.1'
-  JARS="applicationinsights-core-${APPINSIGHTS_VER}.jar applicationinsights-web-${APPINSIGHTS_VER}.jar" 
+  JARS="applicationinsights-core-${APPINSIGHTS_VER}.jar applicationinsights-web-${APPINSIGHTS_VER}.jar applicationinsights-collectd-${APPINSIGHTS_VER}.jar" 
   for aJar in $(echo $JARS)
   do
      curl -LO https://github.com/Microsoft/ApplicationInsights-Java/releases/download/${APPINSIGHTS_VER}/${aJar}
-     atl_log download_appinsights_jars "Copying appinsights jar: ${aJar} to ${1}"
-     cp -fp ${aJar} ${1}
-  done 
+     if [ $aJar != "applicationinsights-collectd-${APPINSIGHTS_VER}.jar" ]
+     then
+          atl_log download_appinsights_jars "Copying appinsights jar: ${aJar} to ${1}"
+          cp -fp ${aJar} ${1}
+     fi
+  done
 }
 
 function configure_cluster {
@@ -685,6 +718,7 @@ function install_jira {
   remount_share
   atl_log install_jira "Done installing JIRA! Starting..."
   /etc/init.d/jira start
+  install_appinsights_collectd
 }
 
 atl_log main "Got args: $@"

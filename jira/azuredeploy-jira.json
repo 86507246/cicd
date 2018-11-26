@@ -469,7 +469,8 @@
                         "[concat(variables('templatesUrl'), 'dbconfig.xml.template', parameters('provisioningStorageToken'))]",
                         "[concat(variables('templatesUrl'), 'jira_db.sql.template', parameters('provisioningStorageToken'))]",
                         "[concat(variables('templatesUrl'), 'server.xml.template', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'ApplicationInsights.xml.template', parameters('provisioningStorageToken'))]"
+                        "[concat(variables('templatesUrl'), 'ApplicationInsights.xml.template', parameters('provisioningStorageToken'))]",
+                        "[concat(variables('templatesUrl'), 'jira-collectd.conf.template', parameters('provisioningStorageToken'))]"
                     ]
                 },
                 "protectedSettings": {
