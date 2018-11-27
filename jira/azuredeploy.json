@@ -87,6 +87,17 @@
                 "description": "Database password"
             }
         },
+        "dbTier": {
+            "type": "string",
+            "allowedValues": [
+                "Standard",
+                "Premium"
+            ],
+            "defaultValue": "Premium",
+            "metadata": {
+                "description": "The database service tier"
+            }
+        },
         "userName": {
             "type": "string",
             "defaultValue": "admin",
@@ -120,8 +131,7 @@
             "defaultValue": 2,
             "metadata": {
                 "description": "The number of JIRA nodes in the cluster"
-            },
-            "minValue": 2
+            }
         },
         "sslBase64EncodedPfxCertificate": {
             "type": "string",
@@ -215,6 +225,9 @@
                     },
                     "dbPassword": {
                         "value": "[parameters('dbPassword')]"
+                    },
+                    "dbTier": {
+                        "value": "[parameters('dbTier')]"
                     },
                     "applicationTitle": {
                         "value": "[parameters('applicationTitle')]"
