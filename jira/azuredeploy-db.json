@@ -24,6 +24,17 @@
                 "description": "Database password"
             }
         },
+        "dbTier": {
+            "type": "string",
+            "allowedValues": [
+                "Standard",
+                "Premium"
+            ],
+            "defaultValue": "Premium",
+            "metadata": {
+                "description": "The database service tier"
+            }
+        },
         "clusterSize": {
             "type": "int",
             "allowedValues": [
@@ -59,27 +70,29 @@
             },
             "database": {
                 "name": "[concat(variables('namespace'), 'sqldatabase')]",
-                "edition": "[variables('lookup').dbTierToDbEdition[variables('lookup').clusterSizeToDbTier[string(parameters('clusterSize'))]]]",
-                "collation": "SQL_Latin1_General_CP437_CI_AI",
-                "maxSizeBytes": "107374182400",
-                "schema": "jiraschema"
-            },
-            "tier": "[variables('lookup').clusterSizeToDbTier[string(parameters('clusterSize'))]]"
+                "tier": "[parameters('dbTier')]",
+                "tierName" : "[variables('lookup').clusterSizeToDbTier[string(parameters('clusterSize'))]]",
+                "maxSizeBytes": "[variables('lookup').maxSizeInBytes[string(parameters('dbTier'))]]",
+                "collation": "SQL_Latin1_General_CP437_CI_AI"
+
+            }
         },
         "lookup": {
             "clusterSizeToDbTier": {
-                "1": "P2",
-                "2": "P2",
-                "3": "P2",
-                "4": "P4",
-                "5": "P4",
-                "6": "P4"
+                "2": "[variables('conditions').smallCluster]",
+                "3": "[variables('conditions').smallCluster]",
+                "4": "[variables('conditions').largeCluster]",
+                "5": "[variables('conditions').largeCluster]",
+                "6": "[variables('conditions').largeCluster]"
             },
-            "dbTierToDbEdition": {
-                "P2": "Premium",
-                "P4": "Premium",
-                "P6": "Premium"
+            "maxSizeInBytes": {
+                "Standard" : 268435456000,
+                "Premium" : 536870912000
             }
+        },
+        "conditions": {
+            "smallCluster": "[if(equals(parameters('dbTier'),'Standard'),'S4','P2')]",
+            "largeCluster": "[if(equals(parameters('dbTier'),'Standard'),'S6','P4')]"
         },
         "tags": {
             "vendor": "Atlassian",
@@ -89,33 +102,31 @@
     },
     "resources": [
         {
+            "name": "[variables('sql').server.name]",
             "type": "Microsoft.Sql/servers",
             "apiVersion": "2015-05-01-preview",
-            "name": "[variables('sql').server.name]",
             "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
             "properties": {
-                "version": "12.0",
                 "administratorLogin": "[variables('sql').server.username]",
                 "administratorLoginPassword": "[variables('sql').server.password]"
             },
-            "resources": [
-                {
-                    "type": "databases",
-                    "apiVersion": "2015-05-01-preview",
-                    "name": "[variables('sql').database.name]",
-                    "location": "[parameters('location')]",
-                    "tags": "[variables('tags')]",
-                    "dependsOn": [
-                        "[concat('Microsoft.Sql/servers/', variables('sql').server.name)]"
-                    ],
-                    "properties": {
-                        "edition": "[variables('sql').database.edition]",
-                        "collation": "[variables('sql').database.collation]",
-                        "maxSizeBytes": "[variables('sql').database.maxSizeBytes]",
-                        "requestedServiceObjectiveName": "[variables('sql').tier]"
-                    }
-                }
+            "tags": "[variables('tags')]"
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases",
+            "sku": {
+                "name": "[variables('sql').database.tierName]",
+                "tier": "[parameters('dbTier')]"
+            },
+            "name": "[concat(variables('sql').server.name, '/',variables('sql').database.name)]",
+            "apiVersion": "2017-03-01-preview",
+            "location": "[parameters('location')]",
+            "properties": {
+                "collation": "[variables('sql').database.collation]",
+                "maxSizeBytes": "[variables('sql').database.maxSizeBytes]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Sql/servers/', variables('sql').server.name)]"
             ]
         },
         {
