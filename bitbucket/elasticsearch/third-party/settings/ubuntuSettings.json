@@ -1,0 +1,213 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "_artifactsLocationSasToken": {
+      "type": "securestring",
+      "metadata": {
+          "description": "The sasToken required to access _artifactsLocation.  When the template is deployed using the accompanying scripts, a sasToken will be automatically generated. Use the defaultValue if the staging location is not secured."
+      },
+      "defaultValue": ""
+    },
+    "templateBaseUrl": {
+        "type": "string",
+        "metadata": {
+            "description": "The base url for templates"
+        }
+    },
+    "esSettings": {
+        "type": "object",
+        "metadata": {
+            "description" : "The Elasticsearch settings"
+        }
+    },
+    "commonVmSettings": {
+        "type": "object",
+        "metadata": {
+            "description" : "Shared VM settings"
+        }
+    },
+    "topologySettings": {
+        "type": "object",
+        "metadata": {
+            "description": "Aggregate for topology variable"
+        }
+    },
+    "networkSettings": {
+      "type": "object",
+      "metadata": {
+        "description": "Network settings"
+      }
+    },
+    "azureCloudStorageAccount": {
+      "type": "secureObject",
+      "metadata": {
+          "description": "The storage settings for the Azure Cloud plugin"
+      }
+    },
+    "kibanaIp": {
+      "type": "string",
+      "metadata": {
+          "description": "The public IP address for Kibana"
+      }
+    },
+    "sharedStorageAccount": {
+      "type": "secureObject",
+      "metadata": {
+        "description": "The shared storage settings"
+      }
+    },
+    "elasticTags": {
+      "type": "object",
+      "defaultValue": {
+        "provider": "648D2193-0CE0-4EFB-8A82-AF9792184FD9"
+      },
+      "metadata": {
+        "description": "Unique identifiers to allow the Azure Infrastructure to understand the origin of resources deployed to Azure. You do not need to supply a value for this."
+      }
+    }
+  },
+  "variables": {
+    "nodesTemplateUrl": "[concat(parameters('templateBaseUrl'), 'partials/node-resources.json', parameters('_artifactsLocationSasToken'))]",
+    "namespacePrefix": "[parameters('topologySettings').vmHostNamePrefix]",
+    "kibanaDomainName": "[if(not(empty(parameters('esSettings').samlMetadataUri)),if(not(empty(parameters('esSettings').samlServiceProviderUri)),parameters('esSettings').samlServiceProviderUri,parameters('kibanaIp')),'')]",
+    "dataNodeShortOpts": {
+      "No": "z",
+      "Yes": ""
+    },
+    "dataNodeShortOpt": "[variables('dataNodeShortOpts')[parameters('topologySettings').dataNodesAreMasterEligible]]",
+    "dedicatedMasterNodesShortOpts": {
+      "No": "d",
+      "Yes": ""
+    },
+    "dedicatedMasterNodesShortOpt": "[variables('dedicatedMasterNodesShortOpts')[parameters('topologySettings').dataNodesAreMasterEligible]]",
+    "installAzureCloudPluginShortOpts": {
+      "No": "",
+      "Yes": "j"
+    },
+    "installAzureCloudPluginShortOpt": "[variables('installAzureCloudPluginShortOpts')[parameters('azureCloudStorageAccount').install]]",
+    "azureCloudStorageName": "[if(equals(parameters('azureCloudStorageAccount').install, 'Yes'), if(empty(parameters('azureCloudStorageAccount').name), parameters('sharedStorageAccount').name, parameters('azureCloudStorageAccount').name), '')]",
+    "azureCloudStorageKey": "[if(equals(parameters('azureCloudStorageAccount').install, 'Yes'), if(empty(parameters('azureCloudStorageAccount').key), parameters('sharedStorageAccount').key, parameters('azureCloudStorageAccount').key), '')]",
+    "azureCloudStorageSuffix": "[if(equals(parameters('azureCloudStorageAccount').install, 'Yes'), if(empty(parameters('azureCloudStorageAccount').name), parameters('sharedStorageAccount').suffix, parameters('azureCloudStorageAccount').suffix), '')]",
+    "installPluginsShortOpts": {
+      "No": "",
+      "Yes": "l"
+    },
+    "installPluginsShortOpt": "[variables('installPluginsShortOpts')[parameters('esSettings').installPlugins]]",
+    "commonShortOpts": "[concat(variables('dedicatedMasterNodesShortOpt'),  variables('installPluginsShortOpt'), variables('installAzureCloudPluginShortOpt'), 'n ')]",
+    "commonInstallParams": "[concat('\"', parameters('esSettings').clusterName, '\" -v \"', parameters('esSettings').version, '\" -m ', parameters('esSettings').heapSize,' -A \"', parameters('esSettings').securityAdminPwd, '\" -R \"', parameters('esSettings').securityReadPwd, '\" -K \"', parameters('esSettings').securityKibanaPwd, '\" -S \"', parameters('esSettings').securityLogstashPwd, '\" -B \"', parameters('esSettings').securityBootstrapPwd, '\" -Z ', parameters('topologySettings').vmDataNodeCount,' -p \"', variables('namespacePrefix'), '\" -a \"', variables('azureCloudStorageName'), '\" -k \"', variables('azureCloudStorageKey'), '\" -E \"', variables('azureCloudStorageSuffix'), '\" -L \"', parameters('esSettings').installAdditionalPlugins, '\" -C \"', replace(parameters('esSettings').yamlConfiguration, '\"', '\\\"'), '\" -D \"', parameters('topologySettings').vNetLoadBalancerIp, '\" -H \"', parameters('esSettings').httpCertBlob,'\" -G \"', parameters('esSettings').httpCertPassword, '\" -V \"', parameters('esSettings').httpCaCertBlob, '\" -J \"', parameters('esSettings').httpCaCertPassword, '\" -T \"', parameters('esSettings').transportCaCertBlob, '\" -W \"', parameters('esSettings').transportCaCertPassword, '\" -N \"', parameters('esSettings').transportCertPassword, '\" -O \"', parameters('esSettings').samlMetadataUri, '\" -P \"', variables('kibanaDomainName'), '\"')]",
+    "ubuntuScripts": [
+      "[concat(parameters('templateBaseUrl'), 'scripts/elasticsearch-ubuntu-install.sh', parameters('_artifactsLocationSasToken'))]",
+      "[concat(parameters('templateBaseUrl'), 'scripts/kibana-install.sh', parameters('_artifactsLocationSasToken'))]",
+      "[concat(parameters('templateBaseUrl'), 'scripts/vm-disk-utils-0.1.sh', parameters('_artifactsLocationSasToken'))]"
+    ],
+    "ubuntuSkus": {
+      "5": "16.04-LTS",
+      "6": "16.04-LTS"
+    },
+    "ubuntuSku": "[variables('ubuntuSkus')[substring(parameters('esSettings').version, 0, 1)]]",
+    "ubuntuSettings": {
+      "imageReference": {
+        "publisher": "Canonical",
+        "offer": "UbuntuServer",
+        "sku": "[variables('ubuntuSku')]",
+        "version": "latest"
+      },
+      "managementPort": 22,
+      "extensionSettings": {
+        "master": {
+          "publisher": "Microsoft.Azure.Extensions",
+          "type": "CustomScript",
+          "typeHandlerVersion": "2.0",
+          "autoUpgradeMinorVersion": true,
+          "settings": {
+            "fileUris": "[variables('ubuntuScripts')]"
+          },
+          "protectedSettings": {
+            "commandToExecute": "[concat('bash elasticsearch-ubuntu-install.sh -x', variables('commonShortOpts'), variables('commonInstallParams'))]"
+          }
+        },
+        "client": {
+          "publisher": "Microsoft.Azure.Extensions",
+          "type": "CustomScript",
+          "typeHandlerVersion": "2.0",
+          "autoUpgradeMinorVersion": true,
+          "settings": {
+            "fileUris": "[variables('ubuntuScripts')]"
+          },
+          "protectedSettings": {
+            "commandToExecute": "[concat('bash elasticsearch-ubuntu-install.sh -y', variables('commonShortOpts'), variables('commonInstallParams'))]"
+          }
+        },
+        "data": {
+          "publisher": "Microsoft.Azure.Extensions",
+          "type": "CustomScript",
+          "typeHandlerVersion": "2.0",
+          "autoUpgradeMinorVersion": true,
+          "settings": {
+            "fileUris": "[variables('ubuntuScripts')]"
+          },
+          "protectedSettings": {
+            "commandToExecute": "[concat('bash elasticsearch-ubuntu-install.sh -', variables('dataNodeShortOpt'), variables('commonShortOpts'), variables('commonInstallParams'))]"
+          }
+        },
+        "kibana": {
+          "publisher": "Microsoft.Azure.Extensions",
+          "type": "CustomScript",
+          "typeHandlerVersion": "2.0",
+          "autoUpgradeMinorVersion": true,
+          "settings": {
+            "fileUris": "[variables('ubuntuScripts')]"
+          },
+          "protectedSettings": {
+            "commandToExecute": "[concat('bash kibana-install.sh -', variables('installPluginsShortOpt'), 'n \"', parameters('esSettings').clusterName, '\" -v \"', parameters('esSettings').version, '\" -u \"', concat(if(equals(parameters('networkSettings').https, 'Yes'), 'https', 'http'), '://', parameters('topologySettings').vNetLoadBalancerIp, ':9200') ,'\" -S \"', parameters('esSettings').securityKibanaPwd, '\" -C \"', parameters('topologySettings').kibanaCertBlob, '\" -K \"', parameters('topologySettings').kibanaKeyBlob, '\" -P \"', parameters('topologySettings').kibanaKeyPassphrase, '\" -Y \"', replace(parameters('topologySettings').kibanaYaml, '\"', '\\\"'), '\" -H \"', parameters('esSettings').httpCertBlob,'\" -G \"', parameters('esSettings').httpCertPassword, '\" -V \"', parameters('esSettings').httpCaCertBlob,'\" -J \"', parameters('esSettings').httpCaCertPassword, '\" -U \"', variables('kibanaDomainName'), '\"')]"
+          }
+        }
+      }
+    }
+  },
+  "resources": [
+    {
+      "name": "elasticsearch-nodes",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-05-10",
+      "dependsOn": [ ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('nodesTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "_artifactsLocationSasToken": {
+            "value": "[parameters('_artifactsLocationSasToken')]"
+          },
+          "templateBaseUrl": {
+            "value": "[parameters('templateBaseUrl')]"
+          },
+          "osSettings": {
+            "value": "[variables('ubuntuSettings')]"
+          },
+          "commonVmSettings": {
+            "value": "[parameters('commonVmSettings')]"
+          },
+          "topologySettings": {
+            "value": "[parameters('topologySettings')]"
+          },
+          "networkSettings": {
+            "value": "[parameters('networkSettings')]"
+          },
+          "elasticTags": {
+            "value": "[parameters('elasticTags')]"
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "jumpboxssh": {
+      "value": "[reference('elasticsearch-nodes').outputs.jumpboxssh.value]",
+      "type": "string"
+    }
+  }
+}

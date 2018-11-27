@@ -78,7 +78,7 @@ async function createDeploymentTask (deployment = getDeploymentPath(), params = 
   })
 }
 
-function publish (prepareResources = () => {}) {
+function publish (prepareResources = () => {}, processResources = () => {}, flatten = boolean => true) {
   const pkg = {
     name: product(),
     source: path.join(__dirname, product()),
@@ -96,11 +96,23 @@ function publish (prepareResources = () => {}) {
     path.resolve(pkg.source, 'createUIDefinition.json'),
     path.resolve(pkg.target, CREATE_UI_DEFINITION_NAME))
 
-  shell.exec([
-    'zip', '-r', '--junk-paths',
-    path.resolve(pkg.target, '..', `${pkg.name}.zip`),
-    pkg.target
-  ].join(' '))
+  processResources(pkg)
+
+  if(flatten) {
+    shell.exec([
+      'zip', '-r', '--junk-paths',
+      path.resolve(pkg.target, '..', `${pkg.name}.zip`),
+      pkg.target
+    ].join(' '))
+  } else {
+    shell.exec([
+      'pushd '+ pkg.target + ' && ',
+      'zip', '-r',
+      path.resolve(pkg.target, '..', `${pkg.name}.zip`),
+      ".",
+      ' && popd',
+    ].join(' '))
+  }
 }
 
 function getDeploymentParametersPath () {
@@ -194,15 +206,32 @@ function applyTasks (gulp) {
 
   gulp.task('publish-bitbucket', () => {
     publish((pkg) => {
-      shell.mkdir('-p', path.resolve(pkg.target, 'scripts'))
+      var bitbucketDir = path.resolve(pkg.target, 'bitbucket')
+      shell.mkdir('-p', bitbucketDir)
+      shell.mkdir('-p', path.resolve(bitbucketDir, 'scripts'))
       shell.cp(
         path.resolve(pkg.source, 'scripts', '*'),
-        path.resolve(pkg.target, 'scripts'))
-      shell.mkdir('-p', path.resolve(pkg.target, 'elasticsearch'))
+        path.resolve(bitbucketDir, 'scripts'))
+
+      shell.mkdir('-p', path.resolve(bitbucketDir, 'elasticsearch'))
       shell.cp(
         path.resolve(pkg.source, 'elasticsearch', 'elasticsearch.json'),
-        path.resolve(pkg.target, 'elasticsearch'))
-    })
+        path.resolve(bitbucketDir, 'elasticsearch'))
+        
+      shell.mkdir('-p', path.resolve(bitbucketDir, 'elasticsearch/third-party'))
+      shell.cp('-r',
+          path.resolve(pkg.source, 'elasticsearch/third-party', '*'),
+          path.resolve(bitbucketDir, 'elasticsearch/third-party'))
+    }, (pkg) => {
+      var mainFileName = pkg.target + '/' + MAIN_TEMPLATE_NAME
+      var mainFile = require(mainFileName)
+
+      mainFile.parameters._artifactsLocation.defaultValue = '[deployment().properties.templateLink.uri]'
+
+      fs.writeFileSync(mainFileName, JSON.stringify(mainFile, null, 2), function (err) {
+        if (err) return fail(err)
+      })
+    }, false)
   })
 
   gulp.task('publish', () => runSequence('check-zip-cli', `publish-${product()}`))

@@ -2,6 +2,13 @@
     "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "_artifactsLocationSasToken": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The sasToken required to access _artifactsLocation.  When the template is deployed using the accompanying scripts, a sasToken will be automatically generated. Use the defaultValue if the staging location is not secured."
+            },
+            "defaultValue": ""
+          },
         "adminUsername": {
             "type": "string",
             "metadata": {
@@ -288,7 +295,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(parameters('esTemplateBaseUrl'), 'loadbalancers/internal-lb-resources.json')]",
+                    "uri": "[concat(parameters('esTemplateBaseUrl'), 'loadbalancers/internal-lb-resources.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -315,10 +322,13 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(parameters('esTemplateBaseUrl'), 'settings/ubuntuSettings.json')]",
+                    "uri": "[concat(parameters('esTemplateBaseUrl'), 'settings/ubuntuSettings.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
                     "templateBaseUrl": {
                         "value": "[parameters('esTemplateBaseUrl')]"
                     },

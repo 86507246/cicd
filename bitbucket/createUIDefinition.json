@@ -265,8 +265,8 @@
                         },
                         "constraints": {
                             "required": true,
-                            "regex": "^(?=.*[A-Z])(?=.*[!@#$%])(?=.*[0-9])(?=.*[a-z]).{8,16}$",
-                            "validationMessage": "This password must be between 8 and 16 characters long, and must contain at least one uppercase letter, one lowercase letter, one number (0-9), and one non-alphanumeric character (!, $, #, %, etc.)."
+                            "regex": "^(?=.*[A-Z])(?=.*[!@#$%])(?=.*[0-9])(?=.*[a-z]).{12,16}$",
+                            "validationMessage": "This password must be between 12 and 16 characters long, and must contain at least one uppercase letter, one lowercase letter, one number (0-9), and one non-alphanumeric character (!, $, #, %, etc.)."
                         },
                         "visible": "[equals('no', steps('database').autogeneratePassword)]"
                     },
