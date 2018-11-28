@@ -71,10 +71,9 @@
             "database": {
                 "name": "[concat(variables('namespace'), 'sqldatabase')]",
                 "tier": "[parameters('dbTier')]",
-                "tierName" : "[variables('lookup').clusterSizeToDbTier[string(parameters('clusterSize'))]]",
+                "tierName": "[variables('lookup').clusterSizeToDbTier[string(parameters('clusterSize'))]]",
                 "maxSizeBytes": "[variables('lookup').maxSizeInBytes[string(parameters('dbTier'))]]",
                 "collation": "SQL_Latin1_General_CP437_CI_AI"
-
             }
         },
         "lookup": {
@@ -86,8 +85,8 @@
                 "6": "[variables('conditions').largeCluster]"
             },
             "maxSizeInBytes": {
-                "Standard" : 268435456000,
-                "Premium" : 536870912000
+                "Standard": 268435456000,
+                "Premium": 536870912000
             }
         },
         "conditions": {
@@ -98,9 +97,27 @@
             "vendor": "Atlassian",
             "product": "JIRA",
             "provider": "2F0AF47A-92C7-413A-9009-C3815BFF7AF6"
+        },
+        "workspace": {
+            "name": "[concat(variables('namespace'), '-OmsWorkspace-', uniqueString(resourceGroup().id))]",
+            "sku": "free",
+            "retentionInDays": 7
         }
     },
     "resources": [
+        {
+            "type": "Microsoft.OperationalInsights/workspaces",
+            "name": "[variables('workspace').name]",
+            "apiVersion": "2015-11-01-preview",
+            "location": "[parameters('location')]",
+            "scale": null,
+            "properties": {
+                "sku": {
+                    "name": "[variables('workspace').sku]"
+                },
+                "retentionInDays": "[variables('workspace').retentionInDays]"
+            }
+        },
         {
             "name": "[variables('sql').server.name]",
             "type": "Microsoft.Sql/servers",
@@ -110,23 +127,125 @@
                 "administratorLogin": "[variables('sql').server.username]",
                 "administratorLoginPassword": "[variables('sql').server.password]"
             },
-            "tags": "[variables('tags')]"
-        },
-        {
-            "type": "Microsoft.Sql/servers/databases",
-            "sku": {
-                "name": "[variables('sql').database.tierName]",
-                "tier": "[parameters('dbTier')]"
-            },
-            "name": "[concat(variables('sql').server.name, '/',variables('sql').database.name)]",
-            "apiVersion": "2017-03-01-preview",
-            "location": "[parameters('location')]",
-            "properties": {
-                "collation": "[variables('sql').database.collation]",
-                "maxSizeBytes": "[variables('sql').database.maxSizeBytes]"
-            },
-            "dependsOn": [
-                "[concat('Microsoft.Sql/servers/', variables('sql').server.name)]"
+            "tags": "[variables('tags')]",
+            "resources": [
+                {
+                    "type": "databases",
+                    "apiVersion": "2017-03-01-preview",
+                    "name": "[variables('sql').database.name]",
+                    "location": "[parameters('location')]",
+                    "tags": "[variables('tags')]",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', variables('sql').server.name)]"
+                    ],
+                    "sku": {
+                        "name": "[variables('sql').database.tierName]",
+                        "tier": "[parameters('dbTier')]"
+                    },
+                    "properties": {
+                        "collation": "[variables('sql').database.collation]",
+                        "maxSizeBytes": "[variables('sql').database.maxSizeBytes]"
+                    },
+                    "resources": [
+                        {
+                            "comments": "DiagnosticSettings have to be within the nested, nested SQL DB - https://david-obrien.net/2018/06/azure-sql-diagnostics/. NB diagnostic hangs around too ie doesn't get deleted on RG deletion.",
+                            "type": "providers/diagnosticSettings",
+                            "name": "Microsoft.Insights/diagnostic_primary",
+                            "apiVersion": "2017-05-01-preview",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Sql/servers/databases', variables('sql').server.name, variables('sql').database.name)]"
+                            ],
+                            "properties": {
+                                "name": "sqlSaveToWorkspace",
+                                "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name)]",
+                                "logs": [
+                                    {
+                                        "category": "Blocks",
+                                        "enabled": true,
+                                        "retentionPolicy": {
+                                            "days": "[variables('workspace').retentionInDays]",
+                                            "enabled": false
+                                        }
+                                    },
+                                    {
+                                        "category": "QueryStoreWaitStatistics",
+                                        "enabled": true,
+                                        "retentionPolicy": {
+                                            "days": "[variables('workspace').retentionInDays]",
+                                            "enabled": false
+                                        }
+                                    },
+                                    {
+                                        "category": "Errors",
+                                        "enabled": true,
+                                        "retentionPolicy": {
+                                            "days": "[variables('workspace').retentionInDays]",
+                                            "enabled": false
+                                        }
+                                    },
+                                    {
+                                        "category": "QueryStoreRuntimeStatistics",
+                                        "enabled": true,
+                                        "retentionPolicy": {
+                                            "days": "[variables('workspace').retentionInDays]",
+                                            "enabled": false
+                                        }
+                                    },
+                                    {
+                                        "category": "DatabaseWaitStatistics",
+                                        "enabled": true,
+                                        "retentionPolicy": {
+                                            "days": "[variables('workspace').retentionInDays]",
+                                            "enabled": false
+                                        }
+                                    },
+                                    {
+                                        "category": "Timeouts",
+                                        "enabled": true,
+                                        "retentionPolicy": {
+                                            "days": "[variables('workspace').retentionInDays]",
+                                            "enabled": false
+                                        }
+                                    },
+                                    {
+                                        "category": "SQLInsights",
+                                        "enabled": true,
+                                        "retentionPolicy": {
+                                            "days": "[variables('workspace').retentionInDays]",
+                                            "enabled": false
+                                        }
+                                    },
+                                    {
+                                        "category": "AutomaticTuning",
+                                        "enabled": true,
+                                        "retentionPolicy": {
+                                            "days": "[variables('workspace').retentionInDays]",
+                                            "enabled": false
+                                        }
+                                    },
+                                    {
+                                        "category": "Deadlocks",
+                                        "enabled": true,
+                                        "retentionPolicy": {
+                                            "days": "[variables('workspace').retentionInDays]",
+                                            "enabled": false
+                                        }
+                                    }
+                                ],
+                                "metrics": [
+                                    {
+                                        "category": "AllMetrics",
+                                        "enabled": true,
+                                        "retentionPolicy": {
+                                            "enabled": false,
+                                            "days": "[variables('workspace').retentionInDays]"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
             ]
         },
         {
@@ -150,6 +269,10 @@
         "jdbcUrl": {
             "type": "string",
             "value": "[concat('jdbc:sqlserver://', reference(variables('sql').server.name).fullyQualifiedDomainName, ':1433;database=', variables('sql').database.name, ';user=', variables('sql').server.username, '@', variables('sql').server.name, ';password=', variables('sql').server.password)]"
+        },
+        "workspaceName": {
+            "type": "string",
+            "value": "[variables('workspace').name]"
         }
     }
 }
