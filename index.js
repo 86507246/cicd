@@ -227,6 +227,8 @@ function applyTasks (gulp) {
       var mainFile = require(mainFileName)
 
       mainFile.parameters._artifactsLocation.defaultValue = '[deployment().properties.templateLink.uri]'
+      delete mainFile.parameters.scriptsBranch
+      delete mainFile.parameters.repositoryLocation
 
       fs.writeFileSync(mainFileName, JSON.stringify(mainFile, null, 2), function (err) {
         if (err) return fail(err)
