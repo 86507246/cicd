@@ -172,9 +172,6 @@
         "appInsightsTemplate": {
             "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-app-insights.json')]"
         },
-        "alertsTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-alerts.json')]"
-        },
         "isSslSpecified": "[not(empty(parameters('sslBase64EncodedPfxCertificate')))]",
         "tags": {
             "vendor": "Atlassian",
@@ -708,45 +705,28 @@
                 "startIpAddress": "[parameters('jumpboxPublicIpAddress')]",
                 "endIpAddress": "[parameters('jumpboxPublicIpAddress')]"
             }
-        },
-        {
-            "apiVersion": "2015-01-01",
-            "name": "alertsTemplate",
-            "type": "Microsoft.Resources/deployments",
-            "condition": "[not(empty(parameters('supportUserEmail')))]",
-            "dependsOn": [
-                "[concat('Microsoft.Storage/storageAccounts/', variables('jira').storage.name)]",
-                "dbTemplate",
-                "appGtwyTemplate",
-                "[concat('Microsoft.Compute/virtualMachineScaleSets/', variables('jira').cluster.name)]"
-            ],
-            "properties": {
-                "mode": "Incremental",
-                "templateLink": {
-                    "uri": "[concat(variables('alertsTemplate').templateUrl, parameters('provisioningStorageToken'))]",
-                    "contentVersion": "1.0.0.0"
-                },
-                "parameters": {
-                    "supportUserEmail": {
-                        "value": "[parameters('supportUserEmail')]"
-                    },
-                    "gtwyName" : {
-                        "value": "[reference('appGtwyTemplate').outputs.gtwyName.value]"
-                    },
-                    "storageAccountName": {
-                        "value": "[variables('jira').storage.name]"
-                    },
-                    "clusterName": {
-                        "value": "[variables('jira').cluster.name]"
-                    }
-                }
-            }
         }
     ],
     "outputs": {
         "jdbcUrl": {
             "type": "string",
             "value": "[reference('dbTemplate').outputs.jdbcUrl.value]"
+        },
+        "gtwyName" : {
+            "type": "string",
+            "value": "[reference('appGtwyTemplate').outputs.gtwyName.value]"
+        },
+        "storageAccountName": {
+            "type": "string",
+            "value": "[variables('jira').storage.name]"
+        },
+        "clusterName": {
+            "type": "string",
+            "value": "[variables('jira').cluster.name]"
+        },
+        "appInsightsName": {
+            "type": "string",
+            "value": "[reference('appInsightsTemplate').outputs.appInsightsName.value]"
         },
         "jiraAppEndpoint": {
             "type": "string",

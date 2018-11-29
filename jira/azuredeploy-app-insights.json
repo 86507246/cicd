@@ -66,11 +66,15 @@
             "properties": {
                 "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]"
             }
-        }     
+        }
     ],
     "outputs": {
         "instrumentkey": {
             "value": "[reference(variables('appinsights').name).InstrumentationKey]",
+            "type": "string"
+        },
+        "appInsightsName": {
+            "value": "[variables('appinsights').name]",
             "type": "string"
         }
     }
