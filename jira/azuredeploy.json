@@ -107,13 +107,16 @@
             "type": "securestring",
             "defaultValue": "admin"
         },
-        "userFullname": {
+        "supportUserFullname": {
             "type": "string",
-            "defaultValue": "Admin Admin"
+            "defaultValue": ""
         },
-        "userEmail": {
+        "supportUserEmail": {
             "type": "string",
-            "defaultValue": "admin@example.com"
+            "defaultValue": "",
+            "metadata": {
+                "description": "If you specify a support email address we'll create/send Azure monitoring alerts"
+            }
         },
         "applicationTitle": {
             "type": "string",
@@ -247,11 +250,11 @@
                     "userCredential": {
                         "value": "[parameters('userCredential')]"
                     },
-                    "userEmail": {
-                        "value": "[parameters('userEmail')]"
+                    "supportUserEmail": {
+                        "value": "[parameters('supportUserEmail')]"
                     },
-                    "userFullname": {
-                        "value": "[parameters('userFullname')]"
+                    "supportUserFullname": {
+                        "value": "[parameters('supportUserFullname')]"
                     },
                     "vnetName": {
                         "value": "[reference('vpcTemplate').outputs.vnetName.value]"

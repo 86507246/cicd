@@ -19,6 +19,10 @@
         "solutionTypes": "AzureSQLAnalytics",
         "sqlanalytics": {
             "name": "[concat(variables('solutionTypes'), '(', parameters('workspaceName'), ')')]"
+        },
+        "gtwySolutionTypes": "AzureAppGatewayAnalytics",
+        "gtwyanalytics": {
+            "name": "[concat(variables('gtwySolutionTypes'), '(', parameters('workspaceName'), ')')]"
         }
     },
     "resources": [
@@ -47,7 +51,22 @@
             "properties": {
                 "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]"
             }
-        }
+        },
+        {
+            "type": "Microsoft.OperationsManagement/solutions",
+            "name": "[variables('gtwyanalytics').name]",
+            "apiVersion": "2015-11-01-preview",
+            "location": "[parameters('location')]",
+            "plan": {
+                "name": "[variables('gtwyanalytics').name]",
+                "promotionCode": "",
+                "product": "[concat('OMSGallery/', variables('gtwySolutionTypes'))]",
+                "publisher": "Microsoft"
+            },
+            "properties": {
+                "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]"
+            }
+        }     
     ],
     "outputs": {
         "instrumentkey": {

@@ -58,6 +58,9 @@
         "clusterDbAccessNetworkRule": {
             "type": "string",
             "defaultValue": "allowClusterDbAccess"
+        },
+        "workspaceName": {
+            "type": "string"
         }
     },
     "variables": {
@@ -98,26 +101,9 @@
             "product": "JIRA",
             "provider": "2F0AF47A-92C7-413A-9009-C3815BFF7AF6"
         },
-        "workspace": {
-            "name": "[concat(variables('namespace'), '-OmsWorkspace-', uniqueString(resourceGroup().id))]",
-            "sku": "free",
-            "retentionInDays": 7
-        }
+        "retentionInDays": 7
     },
     "resources": [
-        {
-            "type": "Microsoft.OperationalInsights/workspaces",
-            "name": "[variables('workspace').name]",
-            "apiVersion": "2015-11-01-preview",
-            "location": "[parameters('location')]",
-            "scale": null,
-            "properties": {
-                "sku": {
-                    "name": "[variables('workspace').sku]"
-                },
-                "retentionInDays": "[variables('workspace').retentionInDays]"
-            }
-        },
         {
             "name": "[variables('sql').server.name]",
             "type": "Microsoft.Sql/servers",
@@ -157,13 +143,13 @@
                             ],
                             "properties": {
                                 "name": "sqlSaveToWorkspace",
-                                "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name)]",
+                                "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]",
                                 "logs": [
                                     {
                                         "category": "Blocks",
                                         "enabled": true,
                                         "retentionPolicy": {
-                                            "days": "[variables('workspace').retentionInDays]",
+                                            "days": "[variables('retentionInDays')]",
                                             "enabled": false
                                         }
                                     },
@@ -171,7 +157,7 @@
                                         "category": "QueryStoreWaitStatistics",
                                         "enabled": true,
                                         "retentionPolicy": {
-                                            "days": "[variables('workspace').retentionInDays]",
+                                            "days": "[variables('retentionInDays')]",
                                             "enabled": false
                                         }
                                     },
@@ -179,7 +165,7 @@
                                         "category": "Errors",
                                         "enabled": true,
                                         "retentionPolicy": {
-                                            "days": "[variables('workspace').retentionInDays]",
+                                            "days": "[variables('retentionInDays')]",
                                             "enabled": false
                                         }
                                     },
@@ -187,7 +173,7 @@
                                         "category": "QueryStoreRuntimeStatistics",
                                         "enabled": true,
                                         "retentionPolicy": {
-                                            "days": "[variables('workspace').retentionInDays]",
+                                            "days": "[variables('retentionInDays')]",
                                             "enabled": false
                                         }
                                     },
@@ -195,7 +181,7 @@
                                         "category": "DatabaseWaitStatistics",
                                         "enabled": true,
                                         "retentionPolicy": {
-                                            "days": "[variables('workspace').retentionInDays]",
+                                            "days": "[variables('retentionInDays')]",
                                             "enabled": false
                                         }
                                     },
@@ -203,7 +189,7 @@
                                         "category": "Timeouts",
                                         "enabled": true,
                                         "retentionPolicy": {
-                                            "days": "[variables('workspace').retentionInDays]",
+                                            "days": "[variables('retentionInDays')]",
                                             "enabled": false
                                         }
                                     },
@@ -211,7 +197,7 @@
                                         "category": "SQLInsights",
                                         "enabled": true,
                                         "retentionPolicy": {
-                                            "days": "[variables('workspace').retentionInDays]",
+                                            "days": "[variables('retentionInDays')]",
                                             "enabled": false
                                         }
                                     },
@@ -219,7 +205,7 @@
                                         "category": "AutomaticTuning",
                                         "enabled": true,
                                         "retentionPolicy": {
-                                            "days": "[variables('workspace').retentionInDays]",
+                                            "days": "[variables('retentionInDays')]",
                                             "enabled": false
                                         }
                                     },
@@ -227,7 +213,7 @@
                                         "category": "Deadlocks",
                                         "enabled": true,
                                         "retentionPolicy": {
-                                            "days": "[variables('workspace').retentionInDays]",
+                                            "days": "[variables('retentionInDays')]",
                                             "enabled": false
                                         }
                                     }
@@ -238,7 +224,7 @@
                                         "enabled": true,
                                         "retentionPolicy": {
                                             "enabled": false,
-                                            "days": "[variables('workspace').retentionInDays]"
+                                            "days": "[variables('retentionInDays')]"
                                         }
                                     }
                                 ]
@@ -269,10 +255,6 @@
         "jdbcUrl": {
             "type": "string",
             "value": "[concat('jdbc:sqlserver://', reference(variables('sql').server.name).fullyQualifiedDomainName, ':1433;database=', variables('sql').database.name, ';user=', variables('sql').server.username, '@', variables('sql').server.name, ';password=', variables('sql').server.password)]"
-        },
-        "workspaceName": {
-            "type": "string",
-            "value": "[variables('workspace').name]"
         }
     }
 }

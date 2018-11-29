@@ -46,6 +46,9 @@
         "sslPfxCertificatePassword": {
             "type": "string",
             "defaultValue": ""
+        },
+        "workspaceName": {
+            "type": "string"
         }
     },
     "variables": {
@@ -103,8 +106,12 @@
                 "config": {
                     "name": "[concat(variables('namespace'), 'httpToHttpsRedirectConfig')]"
                 }
+            },
+            "probe": {
+                "name": "[concat(variables('namespace'), 'StatusCheck')]"
             }
-        }
+        },
+        "retentionInDays": 7
     },
     "resources": [
         {
@@ -204,6 +211,27 @@
                         }
                     }
                 ],
+                "probes": [
+                    {
+                        "name": "[variables('applicationGateway').probe.name]",
+                        "properties": {
+                            "protocol": "Http",
+                            "path": "/status",
+                            "interval": 30,
+                            "timeout": 30,
+                            "unhealthyThreshold": 3,
+                            "pickHostNameFromBackendHttpSettings": true,
+                            "minServers": 0,
+                            "match": {
+                                "body": "{\"state\":\"RUNNING\"}",
+                                "statusCodes": [
+                                    "200-399"
+                                ]
+                            }
+                        },
+                        "type": "Microsoft.Network/applicationGateways/probes"
+                    }
+                ],
                 "requestRoutingRules": [
                     {
                         "Name": "[concat(variables('namespace'), 'appgwroutes')]",
@@ -221,7 +249,59 @@
                         }
                     }
                 ]
-            }
+            },
+            "resources": [
+                {
+                    "comments": "DiagnosticSettings have to be within the nested, nested SQL DB - https://david-obrien.net/2018/06/azure-sql-diagnostics/. NB diagnostic hangs around too ie doesn't get deleted on RG deletion.",
+                    "type": "providers/diagnosticSettings",
+                    "name": "Microsoft.Insights/JiraAppGatewayDiagnostics",
+                    "apiVersion": "2017-05-01-preview",
+                    "condition": "[empty(parameters('sslPfxCertificatePassword'))]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/applicationGateways/', concat(variables('namespace'), 'appgateway'))]"
+                    ],
+                    "properties": {
+                        "name": "JiraAppGatewayDiagnostics",
+                        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]",
+                        "logs": [
+                            {
+                                "category": "ApplicationGatewayAccessLog",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "days": "[variables('retentionInDays')]",
+                                    "enabled": false
+                                }
+                            },
+                            {
+                                "category": "ApplicationGatewayPerformanceLog",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "days": "[variables('retentionInDays')]",
+                                    "enabled": false
+                                }
+                            },
+                            {
+                                "category": "ApplicationGatewayFirewallLog",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "days": "[variables('retentionInDays')]",
+                                    "enabled": false
+                                }
+                            }
+                        ],
+                        "metrics": [
+                            {
+                                "category": "AllMetrics",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "enabled": false,
+                                    "days": "[variables('retentionInDays')]"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
         },
         {
             "name": "[concat(variables('namespace'), 'appgateway-https')]",
@@ -375,6 +455,27 @@
                         "type": "Microsoft.Network/applicationGateways/requestRoutingRules"
                     }
                 ],
+                "probes": [
+                    {
+                        "name": "[variables('applicationGateway').probe.name]",
+                        "properties": {
+                            "protocol": "Http",
+                            "path": "/status",
+                            "interval": 30,
+                            "timeout": 30,
+                            "unhealthyThreshold": 3,
+                            "pickHostNameFromBackendHttpSettings": true,
+                            "minServers": 0,
+                            "match": {
+                                "body": "{\"state\":\"RUNNING\"}",
+                                "statusCodes": [
+                                    "200-399"
+                                ]
+                            }
+                        },
+                        "type": "Microsoft.Network/applicationGateways/probes"
+                    }
+                ],
                 "redirectConfigurations": [
                     {
                         "name": "[variables('applicationGateway').redirect.config.name]",
@@ -394,7 +495,58 @@
                         "type": "Microsoft.Network/applicationGateways/redirectConfigurations"
                     }
                 ]
-            }
+            },
+            "resources": [
+                {
+                    "type": "providers/diagnosticSettings",
+                    "name": "Microsoft.Insights/JiraAppGatewayDiagnostics",
+                    "condition": "[not(empty(parameters('sslPfxCertificatePassword')))]",
+                    "apiVersion": "2017-05-01-preview",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/applicationGateways/', concat(variables('namespace'), 'appgateway-https'))]"
+                    ],
+                    "properties": {
+                        "name": "JiraAppGatewayDiagnostics",
+                        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]",
+                        "logs": [
+                            {
+                                "category": "ApplicationGatewayAccessLog",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "days": "[variables('retentionInDays')]",
+                                    "enabled": false
+                                }
+                            },
+                            {
+                                "category": "ApplicationGatewayPerformanceLog",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "days": "[variables('retentionInDays')]",
+                                    "enabled": false
+                                }
+                            },
+                            {
+                                "category": "ApplicationGatewayFirewallLog",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "days": "[variables('retentionInDays')]",
+                                    "enabled": false
+                                }
+                            }
+                        ],
+                        "metrics": [
+                            {
+                                "category": "AllMetrics",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "enabled": false,
+                                    "days": "[variables('retentionInDays')]"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
         }
     ],
     "outputs": {

@@ -91,13 +91,11 @@
         "userCredential": {
             "type": "securestring"
         },
-        "userFullname": {
-            "type": "string",
-            "defaultValue": "Admin Admin"
+        "supportUserFullname": {
+            "type": "string"
         },
-        "userEmail": {
-            "type": "string",
-            "defaultValue": "admin@example.com"
+        "supportUserEmail": {
+            "type": "string"
         },
         "applicationTitle": {
             "type": "string",
@@ -174,12 +172,17 @@
         "appInsightsTemplate": {
             "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-app-insights.json')]"
         },
+        "alertsTemplate": {
+            "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-alerts.json')]"
+        },
         "isSslSpecified": "[not(empty(parameters('sslBase64EncodedPfxCertificate')))]",
         "tags": {
             "vendor": "Atlassian",
             "product": "JIRA",
             "provider": "2F0AF47A-92C7-413A-9009-C3815BFF7AF6"
         },
+        "userFullname": "[if(empty(parameters('supportUserFullname')), 'Admin Admin', parameters('supportUserFullname'))]",
+        "userEmail": "[if(empty(parameters('supportUserEmail')), 'admin@example.com', parameters('supportUserEmail'))]",
         "env": {
             "storage": [
                 {
@@ -250,19 +253,19 @@
                 },
                 {
                     "name": "USER_FULLNAME",
-                    "value": "[parameters('userFullname')]"
+                    "value": "[variables('userFullname')]"
                 },
                 {
                     "name": "USER_FULLNAME_LOWERCASE",
-                    "value": "[toLower(parameters('userFullname'))]"
+                    "value": "[toLower(variables('userFullname'))]"
                 },
                 {
                     "name": "USER_EMAIL",
-                    "value": "[parameters('userEmail')]"
+                    "value": "[variables('userEmail')]"
                 },
                 {
                     "name": "USER_EMAIL_LOWERCASE",
-                    "value": "[toLower(parameters('userEmail'))]"
+                    "value": "[toLower(variables('userEmail'))]"
                 },
                 {
                     "name": "USER_CREDENTIAL",
@@ -349,13 +352,34 @@
             "disk": {
                 "name": "vm-disk-utils-0.1.sh"
             }
+        },
+        "workspace": {
+            "name": "[concat(variables('namespace'), '-OmsWorkspace-', uniqueString(resourceGroup().id))]",
+            "sku": "free",
+            "retentionInDays": 7
         }
     },
     "resources": [
         {
+            "type": "Microsoft.OperationalInsights/workspaces",
+            "name": "[variables('workspace').name]",
+            "apiVersion": "2015-11-01-preview",
+            "location": "[parameters('location')]",
+            "scale": null,
+            "properties": {
+                "sku": {
+                    "name": "[variables('workspace').sku]"
+                },
+                "retentionInDays": "[variables('workspace').retentionInDays]"
+            }
+        },
+        {
             "apiVersion": "2015-01-01",
             "name": "dbTemplate",
             "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "[variables('workspace').name]"
+            ],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
@@ -386,6 +410,9 @@
                     },
                     "appSubnetName": {
                         "value": "[parameters('appSubnetName')]"
+                    },
+                    "workspaceName": {
+                        "value": "[variables('workspace').name]"
                     }
                 }
             }
@@ -396,6 +423,7 @@
             "type": "Microsoft.Resources/deployments",
             "condition": "[parameters('enableApplicationInsights')]",
             "dependsOn": [
+                "[variables('workspace').name]",
                 "dbTemplate"
             ],
             "properties": {
@@ -409,7 +437,7 @@
                         "value": "[parameters('location')]"
                     },
                     "workspaceName": {
-                        "value": "[reference('dbTemplate').outputs.workspaceName.value]"
+                        "value": "[variables('workspace').name]"
                     }
                 }
             }
@@ -418,6 +446,9 @@
             "apiVersion": "2015-01-01",
             "name": "appGtwyTemplate",
             "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "[variables('workspace').name]"
+            ],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
@@ -445,6 +476,9 @@
                     },
                     "sslPfxCertificatePassword": {
                         "value": "[parameters('sslPfxCertificatePassword')]"
+                    },
+                    "workspaceName": {
+                        "value": "[variables('workspace').name]"
                     }
                 }
             }
@@ -673,6 +707,39 @@
             "properties": {
                 "startIpAddress": "[parameters('jumpboxPublicIpAddress')]",
                 "endIpAddress": "[parameters('jumpboxPublicIpAddress')]"
+            }
+        },
+        {
+            "apiVersion": "2015-01-01",
+            "name": "alertsTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[not(empty(parameters('supportUserEmail')))]",
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('jira').storage.name)]",
+                "dbTemplate",
+                "appGtwyTemplate",
+                "[concat('Microsoft.Compute/virtualMachineScaleSets/', variables('jira').cluster.name)]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('alertsTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "supportUserEmail": {
+                        "value": "[parameters('supportUserEmail')]"
+                    },
+                    "gtwyName" : {
+                        "value": "[reference('appGtwyTemplate').outputs.gtwyName.value]"
+                    },
+                    "storageAccountName": {
+                        "value": "[variables('jira').storage.name]"
+                    },
+                    "clusterName": {
+                        "value": "[variables('jira').cluster.name]"
+                    }
+                }
             }
         }
     ],

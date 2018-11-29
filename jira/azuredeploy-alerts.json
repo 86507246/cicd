@@ -1,0 +1,199 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "supportUserEmail": {
+            "type": "string"
+        },
+        "gtwyName": {
+            "type": "string"
+        },
+        "storageAccountName": {
+            "type": "string"
+        },
+        "clusterName": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "namespace": "jira",
+        "supportTeam": {
+            "name": "[concat(variables('namespace'), '-SupportTeam-', uniqueString(resourceGroup().id))]",
+            "shortName": "[toUpper(concat(variables('namespace'), 'SupTeam'))]"
+        },
+        "alerts": {
+            "jiraNodeOffline": {
+                "name": "[concat(variables('namespace'), 'AlertClusterNodeOffline', uniqueString(resourceGroup().id))]" 
+            },
+            "jiraSanSize": {
+                "name": "[concat(variables('namespace'), 'AlertSharedStorageSize', uniqueString(resourceGroup().id))]" 
+            },
+            "jiraClusterNodeCPU": {
+                "name": "[concat(variables('namespace'), 'AlertClusterNodeHighCpuUsage', uniqueString(resourceGroup().id))]"
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Insights/actionGroups",
+            "name": "[variables('supportTeam').name]",
+            "apiVersion": "2018-03-01",
+            "location": "Global",
+            "properties": {
+                "groupShortName": "[variables('supportTeam').shortName]",
+                "enabled": true,
+                "emailReceivers": [
+                    {
+                        "name": "JiraEmailAction_-EmailAction-",
+                        "emailAddress": "[parameters('supportUserEmail')]"
+                    }
+                ],
+                "smsReceivers": [],
+                "webhookReceivers": [],
+                "itsmReceivers": [],
+                "azureAppPushReceivers": [],
+                "automationRunbookReceivers": [],
+                "voiceReceivers": [],
+                "logicAppReceivers": [],
+                "azureFunctionReceivers": []
+            }
+        },
+        {
+            "type": "Microsoft.Insights/metricAlerts",
+            "name": "[variables('alerts').jiraNodeOffline.name]",
+            "apiVersion": "2018-03-01",
+            "location": "global",
+            "tags": {},
+            "scale": null,
+            "properties": {
+                "description": "A Jira node has just became unhealthly/gone offline. ",
+                "enabled": true,
+                "severity": 1,
+                "windowSize": "PT5M",
+                "evaluationFrequency": "PT1M",
+                "templateType": "8",
+                "templateSpecificParameters": {},
+                "scopes": [
+                    "[resourceId('Microsoft.Network/applicationGateways/', parameters('gtwyName'))]"
+                ],
+                "criteria": {
+                    "allOf": [
+                        {
+                            "metricName": "UnhealthyHostCount",
+                            "metricNamespace": "Microsoft.Network/applicationGateways",
+                            "operator": "GreaterThan",
+                            "threshold": 0,
+                            "timeAggregation": "Average",
+                            "name": "Metric1",
+                            "dimensions": [],
+                            "monitorTemplateType": "8"
+                        }
+                    ],
+                    "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria"
+                },
+                "actions": [
+                    {
+                        "actionGroupId": "[resourceId('Microsoft.Insights/actionGroups', variables('supportTeam').name)]",
+                        "webHookProperties": {}
+                    }
+                ]
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Insights/actionGroups', variables('supportTeam').name)]"
+            ]
+        },
+        {
+            "type": "Microsoft.Insights/metricAlerts",
+            "name": "[variables('alerts').jiraSanSize.name]",
+            "apiVersion": "2018-03-01",
+            "location": "Global",
+            "properties": {
+                "description": "SAN Size Over 4TB",
+                "enabled": true,
+                "severity": 3,
+                "windowSize": "PT5M",
+                "evaluationFrequency": "PT1M",
+                "templateType": "8",
+                "templateSpecificParameters": {},
+                "scopes": [
+                    "[resourceId('Microsoft.Storage/storageAccounts/fileServices', parameters('storageAccountName'), 'default')]"
+                ],
+                "criteria": {
+                    "allOf": [
+                        {
+                            "metricName": "FileCapacity",
+                            "metricNamespace": "Microsoft.Storage/storageAccounts/fileServices",
+                            "operator": "GreaterThan",
+                            "threshold": 4000000000000,
+                            "timeAggregation": "Average",
+                            "name": "Metric1",
+                            "dimensions": [],
+                            "monitorTemplateType": "8"
+                        }
+                    ],
+                    "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria"
+                },
+                "actions": [
+                    {
+                        "actionGroupId": "[resourceId('Microsoft.Insights/actionGroups', variables('supportTeam').name)]",
+                        "webHookProperties": {}
+                    }
+                ]
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Insights/actionGroups', variables('supportTeam').name)]"
+            ]
+        },
+        {
+            "type": "Microsoft.Insights/metricAlerts",
+            "name": "[variables('alerts').jiraClusterNodeCPU.name]",
+            "apiVersion": "2018-03-01",
+            "location": "Global",
+            "properties": {
+                "description": "A Jira node is running hot.",
+                "enabled": true,
+                "severity": 3,
+                "windowSize": "PT5M",
+                "evaluationFrequency": "PT1M",
+                "templateType": "8",
+                "templateSpecificParameters": {},
+                "scopes": [
+                    "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('clusterName'))]"
+                ],
+                "criteria": {
+                    "allOf": [
+                        {
+                            "metricName": "Percentage CPU",
+                            "metricNamespace": "Microsoft.Compute/virtualMachineScaleSets",
+                            "operator": "GreaterThan",
+                            "threshold": 80,
+                            "timeAggregation": "Average",
+                            "name": "Metric1",
+                            "dimensions": [
+                                {
+                                    "name": "VMName",
+                                    "operator": "Include",
+                                    "values": [
+                                        "*"
+                                    ]
+                                }
+                            ],
+                            "monitorTemplateType": "8"
+                        }
+                    ],
+                    "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria"
+                },
+                "actions": [
+                    {
+                        "actionGroupId": "[resourceId('Microsoft.Insights/actionGroups', variables('supportTeam').name)]",
+                        "webHookProperties": {}
+                    }
+                ]
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Insights/actionGroups', variables('supportTeam').name)]"
+            ]
+        }
+    ],
+    "outputs": {}
+}
