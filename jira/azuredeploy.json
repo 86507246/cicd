@@ -107,13 +107,16 @@
             "type": "securestring",
             "defaultValue": "admin"
         },
-        "userFullname": {
+        "supportUserFullname": {
             "type": "string",
-            "defaultValue": "Admin Admin"
+            "defaultValue": ""
         },
-        "userEmail": {
+        "supportUserEmail": {
             "type": "string",
-            "defaultValue": "admin@example.com"
+            "defaultValue": "",
+            "metadata": {
+                "description": "If you specify a support email address we'll create/send Azure monitoring alerts"
+            }
         },
         "applicationTitle": {
             "type": "string",
@@ -151,6 +154,9 @@
         },
         "domainTemplate": {
             "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-domain.json')]"
+        },
+        "alertsTemplate": {
+            "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-alerts.json')]"
         }
     },
     "resources": [
@@ -247,11 +253,11 @@
                     "userCredential": {
                         "value": "[parameters('userCredential')]"
                     },
-                    "userEmail": {
-                        "value": "[parameters('userEmail')]"
+                    "supportUserEmail": {
+                        "value": "[parameters('supportUserEmail')]"
                     },
-                    "userFullname": {
-                        "value": "[parameters('userFullname')]"
+                    "supportUserFullname": {
+                        "value": "[parameters('supportUserFullname')]"
                     },
                     "vnetName": {
                         "value": "[reference('vpcTemplate').outputs.vnetName.value]"
@@ -300,6 +306,45 @@
                     },
                     "prefix": {
                         "value": "jira"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-01-01",
+            "name": "alertsTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[not(empty(parameters('supportUserEmail')))]",
+            "dependsOn": [
+                "jiraTemplate"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('alertsTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "supportUserEmail": {
+                        "value": "[parameters('supportUserEmail')]"
+                    },
+                    "gtwyName" : {
+                        "value": "[reference('jiraTemplate').outputs.gtwyName.value]"
+                    },
+                    "storageAccountName": {
+                        "value": "[reference('jiraTemplate').outputs.storageAccountName.value]"
+                    },
+                    "clusterName": {
+                        "value": "[reference('jiraTemplate').outputs.clusterName.value]"
+                    },
+                    "appInsightsName": {
+                        "value": "[reference('jiraTemplate').outputs.appInsightsName.value]"
+                    },
+                    "statusCheckUrl": {
+                        "value": "[concat(if(not(empty(parameters('sslBase64EncodedPfxCertificate'))), concat('https://', if(greater(length(parameters('cname')), 0), reference('domainTemplate').outputs.alias.value, reference('jiraTemplate').outputs.jiraAppEndpoint.value)), concat('http://', if(greater(length(parameters('cname')), 0), reference('domainTemplate').outputs.alias.value, reference('jiraTemplate').outputs.jiraAppEndpoint.value))), '/status')]"
                     }
                 }
             }
