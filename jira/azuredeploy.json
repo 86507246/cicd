@@ -134,7 +134,8 @@
             "defaultValue": 2,
             "metadata": {
                 "description": "The number of JIRA nodes in the cluster"
-            }
+            },
+            "minValue": 2
         },
         "sslBase64EncodedPfxCertificate": {
             "type": "string",
@@ -345,6 +346,12 @@
                     },
                     "statusCheckUrl": {
                         "value": "[concat(if(not(empty(parameters('sslBase64EncodedPfxCertificate'))), concat('https://', if(greater(length(parameters('cname')), 0), reference('domainTemplate').outputs.alias.value, reference('jiraTemplate').outputs.jiraAppEndpoint.value)), concat('http://', if(greater(length(parameters('cname')), 0), reference('domainTemplate').outputs.alias.value, reference('jiraTemplate').outputs.jiraAppEndpoint.value))), '/status')]"
+                    },
+                    "dbDatabaseServerName": {
+                        "value": "[reference('jiraTemplate').outputs.dbDatabaseServerName.value]"
+                    },
+                    "dbDatabaseName": {
+                        "value": "[reference('jiraTemplate').outputs.dbDatabaseName.value]"
                     }
                 }
             }
