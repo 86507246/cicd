@@ -162,6 +162,7 @@
         "scriptsUrl": "[concat(variables('url'), 'scripts/')]",
         "templatesUrl": "[concat(variables('url'), 'templates/')]",
         "dbServerName": "[concat(variables('namespace'), 'sqlserver', uniqueString(resourceGroup().id))]",
+        "dbDatabaseName": "[concat(variables('namespace'), 'sqldatabase', uniqueString(resourceGroup().id))]",
         "namespace": "jira",
         "dbTemplate": {
             "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-db.json')]"
@@ -236,7 +237,7 @@
                 },
                 {
                     "name": "DB_NAME",
-                    "value": "[concat(variables('namespace'), 'sqldatabase')]"
+                    "value": "[variables('dbDatabaseName')]"
                 }
             ],
             "sql": [
@@ -389,6 +390,9 @@
                     },
                     "dbServerName": {
                         "value": "[variables('dbServerName')]"
+                    },
+                    "dbDatabaseName": {
+                        "value": "[variables('dbDatabaseName')]"
                     },
                     "clusterSize": {
                         "value": "[parameters('clusterSize')]"
@@ -743,6 +747,14 @@
         "installJiraCmdArgs": {
             "type": "string",
             "value": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' install ', if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.instrumentkey.value, 'NOAPPINSIGHTS'), ' 2>&1 > ./jira.install.log')]"
+        },
+        "dbDatabaseServerName": {
+            "type": "string",
+            "value": "[variables('dbServerName')]"
+        },
+        "dbDatabaseName": {
+            "type": "string",
+            "value": "[variables('dbDatabaseName')]"
         }
     }
 }
