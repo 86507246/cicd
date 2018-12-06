@@ -23,6 +23,9 @@
         "statusCheckUrl": {
             "type": "string"
         },
+        "dbCreateNew": {
+            "type": "bool"
+        },
         "dbDatabaseServerName": {
             "type": "string"
         },
@@ -297,6 +300,7 @@
             "name": "[variables('alerts').dbCpuPercentage.name]",
             "apiVersion": "2016-03-01",
             "location": "[parameters('location')]",
+            "condition": "[parameters('dbCreateNew')]",
             "properties": {
                 "name": "[variables('alerts').dbCpuPercentage.name]",
                 "description": "[variables('alerts').dbCpuPercentage.description]",
@@ -328,6 +332,7 @@
             "name": "[variables('alerts').dbDtuPercentage.name]",
             "apiVersion": "2016-03-01",
             "location": "[parameters('location')]",
+            "condition": "[parameters('dbCreateNew')]",
             "properties": {
                 "name": "[variables('alerts').dbDtuPercentage.name]",
                 "description": "[variables('alerts').dbDtuPercentage.description]",
@@ -359,6 +364,7 @@
             "name": "[variables('alerts').dbSizePercentage.name]",
             "apiVersion": "2016-03-01",
             "location": "[parameters('location')]",
+            "condition": "[parameters('dbCreateNew')]",
             "properties": {
                 "name": "[variables('alerts').dbSizePercentage.name]",
                 "description": "[variables('alerts').dbSizePercentage.description]",

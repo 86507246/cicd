@@ -31,7 +31,13 @@ def main():
       'DB_TRUSTED_HOST',
       'DB_NAME',
       'DB_USER',
-      'DB_PASSWORD'
+      'DB_PASSWORD',
+      'DB_SCHEMA',
+      'DB_PORT',
+      'DB_TYPE',
+      'DB_JDBCURL',
+      'DB_DRIVER_CLASS',
+      'DB_CONFIG_TYPE'
   ]
 
   server_xml_env_variables = [
