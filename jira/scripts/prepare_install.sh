@@ -294,7 +294,8 @@ function hydrate_shared_config {
          ;;
      postgres)
          export DB_CONFIG_TYPE="postgres72"
-         export DB_JDBCURL="jdbc:postgresql://${DB_SERVER_NAME}:${DB_PORT}/${DB_NAME}"
+         export DB_USER="$DB_USER@$(echo ${DB_SERVER_NAME} | cut -d '.' -f1)"
+         export DB_JDBCURL="jdbc:postgresql://${DB_SERVER_NAME}:${DB_PORT}/${DB_NAME}?ssl=true"
          export DB_DRIVER_CLASS="org.postgresql.Driver"
          ;;
      *)

@@ -30,6 +30,12 @@
                 "description": "DB Database Name"
             }
         },
+        "dbPort": {
+            "type": "string",
+            "metadata": {
+                "description": "Database port to use"
+            }
+        },
         "dbUsername": {
             "type": "string",
             "metadata": {
@@ -54,7 +60,9 @@
         }
     },
     "variables": {
-        "dbName": "[if(contains(parameters('dbServerName'), 'database.windows.net'), split(parameters('dbServerName'),'.')[0], parameters('dbServerName'))]"
+        "dbName": "[if(or(contains(parameters('dbServerName'), 'database.windows.net'), contains(parameters('dbServerName'), 'postgres.database.azure.com')), split(parameters('dbServerName'),'.')[0], parameters('dbServerName'))]",
+        "mssqlJdbcUrl": "[concat('jdbc:', parameters('dbType'), '://', parameters('dbServerName'), ':', parameters('dbPort'), ';database=', parameters('dbDatabaseName'), ';user=', parameters('dbUsername'), '@', split(parameters('dbServerName'),'.')[0], ';password=', parameters('dbPassword'))]",
+        "postgresJdbcUrl": "[concat('jdbc:postgresql://', parameters('dbServerName'), ':', parameters('dbPort'), '/', parameters('dbDatabaseName'), '?user=', parameters('dbUsername'), '@', split(parameters('dbServerName'),'.')[0], '&password=', parameters('dbPassword'), '&ssl=true')]"
     },
     "resources": [
         {
@@ -66,12 +74,22 @@
                 "virtualNetworkSubnetId": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '/subnets/', parameters('appSubnetName'))]",
                 "ignoreMissingVnetServiceEndpoint": false
             }
+        },
+        {
+            "type": "Microsoft.DBforPostgreSQL/servers/virtualNetworkRules",
+            "name": "[concat(variables('dbName'), '/', parameters('clusterDbAccessNetworkRule'))]",
+            "condition": "[equals(parameters('dbType'), 'postgres')]",
+            "apiVersion": "2017-12-01",
+            "properties": {
+                "virtualNetworkSubnetId": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '/subnets/', parameters('appSubnetName'))]",
+                "ignoreMissingVnetServiceEndpoint": false
+            }
         }
     ],
     "outputs": {
         "jdbcUrl": {
             "type": "string",
-            "value": "ajdbcurl"
+            "value": "[if(equals(parameters('dbType'), 'sqlserver'), variables('mssqlJdbcUrl'), variables('postgresJdbcUrl'))]"
         }
     }
 }

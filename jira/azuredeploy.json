@@ -82,17 +82,16 @@
             ],
             "defaultValue": "Yes (Azure SQL DB Only)",
             "metadata": {
-                "description": "Creates new database or attempts to use existing specified database"
+                "description": "Creates new database or attempts to use existing specified database (has to be in same resource group and location as the target deployment)"
             }
         },
         "dbType": {
             "type": "string",
             "allowedValues": [
-                "PostgresSQL",
-                "MySQL",
-                "MS SQL Server"
+                "Azure SQL DB",
+                "Azure DB for PostgreSQL"
             ],
-            "defaultValue": "MS SQL Server",
+            "defaultValue": "Azure SQL DB",
             "metadata": {
                 "description": "Database type"
             }
@@ -288,7 +287,7 @@
                         "value": "[if(equals(parameters('dbCreateNew'), 'Yes (Azure SQL DB Only)'), variables('dbServerName'), parameters('dbHost'))]"
                     },
                     "dbType": {
-                        "value": "[if(equals(parameters('dbType'), 'MS SQL Server'), 'sqlserver', if(equals(parameters('dbType'), 'PostgresSQL'), 'postgres', 'mysql'))]"
+                        "value": "[if(equals(parameters('dbType'), 'Azure SQL DB'), 'sqlserver', if(equals(parameters('dbType'), 'Azure DB for PostgreSQL'), 'postgres', 'mysql'))]"
                     },
                     "dbPort": {
                         "value": "[parameters('dbPort')]"
@@ -422,8 +421,11 @@
                     "dbCreateNew": {
                         "value": "[if(equals(parameters('dbCreateNew'), 'Yes (Azure SQL DB Only)'), bool('true'), bool('false'))]"
                     },
+                    "dbType": {
+                        "value": "[if(equals(parameters('dbType'), 'Azure SQL DB'), 'sqlserver', if(equals(parameters('dbType'), 'PostgresSQL'), 'postgres', 'mysql'))]"
+                    },
                     "dbDatabaseServerName": {
-                        "value": "[reference('jiraTemplate').outputs.dbDatabaseServerName.value]"
+                        "value": "[split(reference('jiraTemplate').outputs.dbDatabaseServerName.value, '.')[0]]"
                     },
                     "dbDatabaseName": {
                         "value": "[reference('jiraTemplate').outputs.dbDatabaseName.value]"

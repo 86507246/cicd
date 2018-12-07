@@ -26,6 +26,15 @@
         "dbCreateNew": {
             "type": "bool"
         },
+        "dbType": {
+            "type": "string",
+            "allowedValues": [
+                "sqlserver",
+                "postgres",
+                "mysql"
+            ],
+            "defaultValue": "sqlserver"
+        },
         "dbDatabaseServerName": {
             "type": "string"
         },
@@ -269,7 +278,7 @@
         {
             "type": "microsoft.insights/alertrules",
             "name": "[variables('webTestAlertName')]",
-            "apiVersion": "2014-04-01",
+            "apiVersion": "2016-03-01",
             "location": "[parameters('location')]",
             "properties": {
                 "name": "[variables('webTestAlertName')]",
@@ -300,7 +309,7 @@
             "name": "[variables('alerts').dbCpuPercentage.name]",
             "apiVersion": "2016-03-01",
             "location": "[parameters('location')]",
-            "condition": "[parameters('dbCreateNew')]",
+            "condition": "[equals(parameters('dbType'), 'sqlserver')]",
             "properties": {
                 "name": "[variables('alerts').dbCpuPercentage.name]",
                 "description": "[variables('alerts').dbCpuPercentage.description]",
@@ -332,7 +341,7 @@
             "name": "[variables('alerts').dbDtuPercentage.name]",
             "apiVersion": "2016-03-01",
             "location": "[parameters('location')]",
-            "condition": "[parameters('dbCreateNew')]",
+            "condition": "[equals(parameters('dbType'), 'sqlserver')]",
             "properties": {
                 "name": "[variables('alerts').dbDtuPercentage.name]",
                 "description": "[variables('alerts').dbDtuPercentage.description]",
@@ -364,7 +373,7 @@
             "name": "[variables('alerts').dbSizePercentage.name]",
             "apiVersion": "2016-03-01",
             "location": "[parameters('location')]",
-            "condition": "[parameters('dbCreateNew')]",
+            "condition": "[equals(parameters('dbType'), 'sqlserver')]",
             "properties": {
                 "name": "[variables('alerts').dbSizePercentage.name]",
                 "description": "[variables('alerts').dbSizePercentage.description]",

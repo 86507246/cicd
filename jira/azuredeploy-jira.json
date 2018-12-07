@@ -510,6 +510,9 @@
                     "dbDatabaseName": {
                         "value": "[parameters('dbDatabase')]"
                     },
+                    "dbPort": {
+                        "value": "[parameters('dbPort')]"
+                    },
                     "dbPassword": {
                         "value": "[parameters('dbPassword')]"
                     },
@@ -822,7 +825,7 @@
     "outputs": {
         "jdbcUrl": {
             "type": "string",
-            "value": "[if(parameters('dbCreateNew'), reference('dbTemplate').outputs.jdbcUrl.value, 'constructajdbcstringfromsupplieddb')]"
+            "value": "[if(parameters('dbCreateNew'), reference('dbTemplate').outputs.jdbcUrl.value, reference('byodbTemplate').outputs.jdbcUrl.value)]"
         },
         "gtwyName" : {
             "type": "string",
