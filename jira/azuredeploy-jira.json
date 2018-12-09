@@ -61,6 +61,53 @@
                 "description": "An existing CNAME that will be used to access the JIRA instance."
             }
         },
+        "dbCreateNew": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "Creates new database or attempts to use existing specified database"
+            }
+        },
+        "dbType": {
+            "type": "string",
+            "allowedValues": [
+                "sqlserver",
+                "postgres",
+                "mysql"
+            ],
+            "defaultValue": "sqlserver",
+            "metadata": {
+                "description": "Database type"
+            }
+        },
+        "dbHost": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Host name of DB server"
+            }
+        },
+        "dbPort": {
+            "type": "string",
+            "defaultValue": "[if(equals(parameters('dbType'), 'MS SQL Server'), '1433', if(equals(parameters('dbType'), 'PostgresSQL'), '5432', '3306'))]",
+            "metadata": {
+                "description": "Database port to use"
+            }
+        },
+        "dbDatabase": {
+            "type": "string",
+            "defaultValue": "jira",
+            "metadata": {
+                "description": "Database name"
+            }
+        },
+        "dbSchema": {
+            "type": "string",
+            "defaultValue": "public",
+            "metadata": {
+                "description": "Database schema to use"
+            }
+        },
         "dbUsername": {
             "type": "string",
             "metadata": {
@@ -161,11 +208,12 @@
         "url": "[if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/'))]",
         "scriptsUrl": "[concat(variables('url'), 'scripts/')]",
         "templatesUrl": "[concat(variables('url'), 'templates/')]",
-        "dbServerName": "[concat(variables('namespace'), 'sqlserver', uniqueString(resourceGroup().id))]",
-        "dbDatabaseName": "[concat(variables('namespace'), 'sqldatabase', uniqueString(resourceGroup().id))]",
         "namespace": "jira",
         "dbTemplate": {
             "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-db.json')]"
+        },
+        "byodbTemplate": {
+            "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-byodb.json')]"
         },
         "appGtwyTemplate": {
             "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-jira-gtwy.json')]"
@@ -237,7 +285,23 @@
                 },
                 {
                     "name": "DB_NAME",
-                    "value": "[variables('dbDatabaseName')]"
+                    "value": "[parameters('dbDatabase')]"
+                },
+                {
+                    "name": "DB_SCHEMA",
+                    "value": "[parameters('dbSchema')]"
+                },
+                {
+                    "name": "DB_PORT",
+                    "value": "[parameters('dbPort')]"
+                },
+                {
+                    "name": "DB_TYPE",
+                    "value": "[parameters('dbType')]"
+                },
+                {
+                    "name": "DB_CREATE",
+                    "value": "[parameters('dbCreateNew')]"
                 }
             ],
             "sql": [
@@ -375,6 +439,7 @@
             "apiVersion": "2015-01-01",
             "name": "dbTemplate",
             "type": "Microsoft.Resources/deployments",
+            "condition": "[parameters('dbCreateNew')]",
             "dependsOn": [
                 "[variables('workspace').name]"
             ],
@@ -389,10 +454,10 @@
                         "value": "[parameters('location')]"
                     },
                     "dbServerName": {
-                        "value": "[variables('dbServerName')]"
+                        "value": "[parameters('dbHost')]"
                     },
                     "dbDatabaseName": {
-                        "value": "[variables('dbDatabaseName')]"
+                        "value": "[parameters('dbDatabase')]"
                     },
                     "clusterSize": {
                         "value": "[parameters('clusterSize')]"
@@ -414,6 +479,51 @@
                     },
                     "workspaceName": {
                         "value": "[variables('workspace').name]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-01-01",
+            "name": "byodbTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[not(parameters('dbCreateNew'))]",
+            "dependsOn": [
+                "[variables('workspace').name]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('byodbTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "dbType": {
+                        "value": "[parameters('dbType')]"
+                    },
+                    "dbServerName": {
+                        "value": "[parameters('dbHost')]"
+                    },
+                    "dbDatabaseName": {
+                        "value": "[parameters('dbDatabase')]"
+                    },
+                    "dbPort": {
+                        "value": "[parameters('dbPort')]"
+                    },
+                    "dbPassword": {
+                        "value": "[parameters('dbPassword')]"
+                    },
+                    "dbUsername": {
+                        "value": "[parameters('dbUsername')]"
+                    },
+                    "vnetName": {
+                        "value": "[parameters('vnetName')]"
+                    },
+                    "appSubnetName": {
+                        "value": "[parameters('appSubnetName')]"
                     }
                 }
             }
@@ -524,7 +634,7 @@
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', if(not(empty(parameters('cname'))), parameters('cname'), reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value), ' ', reference('dbTemplate').outputs.serverName.value, ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.instrumentkey.value, ' '), ' 2>&1 > ./jira.prepare.log')]"
+                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', if(not(empty(parameters('cname'))), parameters('cname'), reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value), ' ', if(parameters('dbCreateNew'), reference('dbTemplate').outputs.serverName.value, parameters('dbHost')), ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.instrumentkey.value, ' '), ' 2>&1 > ./jira.prepare.log')]"
                 }
             }
         },
@@ -698,10 +808,11 @@
             }
         },
         {
+            "comments": "Required for bastion host to populate/configure database. Not needed if going to use existing DB",
             "type": "Microsoft.Sql/servers/firewallRules",
             "apiVersion": "2015-05-01-preview",
-            "name": "[concat(variables('dbServerName'), '/', 'AllowAccessToSetupVMPublicIP')]",
-            "location": "[parameters('location')]",
+            "name": "[concat(parameters('dbHost'), '/', 'AllowAccessToSetupVMPublicIP')]",
+            "condition": "[parameters('dbCreateNew')]",
             "dependsOn": [
                 "dbTemplate"
             ],
@@ -714,7 +825,7 @@
     "outputs": {
         "jdbcUrl": {
             "type": "string",
-            "value": "[reference('dbTemplate').outputs.jdbcUrl.value]"
+            "value": "[if(parameters('dbCreateNew'), reference('dbTemplate').outputs.jdbcUrl.value, reference('byodbTemplate').outputs.jdbcUrl.value)]"
         },
         "gtwyName" : {
             "type": "string",
@@ -742,7 +853,7 @@
         },
         "prepareCmdArgs": {
             "type": "string",
-            "value": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', if(not(empty(parameters('cname'))), parameters('cname'), reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value), ' ', reference('dbTemplate').outputs.serverName.value, ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.instrumentkey.value, 'NOAPPINSIGHTS'), ' 2>&1 > ./jira.prepare.log')]"
+            "value": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', if(not(empty(parameters('cname'))), parameters('cname'), reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value), ' ', if(parameters('dbCreateNew'), reference('dbTemplate').outputs.serverName.value, parameters('dbHost')), ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.instrumentkey.value, 'NOAPPINSIGHTS'), ' 2>&1 > ./jira.prepare.log')]"
         },
         "installJiraCmdArgs": {
             "type": "string",
@@ -750,11 +861,11 @@
         },
         "dbDatabaseServerName": {
             "type": "string",
-            "value": "[variables('dbServerName')]"
+            "value": "[parameters('dbHost')]"
         },
         "dbDatabaseName": {
             "type": "string",
-            "value": "[variables('dbDatabaseName')]"
+            "value": "[parameters('dbDatabase')]"
         }
     }
 }

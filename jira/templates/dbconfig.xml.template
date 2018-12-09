@@ -3,11 +3,11 @@
 <jira-database-config>
   <name>defaultDS</name>
   <delegator-name>default</delegator-name>
-  <database-type>mssql</database-type>
-  <schema-name>jiraschema</schema-name>
+  <database-type>${db.config.type}</database-type>
+  <schema-name>${db.schema}</schema-name>
   <jdbc-datasource>
-    <url>jdbc:sqlserver://${db.server.name}:1433;encrypt=true;trustServerCertificate=false;hostNameInCertificate=${db.trusted.host};database=${db.name}</url>
-    <driver-class>com.microsoft.sqlserver.jdbc.SQLServerDriver</driver-class>
+    <url>${db.jdbcurl}</url>
+    <driver-class>${db.driver.class}</driver-class>
     <username>${db.user}</username>
     <password>${db.password}</password>
     <pool-min-size>20</pool-min-size>

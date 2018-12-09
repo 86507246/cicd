@@ -6,6 +6,7 @@ ATL_GENERATE_SERVER_ID_SCRIPT="print((new com.atlassian.license.DefaultSIDManage
 ATL_TEMP_DIR="/tmp"
 ATL_JIRA_VARFILE="${ATL_TEMP_DIR}/jira.varfile"
 ATL_MSSQL_DRIVER_URL="https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/6.1.0.jre8/mssql-jdbc-6.1.0.jre8.jar"
+ATL_POSTGRES_DRIVER_URL="http://central.maven.org/maven2/org/postgresql/postgresql/9.4.1211/postgresql-9.4.1211.jar"
 
 function atl_log {
   local scope=$1
@@ -285,13 +286,32 @@ function hydrate_shared_config {
   export SERVER_PROXY_NAME="${SERVER_CNAME:-${SERVER_AZURE_DOMAIN}}"
   export DB_TRUSTED_HOST=$(get_trusted_dbhost)
 
+  case $DB_TYPE in
+     sqlserver)
+         export DB_CONFIG_TYPE="mssql"
+         export DB_DRIVER_CLASS="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+         export DB_JDBCURL="jdbc:sqlserver://${DB_SERVER_NAME}:${DB_PORT};database=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=${DB_TRUSTED_HOST}"
+         ;;
+     postgres)
+         export DB_CONFIG_TYPE="postgres72"
+         export DB_USER="$DB_USER@$(echo ${DB_SERVER_NAME} | cut -d '.' -f1)"
+         export DB_JDBCURL="jdbc:postgresql://${DB_SERVER_NAME}:${DB_PORT}/${DB_NAME}?ssl=true"
+         export DB_DRIVER_CLASS="org.postgresql.Driver"
+         ;;
+     *)
+         error "Unsupported DB Type: ${DB_TYPE}"
+         ;;
+  esac
+ 
+  atl_log hdyrate_shared_config "Created DB_JDBCURL=${DB_JDBCURL}"
+
   local template_files=(dbconfig.xml.template server.xml.template ApplicationInsights.xml.template jira-collectd.conf.template)
   local output_file=""
   for template_file in ${template_files[@]};
   do
     output_file=`echo "${template_file}" | sed 's/\.template$//'`
     cat ${template_file} | python3 hydrate_jira_config.py > ${output_file}
-    atl_log dyrate_shared_config "Hydrated '${template_file}' into '${output_file}'"
+    atl_log hdyrate_shared_config "Hydrated '${template_file}' into '${output_file}'"
   done
 }
 
@@ -522,18 +542,19 @@ function perform_install {
   atl_log perform_install "${ATL_JIRA_PDORUCT} installation completed"
 }
 
-function install_mssql_driver {
+function install_jdbc_drivers {
   local install_location="${1:-${ATL_JIRA_INSTALL_DIR}/lib}"
 
-  atl_log install_mssql_driver 'Downloading Microsoft database driver'
-
-  curl -O "${ATL_MSSQL_DRIVER_URL}"
+  for jarURL in $(echo $ATL_MSSQL_DRIVER_URL $ATL_POSTGRES_DRIVER_URL)
+  do
+     atl_log install_jdbc_drivers "Downloading JDBC driver from ${jarURL}"
+     curl -O "${jarURL}"
   
-  atl_log install_mssql_driver "Copying JDBC driver to ${install_location}"
+     atl_log install_jdbc_drivers "Copying JDBC driver to ${install_location}"
+     cp -fp $(basename $(echo ${jarURL})) "${install_location}"
+  done
 
-  cp mssql-jdbc-6.1.0.jre8.jar "${install_location}"
-
-  atl_log install_mssql_driver 'MS JDBC driver has been copied.'
+  atl_log install_jdbc_drivers 'JDBC drivers has been copied.'
 }
 
 function install_appinsights {
@@ -656,7 +677,7 @@ function configure_jira {
   atl_log configure_jira "Done configuring cluster!"
 
   atl_log configure_jira "Configuring database driver..."
-  install_mssql_driver
+  install_jdbc_drivers
   atl_log configure_jira "Done configuring database driver!"
 
   atl_log configure_jira "Configuring app insights..."
@@ -689,7 +710,17 @@ function prepare_datadisks {
   atl_log prepare_datadisks "Done preparing and configuring data disks"
 }
 
+function preloadDatabase {
+  atl_log preloadDatabase  "Preloading new database"
+  prepare_password_generator
+  install_password_generator
+  prepare_server_id_generator
+  prepare_database
+  apply_database_dump
+}
+
 function prepare_install {
+  env | sort
   enable_rc_local
   tune_tcp_keepalive_for_azure
   prepare_share
@@ -697,15 +728,16 @@ function prepare_install {
   preserve_installer
   hydrate_shared_config
   copy_artefacts
-  prepare_password_generator
-  install_password_generator
-  prepare_server_id_generator
-  install_mssql_driver "`pwd`"
-  prepare_database
-  apply_database_dump
+  install_jdbc_drivers "`pwd`"
+
+  if [ $DB_CREATE = 'true' ]
+  then 
+     preloadDatabase
+  fi
 }
 
 function install_jira {
+  env | sort
   tune_tcp_keepalive_for_azure
   atl_log install_jira "Ready to install JIRA"
   mount_share
