@@ -302,7 +302,7 @@ function hydrate_shared_config {
          error "Unsupported DB Type: ${DB_TYPE}"
          ;;
   esac
- 
+
   atl_log hdyrate_shared_config "Created DB_JDBCURL=${DB_JDBCURL}"
 
   local template_files=(dbconfig.xml.template server.xml.template ApplicationInsights.xml.template jira-collectd.conf.template)
@@ -343,7 +343,14 @@ function hydrate_db_dump {
 
   log "Prepare database dump [user=${USER_NAME}, password=${USER_PASSWORD}, credential=${USER_CREDENTIAL}]"
 
-  local template_file="jira_db.sql.template"
+  local template_file
+
+  if [ $DB_TYPE == "postgres" ]; then
+    template_file="jira_postgres_db.sql.template"
+  else
+    template_file="jira_db.sql.template"
+  fi
+
   local output_file=`echo "${template_file}" | sed 's/\.template$//'`
 
   cat ${template_file} | python3 hydrate_jira_config.py > ${output_file}
@@ -376,14 +383,6 @@ EOT
   atl_log install_liquibase "Prepared liquibase migration file"
 }
 
-function prepare_database {
-  atl_log prepare_database "Installing liquibase"
-  install_liquibase
-  atl_log prepare_database "liquibase has been installed"
-  atl_log prepare_database "ready to hydrate db dump"
-  hydrate_db_dump  
-}
-
 function get_trusted_dbhost {
   local host=$(echo "${DB_SERVER_NAME}" | cut -d . -f 2-)
   echo "*.${host}"
@@ -398,6 +397,19 @@ function apply_database_dump {
     --password="${DB_PASSWORD}" \
     --changeLogFile=databaseChangeLog.xml \
     update
+}
+
+function apply_postgres_database_dump {
+  atl_log apply_postgres_database_dump "Preparing to install PostgreSQL"
+  apt-get -qqy install postgresql
+  atl_log apply_postgres_database_dump "PostgresSQL successfully installed"
+
+  PGPASSWORD="${DB_PASSWORD}" psql -f jira_postgres_db.sql \
+  -h ${DB_SERVER_NAME} \
+  -p 5432 \
+  -U "${DB_USER}" -w \
+  ${DB_NAME} 2>&1
+  atl_log apply_postgres_database_dump "DB populated"
 }
 
 function prepare_env {
@@ -676,10 +688,6 @@ function configure_jira {
   configure_cluster
   atl_log configure_jira "Done configuring cluster!"
 
-  atl_log configure_jira "Configuring database driver..."
-  install_jdbc_drivers
-  atl_log configure_jira "Done configuring database driver!"
-
   atl_log configure_jira "Configuring app insights..."
   install_appinsights
   atl_log configure_jira "Done app insights!"
@@ -715,8 +723,14 @@ function preloadDatabase {
   prepare_password_generator
   install_password_generator
   prepare_server_id_generator
-  prepare_database
-  apply_database_dump
+  atl_log preloadDatabase "ready to hydrate db dump"
+  hydrate_db_dump
+  if [ $DB_TYPE == "postgres" ]; then
+    apply_postgres_database_dump
+  else
+    install_liquibase
+    apply_database_dump
+  fi
 }
 
 function prepare_install {
@@ -731,7 +745,7 @@ function prepare_install {
   install_jdbc_drivers "`pwd`"
 
   if [ $DB_CREATE = 'true' ]
-  then 
+  then
      preloadDatabase
   fi
 }

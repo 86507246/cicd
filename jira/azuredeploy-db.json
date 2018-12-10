@@ -65,6 +65,9 @@
             "type": "string",
             "defaultValue": "allowClusterDbAccess"
         },
+        "jumpboxPublicIpAddress": {
+            "type": "string"
+        },
         "workspaceName": {
             "type": "string"
         }
@@ -250,6 +253,19 @@
             "dependsOn": [
                 "[resourceId('Microsoft.Sql/servers', parameters('dbServerName'))]"
             ]
+        },
+        {
+            "comments": "Required for bastion host to populate/configure database. Not needed if going to use existing DB",
+            "type": "Microsoft.Sql/servers/firewallRules",
+            "apiVersion": "2015-05-01-preview",
+            "name": "[concat(parameters('dbServerName'), '/', 'AllowAccessToSetupVMPublicIP')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('dbServerName'))]"
+            ],
+            "properties": {
+                "startIpAddress": "[parameters('jumpboxPublicIpAddress')]",
+                "endIpAddress": "[parameters('jumpboxPublicIpAddress')]"
+            }
         }
     ],
     "outputs": {

@@ -89,7 +89,7 @@
         },
         "dbPort": {
             "type": "string",
-            "defaultValue": "[if(equals(parameters('dbType'), 'MS SQL Server'), '1433', if(equals(parameters('dbType'), 'PostgresSQL'), '5432', '3306'))]",
+            "defaultValue": "[if(equals(parameters('dbType'), 'sqlserver'), '1433', if(equals(parameters('dbType'), 'postgres'), '5432', '3306'))]",
             "metadata": {
                 "description": "Database port to use"
             }
@@ -207,7 +207,7 @@
     "variables": {
         "namespace": "jira",
         "dbTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-db.json')]"
+            "templateUrl": "[concat(parameters('baseUrl'),if(equals(parameters('dbType'),'postgres'),'azuredeploy-postgres-db.json','azuredeploy-db.json'))]"
         },
         "vmssTemplate": {
             "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-jira-vmss.json')]"
@@ -322,6 +322,9 @@
                     },
                     "workspaceName": {
                         "value": "[variables('workspace').name]"
+                    },
+                    "jumpboxPublicIpAddress": {
+                        "value": "[parameters('jumpboxPublicIpAddress')]"
                     }
                 }
             }
@@ -584,20 +587,6 @@
             "kind": "StorageV2",
             "properties": {},
             "tags": "[variables('tags')]"
-        },
-        {
-            "comments": "Required for bastion host to populate/configure database. Not needed if going to use existing DB",
-            "type": "Microsoft.Sql/servers/firewallRules",
-            "apiVersion": "2015-05-01-preview",
-            "name": "[concat(parameters('dbHost'), '/', 'AllowAccessToSetupVMPublicIP')]",
-            "condition": "[parameters('dbCreateNew')]",
-            "dependsOn": [
-                "dbTemplate"
-            ],
-            "properties": {
-                "startIpAddress": "[parameters('jumpboxPublicIpAddress')]",
-                "endIpAddress": "[parameters('jumpboxPublicIpAddress')]"
-            }
         }
     ],
     "outputs": {

@@ -211,7 +211,7 @@
             "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-alerts.json')]"
         },
         "namespace": "jira",
-        "dbServerName": "[concat(variables('namespace'), 'sqlserver', uniqueString(resourceGroup().id))]"
+        "dbServerName": "[concat(variables('namespace'), if(equals(parameters('dbType'),'Azure DB for PostgreSQL'),'postgres','sqlserver'), uniqueString(resourceGroup().id))]"
     },
     "resources": [
         {
@@ -422,7 +422,7 @@
                         "value": "[if(equals(parameters('dbCreateNew'), 'Yes (Azure SQL DB Only)'), bool('true'), bool('false'))]"
                     },
                     "dbType": {
-                        "value": "[if(equals(parameters('dbType'), 'Azure SQL DB'), 'sqlserver', if(equals(parameters('dbType'), 'PostgresSQL'), 'postgres', 'mysql'))]"
+                        "value": "[if(equals(parameters('dbType'), 'Azure SQL DB'), 'sqlserver', if(equals(parameters('dbType'), 'Azure DB for PostgreSQL'), 'postgres', 'mysql'))]"
                     },
                     "dbDatabaseServerName": {
                         "value": "[split(reference('jiraTemplate').outputs.dbDatabaseServerName.value, '.')[0]]"
