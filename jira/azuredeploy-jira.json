@@ -205,12 +205,12 @@
         }
     },
     "variables": {
-        "url": "[if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/'))]",
-        "scriptsUrl": "[concat(variables('url'), 'scripts/')]",
-        "templatesUrl": "[concat(variables('url'), 'templates/')]",
         "namespace": "jira",
         "dbTemplate": {
             "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-db.json')]"
+        },
+        "vmssTemplate": {
+            "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-jira-vmss.json')]"
         },
         "byodbTemplate": {
             "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-byodb.json')]"
@@ -221,153 +221,10 @@
         "appInsightsTemplate": {
             "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-app-insights.json')]"
         },
-        "isSslSpecified": "[not(empty(parameters('sslBase64EncodedPfxCertificate')))]",
         "tags": {
             "vendor": "Atlassian",
             "product": "JIRA",
             "provider": "2F0AF47A-92C7-413A-9009-C3815BFF7AF6"
-        },
-        "userFullname": "[if(empty(parameters('supportUserFullname')), 'Admin Admin', parameters('supportUserFullname'))]",
-        "userEmail": "[if(empty(parameters('supportUserEmail')), 'admin@example.com', parameters('supportUserEmail'))]",
-        "env": {
-            "storage": [
-                {
-                    "name": "STORAGE_BASE_URL",
-                    "value": "[if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/'))]"
-                },
-                {
-                    "name": "STORAGE_TOKEN",
-                    "value": "[parameters('provisioningStorageToken')]"
-                },
-                {
-                    "name": "STORAGE_ACCOUNT",
-                    "value": "[variables('jira').storage.name]"
-                }
-            ],
-            "server": [
-                {
-                    "name": "SERVER_APP_PORT",
-                    "value": "8080"
-                },
-                {
-                    "name": "SERVER_CNAME",
-                    "value": "[parameters('cname')]"
-                },
-                {
-                    "name": "SERVER_PROXY_PORT",
-                    "value": "[if(variables('isSslSpecified'), '443', '80')]"
-                },
-                {
-                    "name": "SERVER_APP_SCHEME",
-                    "value": "[if(variables('isSslSpecified'), 'https', 'http')]"
-                },
-                {
-                    "name": "SERVER_CLUSTER_NAME",
-                    "value": "jiracluster"
-                },
-                {
-                    "name": "SERVER_CATALINA_HOME",
-                    "value": "/catalina/home/placeholder"
-                },
-                {
-                    "name": "SERVER_SECURE_FLAG",
-                    "value": "[if(variables('isSslSpecified'), 'true', 'false')]"
-                }
-            ],
-            "db": [
-                {
-                    "name": "DB_USER",
-                    "value": "[parameters('dbUsername')]"
-                },
-                {
-                    "name": "DB_PASSWORD",
-                    "value": "[parameters('dbPassword')]"
-                },
-                {
-                    "name": "DB_NAME",
-                    "value": "[parameters('dbDatabase')]"
-                },
-                {
-                    "name": "DB_SCHEMA",
-                    "value": "[parameters('dbSchema')]"
-                },
-                {
-                    "name": "DB_PORT",
-                    "value": "[parameters('dbPort')]"
-                },
-                {
-                    "name": "DB_TYPE",
-                    "value": "[parameters('dbType')]"
-                },
-                {
-                    "name": "DB_CREATE",
-                    "value": "[parameters('dbCreateNew')]"
-                }
-            ],
-            "sql": [
-                {
-                    "name": "USER_NAME",
-                    "value": "[parameters('userName')]"
-                },
-                {
-                    "name": "USER_NAME_LOWERCASE",
-                    "value": "[toLower(parameters('userName'))]"
-                },
-                {
-                    "name": "USER_FULLNAME",
-                    "value": "[variables('userFullname')]"
-                },
-                {
-                    "name": "USER_FULLNAME_LOWERCASE",
-                    "value": "[toLower(variables('userFullname'))]"
-                },
-                {
-                    "name": "USER_EMAIL",
-                    "value": "[variables('userEmail')]"
-                },
-                {
-                    "name": "USER_EMAIL_LOWERCASE",
-                    "value": "[toLower(variables('userEmail'))]"
-                },
-                {
-                    "name": "USER_CREDENTIAL",
-                    "value": "[parameters('userCredential')]"
-                },
-                {
-                    "name": "JIRA_LICENSE",
-                    "value": "[variables('jira').license]"
-                },
-                {
-                    "name": "APPLICATION_TITLE",
-                    "value": "[parameters('applicationTitle')]"
-                }
-            ],
-            "settings": [
-                {
-                    "name": "ATL_JIRA_HOME",
-                    "value": "/var/atlassian/application-data/jira"
-                },
-                {
-                    "name": "ATL_JIRA_SHARED_HOME",
-                    "value": "/media/atl/jira/shared"
-                },
-                {
-                    "name": "ATL_JIRA_INSTALL_DIR",
-                    "value": "/opt/atlassian/jira"
-                },
-                {
-                    "name": "ATL_JIRA_SHARED_HOME_NAME",
-                    "value": "jira-shared-home"
-                },
-                {
-                    "name": "ATL_JIRA_RELEASES_BASE_URL",
-                    "value": "https://s3.amazonaws.com/atlassian-software/releases"
-                },
-                {
-                    "name": "ATL_JIRA_PRODUCT",
-                    "value": "jira-software"
-                }
-            ]
         },
         "jira": {
             "storage": {
@@ -396,30 +253,16 @@
                         "size": "100"
                     }
                 }
-            },
-            "license": "AAAB8A0ODAoPeNp9Ul1vmzAUfedXWNrLFgmSknaVIiEtA2/L1EAEZB9a9+CYm8QtsS3btMt+/Yyh6gddEDyY63PuueeeN9+hQgVIFF6iSTg7n87OL9DnZYnCydmlt1MAfC+kBBVcMQpcA66YYYJHOC1xvsoXBfbS5rABlW3XGpSOwgsvFtwQalJygEg3UgplPhBTE60Z4QEVB++GKRIMcKtG0T3RkBADUSvAn5zZ1+tbl0cJjjPOlkucx4v51UMJ/5FMHR1uNZ2+//IgAS8Jq09pkEpUDTVBe/C12Jp7oiCwSHYHkVENnLpm+5EYuAHVXS2ajaaKSWeQ+/OKga9N4Xr83+DRaJRmpf8py/1VniXruFxkqb8usC1EsQI7doU2R2T2gHoWhDkVFShkld8ANejX3hh5PRuPdyJ45sO47hA+dIjfAUoE4sKgimmj2KYxYJmZRkYg2mgjDnZdgWedtZNzwunQfasrzvG8xIn/8WcrkoA6iBr4rXixhF7uIonW/JaLe37K70Fg3N3BFnAa2c//4Z5TfIUhqoVtSa3By9SOcKaJc7+ypD51rD752yjwnM+29DKcvX3frKQWGD7buSOQiuk+TAk8BuTrIp+joteC3rZjoG6Od9czhO9I3biG3QSDSJ6I01MFT3GPnN35Hw9baBMwLAIUarbD2ZcwPRpegxJGdSMJtiQjn/QCFGulFcz4pDzNWDZGR6RTwSNU/ARaX02nf"
-        },
-        "data": {
-            "storage": "[concat(' STORAGE_ATL_ENV_DATA=\"', base64(string(variables('env').storage)), '\" ')]",
-            "server": "[concat(' SERVER_ATL_ENV_DATA=\"', base64(string(variables('env').server)), '\" ')]",
-            "db": "[concat(' DB_ATL_ENV_DATA=\"', base64(string(variables('env').db)), '\" ')]",
-            "sql": "[concat(' SQL_ATL_ENV_DATA=\"', base64(string(variables('env').sql)), '\" ')]",
-            "settings": "[concat(' SETTINGS_ATL_ENV_DATA=\"', base64(string(variables('env').settings)), '\" ')]"
-        },
-        "scripts": {
-            "prepare": {
-                "name": "prepare_install.sh",
-                "env": "[concat(variables('data').storage, variables('data').server, variables('data').db, variables('data').sql, variables('data').settings)]"
-            },
-            "disk": {
-                "name": "vm-disk-utils-0.1.sh"
             }
         },
         "workspace": {
             "name": "[concat(variables('namespace'), '-OmsWorkspace-', uniqueString(resourceGroup().id))]",
             "sku": "free",
             "retentionInDays": 7
-        }
+        },
+        "gtwyIpName": "[concat(variables('namespace'), '-appgtwyip-', uniqueString(resourceGroup().id))]",
+        "gtwyName": "[if(empty(parameters('sslBase64EncodedPfxCertificate')), concat(variables('namespace'), 'appgateway'), concat(variables('namespace'), 'appgateway-https'))]",
+        "gtwyAddressPoolName": "[concat(variables('namespace'), 'appgwaddrpool')]"
     },
     "resources": [
         {
@@ -549,7 +392,27 @@
                     },
                     "workspaceName": {
                         "value": "[variables('workspace').name]"
+                    },
+                    "dbType": {
+                        "value": "[parameters('dbType')]"
                     }
+                }
+            }
+        },
+        {
+            "apiVersion": "2018-08-01",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[variables('gtwyIpName')]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Basic"
+            },
+            "zones": [],
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic",
+                "idleTimeoutInMinutes": 4,
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('gtwyIpName')]"
                 }
             }
         },
@@ -558,7 +421,8 @@
             "name": "appGtwyTemplate",
             "type": "Microsoft.Resources/deployments",
             "dependsOn": [
-                "[variables('workspace').name]"
+                "[variables('workspace').name]",
+                "[variables('gtwyIpName')]"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -569,6 +433,15 @@
                 "parameters": {
                     "location": {
                         "value": "[parameters('location')]"
+                    },
+                    "gtwyIpName": {
+                        "value": "[variables('gtwyIpName')]"
+                    },
+                    "gtwyName": {
+                        "value": "[variables('gtwyName')]"
+                    },
+                    "gtwyAddressPoolName": {
+                        "value": "[variables('gtwyAddressPoolName')]"
                     },
                     "applicationGatewayClusterSize": {
                         "value": "[parameters('applicationGatewayClusterSize')]"
@@ -595,6 +468,111 @@
             }
         },
         {
+            "apiVersion": "2015-01-01",
+            "name": "vmssTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('jira').storage.name)]",
+                "dbTemplate"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('vmssTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "baseUrl": {
+                        "value": "[parameters('baseUrl')]"
+                    },
+                    "provisioningStorageToken": {
+                        "value": "[parameters('provisioningStorageToken')]"
+                    },
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "clusterSize": {
+                        "value": "[parameters('clusterSize')]"
+                    },
+                    "jiraVmSize": {
+                        "value": "[parameters('jiraVmSize')]"
+                    },
+                    "nodeSshUser": {
+                        "value": "[parameters('nodeSshUser')]"
+                    },
+                    "nodeSshPassword": {
+                        "value": "[parameters('nodeSshPassword')]"
+                    },
+                    "cname": {
+                        "value": "[parameters('cname')]"
+                    },
+                    "dbCreateNew": {
+                        "value": "[parameters('dbCreateNew')]"
+                    },
+                    "dbType": {
+                        "value": "[parameters('dbType')]"
+                    },
+                    "dbPort": {
+                        "value": "[parameters('dbPort')]"
+                    },
+                    "dbDatabase": {
+                        "value": "[parameters('dbDatabase')]"
+                    },
+                    "dbSchema": {
+                        "value": "[parameters('dbSchema')]"
+                    },
+                    "dbUsername": {
+                        "value": "[parameters('dbUsername')]"
+                    },
+                    "dbPassword": {
+                        "value": "[parameters('dbPassword')]"
+                    },
+                    "userName": {
+                        "value": "[parameters('userName')]"
+                    },
+                    "userCredential": {
+                        "value": "[parameters('userCredential')]"
+                    },
+                    "supportUserFullname": {
+                        "value": "[parameters('supportUserFullname')]"
+                    },
+                    "supportUserEmail": {
+                        "value": "[parameters('supportUserEmail')]"
+                    },
+                    "applicationTitle": {
+                        "value": "[parameters('applicationTitle')]"
+                    },
+                    "vnetName": {
+                        "value": "[parameters('vnetName')]"
+                    },
+                    "appSubnetName": {
+                        "value": "[parameters('appSubnetName')]"
+                    },
+                    "jumpboxName": {
+                        "value": "[parameters('jumpboxName')]"
+                    },
+                    "sslBase64EncodedPfxCertificate": {
+                        "value": "[parameters('sslBase64EncodedPfxCertificate')]"
+                    },
+                    "appInsightsInstrumentKey": {
+                        "value": "[if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.instrumentkey.value, '')]"
+                    },
+                    "gtwyName": {
+                        "value": "[variables('gtwyName')]"
+                    },
+                    "gtwyAddressPoolName": {
+                        "value": "[variables('gtwyAddressPoolName')]"
+                    },
+                    "jiraBaseUrl": {
+                        "value": "[if(not(empty(parameters('cname'))), parameters('cname'), reference(variables('gtwyIpName')).dnsSettings.fqdn)]"
+                    },
+                    "jiraDbServerName": {
+                        "value": "[if(parameters('dbCreateNew'), reference('dbTemplate').outputs.serverName.value, parameters('dbHost'))]"
+                    }
+                }
+            }
+        },
+        {
             "type": "Microsoft.Storage/storageAccounts",
             "apiVersion": "2018-07-01",
             "name": "[variables('jira').storage.name]",
@@ -606,206 +584,6 @@
             "kind": "StorageV2",
             "properties": {},
             "tags": "[variables('tags')]"
-        },
-        {
-            "type": "Microsoft.Compute/virtualMachines/extensions",
-            "apiVersion": "2018-06-01",
-            "name": "[concat(parameters('jumpboxName'), '/prepare-install-script')]",
-            "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
-            "dependsOn": [
-                "[concat('Microsoft.Storage/storageAccounts/', variables('jira').storage.name)]",
-                "dbTemplate"
-            ],
-            "properties": {
-                "publisher": "Microsoft.Azure.Extensions",
-                "type": "CustomScript",
-                "typeHandlerVersion": "2.0",
-                "autoUpgradeMinorVersion": true,
-                "settings": {
-                    "fileUris": [
-                        "[concat(variables('scriptsUrl'), 'prepare_install.sh', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('scriptsUrl'), 'hydrate_jira_config.py', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'dbconfig.xml.template', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'jira_db.sql.template', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'server.xml.template', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'ApplicationInsights.xml.template', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'jira-collectd.conf.template', parameters('provisioningStorageToken'))]"
-                    ]
-                },
-                "protectedSettings": {
-                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', if(not(empty(parameters('cname'))), parameters('cname'), reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value), ' ', if(parameters('dbCreateNew'), reference('dbTemplate').outputs.serverName.value, parameters('dbHost')), ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.instrumentkey.value, ' '), ' 2>&1 > ./jira.prepare.log')]"
-                }
-            }
-        },
-        {
-            "type": "Microsoft.Compute/virtualMachineScaleSets",
-            "name": "[variables('jira').cluster.name]",
-            "location": "[parameters('location')]",
-            "apiVersion": "2018-06-01",
-            "dependsOn": [
-                "appGtwyTemplate",
-                "[concat('Microsoft.Compute/virtualMachines/',parameters('jumpboxName'),'/extensions/prepare-install-script')]"
-            ],
-            "sku": {
-                "name": "[variables('jira').cluster.vm.size]",
-                "tier": "[variables('jira').cluster.tier]",
-                "capacity": "[parameters('clusterSize')]"
-            },
-            "properties": {
-                "overprovision": false,
-                "singlePlacementGroup": false,
-                "upgradePolicy": {
-                    "mode": "Manual"
-                },
-                "virtualMachineProfile": {
-                    "osProfile": {
-                        "computerNamePrefix": "jiranode-",
-                        "adminUsername": "[variables('jira').cluster.vm.user]",
-                        "adminPassword": "[variables('jira').cluster.vm.pass]",
-                        "linuxConfiguration": {
-                            "disablePasswordAuthentication": false
-                        }
-                    },
-                    "storageProfile": {
-                        "imageReference": {
-                            "publisher": "[variables('jira').cluster.vm.image.publisher]",
-                            "offer": "[variables('jira').cluster.vm.image.offer]",
-                            "sku": "[variables('jira').cluster.vm.image.sku]",
-                            "version": "[variables('jira').cluster.vm.image.version]"
-                        },
-                        "osDisk": {
-                            "managedDisk": {
-                                "storageAccountType": "[variables('jira').cluster.vm.osdisk.type]"
-                            },
-                            "diskSizeGB": "[variables('jira').cluster.vm.osdisk.size]",
-                            "createOption": "FromImage"
-                        },
-                        "dataDisks": [
-                            {
-                                "lun": 0,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 1,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 2,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 3,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 4,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 5,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 6,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 7,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
-                                }
-                            }
-                        ]
-                    },
-                    "networkProfile": {
-                        "networkInterfaceConfigurations": [
-                            {
-                                "name": "[concat(variables('namespace'), 'scaleset-nic')]",
-                                "properties": {
-                                    "primary": true,
-                                    "ipConfigurations": [
-                                        {
-                                            "name": "[concat(variables('namespace'), 'scalset-ipconfig')]",
-                                            "properties": {
-                                                "subnet": {
-                                                    "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '/subnets/', parameters('appSubnetName'))]"
-                                                },
-                                                "ApplicationGatewayBackendAddressPools": [
-                                                    {
-                                                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', reference('appGtwyTemplate').outputs.gtwyName.value), '/backendAddressPools/', reference('appGtwyTemplate').outputs.gtwyAddressPoolName.value)]"
-                                                    }
-                                                ]
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        ]
-                    },
-                    "extensionProfile": {
-                        "extensions": [
-                            {
-                                "name": "jira-install-script",
-                                "properties": {
-                                    "publisher": "Microsoft.Azure.Extensions",
-                                    "type": "CustomScript",
-                                    "typeHandlerVersion": "2.0",
-                                    "autoUpgradeMinorVersion": true,
-                                    "settings": {
-                                        "fileUris": [
-                                            "[concat(uri(variables('scriptsUrl'), variables('scripts').prepare.name), parameters('provisioningStorageToken'))]",
-                                            "[concat(uri(variables('scriptsUrl'), 'appinsights_transform_web_xml.xsl'), parameters('provisioningStorageToken'))]",
-                                            "[concat(uri(variables('scriptsUrl'), variables('scripts').disk.name), parameters('provisioningStorageToken'))]"
-                                        ]
-                                    },
-                                    "protectedSettings": {
-                                        "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' install ', if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.instrumentkey.value, ' '), ' 2>&1 > ./jira.install.log')]"
-                                    }
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
         },
         {
             "comments": "Required for bastion host to populate/configure database. Not needed if going to use existing DB",
@@ -827,9 +605,17 @@
             "type": "string",
             "value": "[if(parameters('dbCreateNew'), reference('dbTemplate').outputs.jdbcUrl.value, reference('byodbTemplate').outputs.jdbcUrl.value)]"
         },
-        "gtwyName" : {
+        "jiraAppEndpoint": {
             "type": "string",
-            "value": "[reference('appGtwyTemplate').outputs.gtwyName.value]"
+            "value": "[reference(variables('gtwyIpName')).dnsSettings.fqdn]"
+        },
+        "gtwyIpName": {
+            "type": "string",
+            "value": "[variables('gtwyIpName')]"
+        },
+        "gtwyName": {
+            "type": "string",
+            "value": "[variables('gtwyName')]"
         },
         "storageAccountName": {
             "type": "string",
@@ -842,22 +628,6 @@
         "appInsightsName": {
             "type": "string",
             "value": "[reference('appInsightsTemplate').outputs.appInsightsName.value]"
-        },
-        "jiraAppEndpoint": {
-            "type": "string",
-            "value": "[reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value]"
-        },
-        "gtwyIpName": {
-            "type": "string",
-            "value": "[reference('appGtwyTemplate').outputs.gtwyIpName.value]"
-        },
-        "prepareCmdArgs": {
-            "type": "string",
-            "value": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', if(not(empty(parameters('cname'))), parameters('cname'), reference('appGtwyTemplate').outputs.gtwyIpEndpoint.value), ' ', if(parameters('dbCreateNew'), reference('dbTemplate').outputs.serverName.value, parameters('dbHost')), ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.instrumentkey.value, 'NOAPPINSIGHTS'), ' 2>&1 > ./jira.prepare.log')]"
-        },
-        "installJiraCmdArgs": {
-            "type": "string",
-            "value": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' install ', if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.instrumentkey.value, 'NOAPPINSIGHTS'), ' 2>&1 > ./jira.install.log')]"
         },
         "dbDatabaseServerName": {
             "type": "string",
