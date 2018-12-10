@@ -16,7 +16,7 @@
                 "description": "Azure region to deploy to. NB allowable regions are those that currently support preview functionality used within this Jira template"
             }
         },
-        "baseUrl": {
+        "templateUrl": {
             "type": "string",
             "defaultValue": "https://jiradcresources.blob.core.windows.net/master/",
             "metadata": {
@@ -24,7 +24,7 @@
                 "artifactsBaseUrl": ""
             }
         },
-        "provisioningStorageToken": {
+        "templateUrlSasToken": {
             "type": "string",
             "defaultValue": "?sv=2017-04-17&si=public-access&sr=c&sig=P15kxinQOKEJruc4gxMmmKL3EpPZMg137i96w%2BKGB8E%3D",
             "metadata": {
@@ -38,7 +38,7 @@
                 "description": "CNAME to use"
             }
         },
-        "jiraVmSize": {
+        "clusterVmSize": {
             "type": "string",
             "defaultValue": "Standard_DS3_v2",
             "metadata": {
@@ -60,14 +60,14 @@
             },
             "minLength": 300
         },
-        "nodeSshUser": {
+        "clusterSshUser": {
             "type": "string",
             "defaultValue": "jiraadmin",
             "metadata": {
                 "description": "The username used to SSH into each JIRA node from the jumpbox."
             }
         },
-        "nodeSshPassword": {
+        "clusterSshPassword": {
             "type": "securestring",
             "defaultValue": "JIRA@dmin",
             "metadata": {
@@ -149,12 +149,12 @@
                 "description": "The database service tier"
             }
         },
-        "userName": {
+        "jiraAdminUserName": {
             "type": "string",
             "defaultValue": "admin",
             "minLength": 5
         },
-        "userCredential": {
+        "jiraAdminUserPassword": {
             "type": "securestring",
             "defaultValue": "admin"
         },
@@ -169,7 +169,7 @@
                 "description": "If you specify a support email address we'll create/send Azure monitoring alerts"
             }
         },
-        "applicationTitle": {
+        "jiraAppTitle": {
             "type": "string",
             "defaultValue": "Atlassian Jira"
         },
@@ -199,16 +199,16 @@
     },
     "variables": {
         "vpcTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-vpc.json')]"
+            "templateUrl": "[concat(parameters('templateUrl'),'azuredeploy-vpc.json')]"
         },
         "jiraTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-jira.json')]"
+            "templateUrl": "[concat(parameters('templateUrl'),'azuredeploy-jira.json')]"
         },
         "domainTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-domain.json')]"
+            "templateUrl": "[concat(parameters('templateUrl'),'azuredeploy-domain.json')]"
         },
         "alertsTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-alerts.json')]"
+            "templateUrl": "[concat(parameters('templateUrl'), 'azuredeploy-alerts.json')]"
         },
         "namespace": "jira",
         "dbServerName": "[concat(variables('namespace'), 'sqlserver', uniqueString(resourceGroup().id))]"
@@ -235,7 +235,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('vpcTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "uri": "[concat(variables('vpcTemplate').templateUrl, parameters('templateUrlSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -261,24 +261,24 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('jiraTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "uri": "[concat(variables('jiraTemplate').templateUrl, parameters('templateUrlSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
                     "location": {
                         "value": "[parameters('location')]"
                     },
-                    "baseUrl": {
-                        "value": "[parameters('baseUrl')]"
+                    "templateUrl": {
+                        "value": "[parameters('templateUrl')]"
                     },
-                    "provisioningStorageToken": {
-                        "value": "[parameters('provisioningStorageToken')]"
+                    "templateUrlSasToken": {
+                        "value": "[parameters('templateUrlSasToken')]"
                     },
                     "clusterSize": {
                         "value": "[parameters('clusterSize')]"
                     },
-                    "jiraVmSize": {
-                        "value": "[parameters('jiraVmSize')]"
+                    "clusterVmSize": {
+                        "value": "[parameters('clusterVmSize')]"
                     },
                     "dbCreateNew": {
                         "value": "[if(equals(parameters('dbCreateNew'), 'Yes (Azure SQL DB Only)'), bool('true'), bool('false'))]"
@@ -307,23 +307,23 @@
                     "dbTier": {
                         "value": "[parameters('dbTier')]"
                     },
-                    "applicationTitle": {
-                        "value": "[parameters('applicationTitle')]"
+                    "jiraAppTitle": {
+                        "value": "[parameters('jiraAppTitle')]"
                     },
-                    "nodeSshUser": {
-                        "value": "[parameters('nodeSshUser')]"
+                    "clusterSshUser": {
+                        "value": "[parameters('clusterSshUser')]"
                     },
-                    "nodeSshPassword": {
-                        "value": "[parameters('nodeSshPassword')]"
+                    "clusterSshPassword": {
+                        "value": "[parameters('clusterSshPassword')]"
                     },
                     "cname": {
                         "value": "[if(greater(length(parameters('cname')), 0), concat('jira.', parameters('cname')), parameters('cname'))]"
                     },
-                    "userName": {
-                        "value": "[parameters('userName')]"
+                    "jiraAdminUserName": {
+                        "value": "[parameters('jiraAdminUserName')]"
                     },
-                    "userCredential": {
-                        "value": "[parameters('userCredential')]"
+                    "jiraAdminUserPassword": {
+                        "value": "[parameters('jiraAdminUserPassword')]"
                     },
                     "supportUserEmail": {
                         "value": "[parameters('supportUserEmail')]"
@@ -366,7 +366,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('domainTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "uri": "[concat(variables('domainTemplate').templateUrl, parameters('templateUrlSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -393,7 +393,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('alertsTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "uri": "[concat(variables('alertsTemplate').templateUrl, parameters('templateUrlSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {

@@ -2,14 +2,14 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "baseUrl": {
+        "templateUrl": {
             "type": "string",
             "metadata": {
                 "description": "Base URL for Marketplace",
                 "artifactsBaseUrl": ""
             }
         },
-        "provisioningStorageToken": {
+        "templateUrlSasToken": {
             "type": "string",
             "defaultValue": "",
             "metadata": {
@@ -34,21 +34,21 @@
                 "description": "The number of JIRA nodes in the cluster"
             }
         },
-        "jiraVmSize": {
+        "clusterVmSize": {
             "type": "string",
             "defaultValue": "Standard_DS3_v2",
             "metadata": {
                 "description": "The size of the virtual machine used for each JIRA node."
             }
         },
-        "nodeSshUser": {
+        "clusterSshUser": {
             "type": "string",
             "defaultValue": "jiraadmin",
             "metadata": {
                 "description": "The username used to SSH into each JIRA node from the jumpbox."
             }
         },
-        "nodeSshPassword": {
+        "clusterSshPassword": {
             "type": "securestring",
             "metadata": {
                 "description": "The password used to SSH into each JIRA node from the jumpbox."
@@ -131,11 +131,11 @@
                 "description": "The database service tier"
             }
         },
-        "userName": {
+        "jiraAdminUserName": {
             "type": "string",
             "defaultValue": "admin"
         },
-        "userCredential": {
+        "jiraAdminUserPassword": {
             "type": "securestring"
         },
         "supportUserFullname": {
@@ -144,7 +144,7 @@
         "supportUserEmail": {
             "type": "string"
         },
-        "applicationTitle": {
+        "jiraAppTitle": {
             "type": "string",
             "defaultValue": "Atlassian Jira"
         },
@@ -207,19 +207,19 @@
     "variables": {
         "namespace": "jira",
         "dbTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-db.json')]"
+            "templateUrl": "[concat(parameters('templateUrl'),'azuredeploy-db.json')]"
         },
         "vmssTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-jira-vmss.json')]"
+            "templateUrl": "[concat(parameters('templateUrl'),'azuredeploy-jira-vmss.json')]"
         },
         "byodbTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-byodb.json')]"
+            "templateUrl": "[concat(parameters('templateUrl'),'azuredeploy-byodb.json')]"
         },
         "appGtwyTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-jira-gtwy.json')]"
+            "templateUrl": "[concat(parameters('templateUrl'), 'azuredeploy-jira-gtwy.json')]"
         },
         "appInsightsTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-app-insights.json')]"
+            "templateUrl": "[concat(parameters('templateUrl'), 'azuredeploy-app-insights.json')]"
         },
         "tags": {
             "vendor": "Atlassian",
@@ -234,9 +234,9 @@
                 "name": "[concat(variables('namespace'), 'cluster')]",
                 "tier": "Standard",
                 "vm": {
-                    "size": "[parameters('jiraVmSize')]",
-                    "user": "[parameters('nodeSshUser')]",
-                    "pass": "[parameters('nodeSshPassword')]",
+                    "size": "[parameters('clusterVmSize')]",
+                    "user": "[parameters('clusterSshUser')]",
+                    "pass": "[parameters('clusterSshPassword')]",
                     "image": {
                         "publisher": "Canonical",
                         "offer": "UbuntuServer",
@@ -289,7 +289,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('dbTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "uri": "[concat(variables('dbTemplate').templateUrl, parameters('templateUrlSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -337,7 +337,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('byodbTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "uri": "[concat(variables('byodbTemplate').templateUrl, parameters('templateUrlSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -383,7 +383,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('appInsightsTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "uri": "[concat(variables('appInsightsTemplate').templateUrl, parameters('templateUrlSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -427,7 +427,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('appGtwyTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "uri": "[concat(variables('appGtwyTemplate').templateUrl, parameters('templateUrlSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -478,15 +478,15 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('vmssTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "uri": "[concat(variables('vmssTemplate').templateUrl, parameters('templateUrlSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "baseUrl": {
-                        "value": "[parameters('baseUrl')]"
+                    "templateUrl": {
+                        "value": "[parameters('templateUrl')]"
                     },
-                    "provisioningStorageToken": {
-                        "value": "[parameters('provisioningStorageToken')]"
+                    "templateUrlSasToken": {
+                        "value": "[parameters('templateUrlSasToken')]"
                     },
                     "location": {
                         "value": "[parameters('location')]"
@@ -494,14 +494,14 @@
                     "clusterSize": {
                         "value": "[parameters('clusterSize')]"
                     },
-                    "jiraVmSize": {
-                        "value": "[parameters('jiraVmSize')]"
+                    "clusterVmSize": {
+                        "value": "[parameters('clusterVmSize')]"
                     },
-                    "nodeSshUser": {
-                        "value": "[parameters('nodeSshUser')]"
+                    "clusterSshUser": {
+                        "value": "[parameters('clusterSshUser')]"
                     },
-                    "nodeSshPassword": {
-                        "value": "[parameters('nodeSshPassword')]"
+                    "clusterSshPassword": {
+                        "value": "[parameters('clusterSshPassword')]"
                     },
                     "cname": {
                         "value": "[parameters('cname')]"
@@ -527,11 +527,11 @@
                     "dbPassword": {
                         "value": "[parameters('dbPassword')]"
                     },
-                    "userName": {
-                        "value": "[parameters('userName')]"
+                    "jiraAdminUserName": {
+                        "value": "[parameters('jiraAdminUserName')]"
                     },
-                    "userCredential": {
-                        "value": "[parameters('userCredential')]"
+                    "jiraAdminUserPassword": {
+                        "value": "[parameters('jiraAdminUserPassword')]"
                     },
                     "supportUserFullname": {
                         "value": "[parameters('supportUserFullname')]"
@@ -539,8 +539,8 @@
                     "supportUserEmail": {
                         "value": "[parameters('supportUserEmail')]"
                     },
-                    "applicationTitle": {
-                        "value": "[parameters('applicationTitle')]"
+                    "jiraAppTitle": {
+                        "value": "[parameters('jiraAppTitle')]"
                     },
                     "vnetName": {
                         "value": "[parameters('vnetName')]"

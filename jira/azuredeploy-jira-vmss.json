@@ -2,14 +2,14 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "baseUrl": {
+        "templateUrl": {
             "type": "string",
             "metadata": {
                 "description": "Base URL for Marketplace",
                 "artifactsBaseUrl": ""
             }
         },
-        "provisioningStorageToken": {
+        "templateUrlSasToken": {
             "type": "string",
             "defaultValue": "",
             "metadata": {
@@ -34,21 +34,21 @@
                 "description": "The number of JIRA nodes in the cluster"
             }
         },
-        "jiraVmSize": {
+        "clusterVmSize": {
             "type": "string",
             "defaultValue": "Standard_DS3_v2",
             "metadata": {
                 "description": "The size of the virtual machine used for each JIRA node."
             }
         },
-        "nodeSshUser": {
+        "clusterSshUser": {
             "type": "string",
             "defaultValue": "jiraadmin",
             "metadata": {
                 "description": "The username used to SSH into each JIRA node from the jumpbox."
             }
         },
-        "nodeSshPassword": {
+        "clusterSshPassword": {
             "type": "securestring",
             "metadata": {
                 "description": "The password used to SSH into each JIRA node from the jumpbox."
@@ -113,11 +113,11 @@
                 "description": "Database password"
             }
         },
-        "userName": {
+        "jiraAdminUserName": {
             "type": "string",
             "defaultValue": "admin"
         },
-        "userCredential": {
+        "jiraAdminUserPassword": {
             "type": "securestring"
         },
         "supportUserFullname": {
@@ -126,7 +126,7 @@
         "supportUserEmail": {
             "type": "string"
         },
-        "applicationTitle": {
+        "jiraAppTitle": {
             "type": "string",
             "defaultValue": "Atlassian Jira"
         },
@@ -162,7 +162,7 @@
     },
     "variables": {
         "namespace": "jira",
-        "url": "[if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/'))]",
+        "url": "[if(endsWith(parameters('templateUrl'), '/'), parameters('templateUrl'), concat(parameters('templateUrl'), '/'))]",
         "scriptsUrl": "[concat(variables('url'), 'scripts/')]",
         "templatesUrl": "[concat(variables('url'), 'templates/')]",
         "userFullname": "[if(empty(parameters('supportUserFullname')), 'Admin Admin', parameters('supportUserFullname'))]",
@@ -172,11 +172,11 @@
             "storage": [
                 {
                     "name": "STORAGE_BASE_URL",
-                    "value": "[if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/'))]"
+                    "value": "[if(endsWith(parameters('templateUrl'), '/'), parameters('templateUrl'), concat(parameters('templateUrl'), '/'))]"
                 },
                 {
                     "name": "STORAGE_TOKEN",
-                    "value": "[parameters('provisioningStorageToken')]"
+                    "value": "[parameters('templateUrlSasToken')]"
                 },
                 {
                     "name": "STORAGE_ACCOUNT",
@@ -246,11 +246,11 @@
             "sql": [
                 {
                     "name": "USER_NAME",
-                    "value": "[parameters('userName')]"
+                    "value": "[parameters('jiraAdminUserName')]"
                 },
                 {
                     "name": "USER_NAME_LOWERCASE",
-                    "value": "[toLower(parameters('userName'))]"
+                    "value": "[toLower(parameters('jiraAdminUserName'))]"
                 },
                 {
                     "name": "USER_FULLNAME",
@@ -270,7 +270,7 @@
                 },
                 {
                     "name": "USER_CREDENTIAL",
-                    "value": "[parameters('userCredential')]"
+                    "value": "[parameters('jiraAdminUserPassword')]"
                 },
                 {
                     "name": "JIRA_LICENSE",
@@ -278,7 +278,7 @@
                 },
                 {
                     "name": "APPLICATION_TITLE",
-                    "value": "[parameters('applicationTitle')]"
+                    "value": "[parameters('jiraAppTitle')]"
                 }
             ],
             "settings": [
@@ -316,9 +316,9 @@
                 "name": "[concat(variables('namespace'), 'cluster')]",
                 "tier": "Standard",
                 "vm": {
-                    "size": "[parameters('jiraVmSize')]",
-                    "user": "[parameters('nodeSshUser')]",
-                    "pass": "[parameters('nodeSshPassword')]",
+                    "size": "[parameters('clusterVmSize')]",
+                    "user": "[parameters('clusterSshUser')]",
+                    "pass": "[parameters('clusterSshPassword')]",
                     "image": {
                         "publisher": "Canonical",
                         "offer": "UbuntuServer",
@@ -374,13 +374,13 @@
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "fileUris": [
-                        "[concat(variables('scriptsUrl'), 'prepare_install.sh', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('scriptsUrl'), 'hydrate_jira_config.py', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'dbconfig.xml.template', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'jira_db.sql.template', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'server.xml.template', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'ApplicationInsights.xml.template', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'jira-collectd.conf.template', parameters('provisioningStorageToken'))]"
+                        "[concat(variables('scriptsUrl'), 'prepare_install.sh', parameters('templateUrlSasToken'))]",
+                        "[concat(variables('scriptsUrl'), 'hydrate_jira_config.py', parameters('templateUrlSasToken'))]",
+                        "[concat(variables('templatesUrl'), 'dbconfig.xml.template', parameters('templateUrlSasToken'))]",
+                        "[concat(variables('templatesUrl'), 'jira_db.sql.template', parameters('templateUrlSasToken'))]",
+                        "[concat(variables('templatesUrl'), 'server.xml.template', parameters('templateUrlSasToken'))]",
+                        "[concat(variables('templatesUrl'), 'ApplicationInsights.xml.template', parameters('templateUrlSasToken'))]",
+                        "[concat(variables('templatesUrl'), 'jira-collectd.conf.template', parameters('templateUrlSasToken'))]"
                     ]
                 },
                 "protectedSettings": {
@@ -541,9 +541,9 @@
                                     "autoUpgradeMinorVersion": true,
                                     "settings": {
                                         "fileUris": [
-                                            "[concat(uri(variables('scriptsUrl'), variables('scripts').prepare.name), parameters('provisioningStorageToken'))]",
-                                            "[concat(uri(variables('scriptsUrl'), 'appinsights_transform_web_xml.xsl'), parameters('provisioningStorageToken'))]",
-                                            "[concat(uri(variables('scriptsUrl'), variables('scripts').disk.name), parameters('provisioningStorageToken'))]"
+                                            "[concat(uri(variables('scriptsUrl'), variables('scripts').prepare.name), parameters('templateUrlSasToken'))]",
+                                            "[concat(uri(variables('scriptsUrl'), 'appinsights_transform_web_xml.xsl'), parameters('templateUrlSasToken'))]",
+                                            "[concat(uri(variables('scriptsUrl'), variables('scripts').disk.name), parameters('templateUrlSasToken'))]"
                                         ]
                                     },
                                     "protectedSettings": {
