@@ -559,9 +559,10 @@ function install_jdbc_drivers {
 
 function install_appinsights {
   atl_log install_appinsights "Installation MS App Insights"
-  atl_log install_appinsights "Have AppInsights Key? ${APPINSIGHTS_INSTRUMENTATION_KEY}"
-  if [ -n ${APPINSIGHTS_INSTRUMENTATION_KEY} ] 
+  atl_log install_appinsights "Have AppInsights Key? |${APPINSIGHTS_INSTRUMENTATION_KEY}|"
+  if [ -n "${APPINSIGHTS_INSTRUMENTATION_KEY}" ] 
   then 
+     atl_log install_appinsights "Installing App Insights"
      apt-get -qqy install xsltproc
      download_appinsights_jars ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/lib
 
@@ -580,7 +581,7 @@ function install_appinsights {
 
 function install_appinsights_collectd {
   # Have moved collectd to run after Jira startup - doesn't start up well with all the mounting/remounting/Jira not being up.
-  if [ -n ${APPINSIGHTS_INSTRUMENTATION_KEY} ]
+  if [ -n "${APPINSIGHTS_INSTRUMENTATION_KEY}" ]
   then
     atl_log install_appinsights_collectd "Configuring collectd to publish Jira JMX"
     apt-get -qqy install collectd

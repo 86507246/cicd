@@ -67,6 +67,10 @@
         },
         "workspaceName": {
             "type": "string"
+        },
+        "enableAnalytics": {
+            "type": "bool",
+            "defaultValue": true
         }
     },
     "variables": {
@@ -142,6 +146,7 @@
                             "comments": "DiagnosticSettings have to be within the nested, nested SQL DB - https://david-obrien.net/2018/06/azure-sql-diagnostics/. NB diagnostic hangs around too ie doesn't get deleted on RG deletion.",
                             "type": "providers/diagnosticSettings",
                             "name": "Microsoft.Insights/diagnostic_primary",
+                            "condition": "[parameters('enableAnalytics')]",
                             "apiVersion": "2017-05-01-preview",
                             "dependsOn": [
                                 "[resourceId('Microsoft.Sql/servers/databases', variables('sql').server.name, variables('sql').database.name)]"

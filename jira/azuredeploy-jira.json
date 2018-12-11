@@ -148,7 +148,7 @@
             "type": "string",
             "defaultValue": "Atlassian Jira"
         },
-        "applicationGatewayClusterSize": {
+        "appGtwyClusterSize": {
             "type": "int",
             "allowedValues": [
                 1,
@@ -164,7 +164,7 @@
                 "description": "The number of nodes for the App Gateway cluster"
             }
         },
-        "applicationGatewaySize": {
+        "appGtwyTier": {
             "type": "string",
             "allowedValues": [
                 "Standard_Small",
@@ -202,6 +202,10 @@
         "enableApplicationInsights": {
             "type": "bool",
             "defaultValue": true
+        },
+        "enableAnalytics": {
+            "type": "bool",
+            "defaultValue": true
         }
     },
     "variables": {
@@ -220,6 +224,9 @@
         },
         "appInsightsTemplate": {
             "templateUrl": "[concat(parameters('templateUrl'), 'azuredeploy-app-insights.json')]"
+        },
+        "analyticsTemplate": {
+            "templateUrl": "[concat(parameters('templateUrl'), 'azuredeploy-analytics.json')]"
         },
         "tags": {
             "vendor": "Atlassian",
@@ -269,6 +276,7 @@
             "type": "Microsoft.OperationalInsights/workspaces",
             "name": "[variables('workspace').name]",
             "apiVersion": "2015-11-01-preview",
+            "condition": "[parameters('enableAnalytics')]",
             "location": "[parameters('location')]",
             "scale": null,
             "properties": {
@@ -322,6 +330,9 @@
                     },
                     "workspaceName": {
                         "value": "[variables('workspace').name]"
+                    },
+                    "enableAnalytics": {
+                        "value": "[parameters('enableAnalytics')]"
                     }
                 }
             }
@@ -389,6 +400,28 @@
                 "parameters": {
                     "location": {
                         "value": "[parameters('location')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-01-01",
+            "name": "analyticsTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[parameters('enableAnalytics')]",
+            "dependsOn": [
+                "[variables('workspace').name]",
+                "dbTemplate"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('analyticsTemplate').templateUrl, parameters('templateUrlSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
                     },
                     "workspaceName": {
                         "value": "[variables('workspace').name]"
@@ -443,11 +476,11 @@
                     "gtwyAddressPoolName": {
                         "value": "[variables('gtwyAddressPoolName')]"
                     },
-                    "applicationGatewayClusterSize": {
-                        "value": "[parameters('applicationGatewayClusterSize')]"
+                    "appGtwyClusterSize": {
+                        "value": "[parameters('appGtwyClusterSize')]"
                     },
-                    "applicationGatewaySize": {
-                        "value": "[parameters('applicationGatewaySize')]"
+                    "appGtwyTier": {
+                        "value": "[parameters('appGtwyTier')]"
                     },
                     "vnetName": {
                         "value": "[parameters('vnetName')]"
@@ -463,6 +496,9 @@
                     },
                     "workspaceName": {
                         "value": "[variables('workspace').name]"
+                    },
+                    "enableAnalytics": {
+                        "value": "[parameters('enableAnalytics')]"
                     }
                 }
             }
@@ -568,6 +604,9 @@
                     },
                     "jiraDbServerName": {
                         "value": "[if(parameters('dbCreateNew'), reference('dbTemplate').outputs.serverName.value, parameters('dbHost'))]"
+                    },
+                    "storageAccessKey": {
+                        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value]"
                     }
                 }
             }
@@ -627,7 +666,7 @@
         },
         "appInsightsName": {
             "type": "string",
-            "value": "[reference('appInsightsTemplate').outputs.appInsightsName.value]"
+            "value": "[if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.appInsightsName.value, '')]"
         },
         "dbDatabaseServerName": {
             "type": "string",

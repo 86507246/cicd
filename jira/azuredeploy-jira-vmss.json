@@ -158,6 +158,9 @@
         },
         "jiraDbServerName": {
             "type": "string"
+        },
+        "storageAccessKey": {
+            "type": "securestring"
         }
     },
     "variables": {
@@ -358,7 +361,9 @@
             "disk": {
                 "name": "vm-disk-utils-0.1.sh"
             }
-        }
+        },
+        "jiraPrepareCmd": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', parameters('storageAccessKey'), ' prepare ', parameters('jiraBaseUrl'), ' ', parameters('jiraDbServerName'), ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 2>&1 > ./jira.prepare.log')]",
+        "jiraInstallCmd": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', parameters('storageAccessKey'), ' install ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 2>&1 > ./jira.install.log')]"
     },
     "resources": [
         {
@@ -384,8 +389,7 @@
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', parameters('jiraBaseUrl'), ' ', parameters('jiraDbServerName'), ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 2>&1 > ./jira.prepare.log')]"
-                }
+                    "commandToExecute": "[variables('jiraPrepareCmd')]"                }
             }
         },
         {
@@ -547,7 +551,7 @@
                                         ]
                                     },
                                     "protectedSettings": {
-                                        "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' install ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 2>&1 > ./jira.install.log')]"
+                                        "commandToExecute": "[variables('jiraInstallCmd')]"
                                     }
                                 }
                             }
@@ -560,11 +564,11 @@
     "outputs": {
         "prepareCmdArgs": {
             "type": "string",
-            "value": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', parameters('jiraBaseUrl'), ' ', parameters('jiraDbServerName'), ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), 'NOAPPINSIGHTS'), ' 2>&1 > ./jira.prepare.log')]"
+            "value": "[variables('jiraPrepareCmd')]"
         },
         "installJiraCmdArgs": {
             "type": "string",
-            "value": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' install ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), 'NOAPPINSIGHTS'), ' 2>&1 > ./jira.install.log')]"
+            "value": "[variables('jiraInstallCmd')]"
         }
     }
 }
