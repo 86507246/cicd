@@ -120,10 +120,10 @@
         "jiraAdminUserPassword": {
             "type": "securestring"
         },
-        "supportUserFullname": {
+        "jiraAdminUserFullname": {
             "type": "string"
         },
-        "supportUserEmail": {
+        "jiraAdminUserEmail": {
             "type": "string"
         },
         "jiraAppTitle": {
@@ -168,8 +168,6 @@
         "url": "[if(endsWith(parameters('templateUrl'), '/'), parameters('templateUrl'), concat(parameters('templateUrl'), '/'))]",
         "scriptsUrl": "[concat(variables('url'), 'scripts/')]",
         "templatesUrl": "[concat(variables('url'), 'templates/')]",
-        "userFullname": "[if(empty(parameters('supportUserFullname')), 'Admin Admin', parameters('supportUserFullname'))]",
-        "userEmail": "[if(empty(parameters('supportUserEmail')), 'admin@example.com', parameters('supportUserEmail'))]",
         "isSslSpecified": "[not(empty(parameters('sslBase64EncodedPfxCertificate')))]",
         "env": {
             "storage": [
@@ -257,19 +255,19 @@
                 },
                 {
                     "name": "USER_FULLNAME",
-                    "value": "[variables('userFullname')]"
+                    "value": "[parameters('jiraAdminUserFullname')]"
                 },
                 {
                     "name": "USER_FULLNAME_LOWERCASE",
-                    "value": "[toLower(variables('userFullname'))]"
+                    "value": "[toLower(parameters('jiraAdminUserFullname'))]"
                 },
                 {
                     "name": "USER_EMAIL",
-                    "value": "[variables('userEmail')]"
+                    "value": "[parameters('jiraAdminUserEmail')]"
                 },
                 {
                     "name": "USER_EMAIL_LOWERCASE",
-                    "value": "[toLower(variables('userEmail'))]"
+                    "value": "[toLower(parameters('jiraAdminUserEmail'))]"
                 },
                 {
                     "name": "USER_CREDENTIAL",

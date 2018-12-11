@@ -158,16 +158,15 @@
             "type": "securestring",
             "defaultValue": "admin"
         },
-        "supportUserFullname": {
+        "jiraAdminUserFullname": {
             "type": "string",
-            "defaultValue": ""
+            "defaultValue": "Admin Admin",
+            "minLength": 5
         },
-        "supportUserEmail": {
+        "jiraAdminUserEmail": {
             "type": "string",
-            "defaultValue": "",
-            "metadata": {
-                "description": "If you specify a support email address we'll create/send Azure monitoring alerts"
-            }
+            "defaultValue": "admin@example.com",
+            "minLength": 5
         },
         "jiraAppTitle": {
             "type": "string",
@@ -223,6 +222,10 @@
             "metadata": {
                 "description": "The application gateway size"
             }
+        },
+        "enableEmailAlerts": {
+            "type": "bool",
+            "defaultValue": true
         },
         "enableApplicationInsights": {
             "type": "bool",
@@ -361,11 +364,11 @@
                     "jiraAdminUserPassword": {
                         "value": "[parameters('jiraAdminUserPassword')]"
                     },
-                    "supportUserEmail": {
-                        "value": "[parameters('supportUserEmail')]"
+                    "jiraAdminUserEmail": {
+                        "value": "[parameters('jiraAdminUserEmail')]"
                     },
-                    "supportUserFullname": {
-                        "value": "[parameters('supportUserFullname')]"
+                    "jiraAdminUserFullname": {
+                        "value": "[parameters('jiraAdminUserFullname')]"
                     },
                     "appGtwyClusterSize": {
                         "value": "[parameters('appGtwyClusterSize')]"
@@ -434,7 +437,7 @@
             "apiVersion": "2015-01-01",
             "name": "alertsTemplate",
             "type": "Microsoft.Resources/deployments",
-            "condition": "[not(empty(parameters('supportUserEmail')))]",
+            "condition": "[parameters('enableEmailAlerts')]",
             "dependsOn": [
                 "jiraTemplate"
             ],
@@ -448,8 +451,8 @@
                     "location": {
                         "value": "[parameters('location')]"
                     },
-                    "supportUserEmail": {
-                        "value": "[parameters('supportUserEmail')]"
+                    "jiraAdminUserEmail": {
+                        "value": "[parameters('jiraAdminUserEmail')]"
                     },
                     "gtwyName" : {
                         "value": "[reference('jiraTemplate').outputs.gtwyName.value]"

@@ -138,10 +138,10 @@
         "jiraAdminUserPassword": {
             "type": "securestring"
         },
-        "supportUserFullname": {
+        "jiraAdminUserFullname": {
             "type": "string"
         },
-        "supportUserEmail": {
+        "jiraAdminUserEmail": {
             "type": "string"
         },
         "jiraAppTitle": {
@@ -569,11 +569,11 @@
                     "jiraAdminUserPassword": {
                         "value": "[parameters('jiraAdminUserPassword')]"
                     },
-                    "supportUserFullname": {
-                        "value": "[parameters('supportUserFullname')]"
+                    "jiraAdminUserFullname": {
+                        "value": "[parameters('jiraAdminUserFullname')]"
                     },
-                    "supportUserEmail": {
-                        "value": "[parameters('supportUserEmail')]"
+                    "jiraAdminUserEmail": {
+                        "value": "[parameters('jiraAdminUserEmail')]"
                     },
                     "jiraAppTitle": {
                         "value": "[parameters('jiraAppTitle')]"
