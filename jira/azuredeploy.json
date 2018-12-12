@@ -6,7 +6,8 @@
             "type": "string",
             "metadata": {
                 "description": "Azure region to deploy to."
-            }
+            },
+            "minLength": 5
         },
         "_artifactsLocation": {
             "type": "string",
@@ -60,18 +61,14 @@
         },
         "clusterSshPassword": {
             "type": "securestring",
-            "defaultValue": "JIRA@dmin",
             "metadata": {
                 "description": "The password used to SSH into each JIRA node from the jumpbox."
-            }
+            },
+            "minLength": 5
         },
         "dbCreateNew": {
-            "type": "string",
-            "allowedValues": [
-                "Yes (Azure SQL DB Only)",
-                "No"
-            ],
-            "defaultValue": "Yes (Azure SQL DB Only)",
+            "type": "bool",
+            "defaultValue": true,
             "metadata": {
                 "description": "Creates new database or attempts to use existing specified database (has to be in same resource group and location as the target deployment)"
             }
@@ -124,7 +121,6 @@
         },
         "dbPassword": {
             "type": "securestring",
-            "defaultValue": ".JkvjxaD;K)LKA*7YpbLyWJLPmocWxrcn69",
             "metadata": {
                 "description": "Database password"
             }
@@ -143,21 +139,33 @@
         "jiraAdminUserName": {
             "type": "string",
             "defaultValue": "admin",
-            "minLength": 5
+            "minLength": 5,
+            "metadata": {
+                "description": "The Jira Admin username"
+            }
         },
         "jiraAdminUserPassword": {
             "type": "securestring",
-            "defaultValue": "admin"
+            "minLength": 5,
+            "metadata": {
+                "description": "The Jira Admin password"
+            }
         },
         "jiraAdminUserFullname": {
             "type": "string",
             "defaultValue": "Admin Admin",
-            "minLength": 5
+            "minLength": 5,
+            "metadata": {
+                "description": "The Jira Admin full name"
+            }
         },
         "jiraAdminUserEmail": {
             "type": "string",
             "defaultValue": "admin@example.com",
-            "minLength": 5
+            "minLength": 5,
+            "metadata": {
+                "description": "The Jira Admin email address"
+            }
         },
         "jiraAppTitle": {
             "type": "string",
@@ -311,10 +319,10 @@
                         "value": "[parameters('clusterVmSize')]"
                     },
                     "dbCreateNew": {
-                        "value": "[if(equals(parameters('dbCreateNew'), 'Yes (Azure SQL DB Only)'), bool('true'), bool('false'))]"
+                        "value": "[parameters('dbCreateNew')]"
                     },
                     "dbHost": {
-                        "value": "[if(equals(parameters('dbCreateNew'), 'Yes (Azure SQL DB Only)'), variables('dbServerName'), parameters('dbHost'))]"
+                        "value": "[if(parameters('dbCreateNew'), variables('dbServerName'), parameters('dbHost'))]"
                     },
                     "dbType": {
                         "value": "[if(equals(parameters('dbType'), 'Azure SQL DB'), 'sqlserver', if(equals(parameters('dbType'), 'Azure DB for PostgreSQL'), 'postgres', 'mysql'))]"
