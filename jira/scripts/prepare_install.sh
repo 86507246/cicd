@@ -380,7 +380,7 @@ function apply_database_dump {
   java -jar liquibase-core-3.5.3.jar \
     --classpath="mssql-jdbc-6.1.0.jre8.jar" \
     --driver=com.microsoft.sqlserver.jdbc.SQLServerDriver \
-    --url="jdbc:sqlserver://${DB_SERVER_NAME}:1433;database=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=$(get_trusted_dbhost);loginTimeout=30;" \
+    --url="jdbc:sqlserver://${DB_SERVER_NAME}:${DB_PORT};database=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=$(get_trusted_dbhost);loginTimeout=30;" \
     --username="${DB_USER}@${DB_SERVER_NAME}" \
     --password="${DB_PASSWORD}" \
     --changeLogFile=databaseChangeLog.xml \
@@ -391,7 +391,7 @@ function apply_postgres_database_dump {
   java -jar liquibase-core-3.5.3.jar \
     --classpath="postgresql-9.4.1211.jar" \
     --driver=org.postgresql.Driver \
-    --url="jdbc:postgresql://${DB_SERVER_NAME}:5432/${DB_NAME}?ssl=true" \
+    --url="jdbc:postgresql://${DB_SERVER_NAME}:${DB_PORT}/${DB_NAME}?ssl=true" \
     --username="${DB_USER}" \
     --password="${DB_PASSWORD}" \
     --changeLogFile=databaseChangeLog.xml \
