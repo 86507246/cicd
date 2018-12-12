@@ -607,8 +607,8 @@
     ],
     "outputs": {
       "location": "[location()]",
-      "templateUrl": "",
-      "templateUrlSasToken": "",
+      "_artifactsLocation": "",
+      "_artifactsLocationSasToken": "",
 
       "jiraAdminUserName": "[steps('administrator').adminUsername]",
       "jiraAdminUserPassword": "[steps('administrator').adminPassword]",
