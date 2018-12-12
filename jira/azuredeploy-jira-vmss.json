@@ -378,6 +378,7 @@
                         "[concat(variables('scriptsUrl'), 'hydrate_jira_config.py', parameters('provisioningStorageToken'))]",
                         "[concat(variables('templatesUrl'), 'dbconfig.xml.template', parameters('provisioningStorageToken'))]",
                         "[concat(variables('templatesUrl'), if(equals(parameters('dbType'),'postgres'),'jira_postgres_db.sql.template','jira_db.sql.template'), parameters('provisioningStorageToken'))]",
+                        "[concat(variables('templatesUrl'), 'databaseChangeLog.xml.template', parameters('provisioningStorageToken'))]",
                         "[concat(variables('templatesUrl'), 'server.xml.template', parameters('provisioningStorageToken'))]",
                         "[concat(variables('templatesUrl'), 'ApplicationInsights.xml.template', parameters('provisioningStorageToken'))]",
                         "[concat(variables('templatesUrl'), 'jira-collectd.conf.template', parameters('provisioningStorageToken'))]"

@@ -305,7 +305,7 @@ function hydrate_shared_config {
 
   atl_log hdyrate_shared_config "Created DB_JDBCURL=${DB_JDBCURL}"
 
-  local template_files=(dbconfig.xml.template server.xml.template ApplicationInsights.xml.template jira-collectd.conf.template)
+  local template_files=(dbconfig.xml.template server.xml.template ApplicationInsights.xml.template jira-collectd.conf.template databaseChangeLog.xml.template)
   local output_file=""
   for template_file in ${template_files[@]};
   do
@@ -361,26 +361,14 @@ function install_liquibase {
   atl_log install_liquibase "Downloading liquibase"
   mvn dependency:get -Dartifact=org.liquibase:liquibase-core:3.5.3 -Dtransitive=false -Ddest=.
   atl_log install_liquibase "Liquibase has been downloaded"
-  atl_log install_liquibase "Preparing liquibase migration file"
+}
 
-  cat <<EOT >> "databaseChangeLog.xml"
-<databaseChangeLog
-    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd
-    http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
-    <changeSet id="1" author="jira">
-      <sqlFile dbms="mssql"
-               encoding="utf8"
-               endDelimiter="\nGO"
-               path="jira_db.sql"
-               relativeToChangelogFile="true" />
-    </changeSet>
-</databaseChangeLog>
-EOT
-
-  atl_log install_liquibase "Prepared liquibase migration file"
+function prepare_database {
+  atl_log prepare_database "Installing liquibase"
+  install_liquibase
+  atl_log prepare_database "liquibase has been installed"
+  atl_log prepare_database "ready to hydrate db dump"
+  hydrate_db_dump
 }
 
 function get_trusted_dbhost {
@@ -400,16 +388,14 @@ function apply_database_dump {
 }
 
 function apply_postgres_database_dump {
-  atl_log apply_postgres_database_dump "Preparing to install PostgreSQL"
-  apt-get -qqy install postgresql
-  atl_log apply_postgres_database_dump "PostgresSQL successfully installed"
-
-  PGPASSWORD="${DB_PASSWORD}" psql -f jira_postgres_db.sql \
-  -h ${DB_SERVER_NAME} \
-  -p 5432 \
-  -U "${DB_USER}" -w \
-  ${DB_NAME} 2>&1
-  atl_log apply_postgres_database_dump "DB populated"
+  java -jar liquibase-core-3.5.3.jar \
+    --classpath="postgresql-9.4.1211.jar" \
+    --driver=org.postgresql.Driver \
+    --url="jdbc:postgresql://${DB_SERVER_NAME}:5432/${DB_NAME}?ssl=true" \
+    --username="${DB_USER}" \
+    --password="${DB_PASSWORD}" \
+    --changeLogFile=databaseChangeLog.xml \
+    update
 }
 
 function prepare_env {
@@ -677,7 +663,6 @@ function configure_jira {
     fi  
   done
 
-  atl_log configure_jira "Ready to configure Tomcat"
   local tomcat_configs=(server.xml)
   for cfg in ${tomcat_configs}; do
     cp "${ATL_JIRA_SHARED_HOME}/${cfg}" "${ATL_JIRA_INSTALL_DIR}/conf/${cfg}"
@@ -687,6 +672,10 @@ function configure_jira {
   atl_log configure_jira "Configuring cluster..."
   configure_cluster
   atl_log configure_jira "Done configuring cluster!"
+
+  atl_log configure_jira "Configuring database driver..."
+  install_jdbc_drivers
+  atl_log configure_jira "Done configuring database driver!"
 
   atl_log configure_jira "Configuring app insights..."
   install_appinsights
@@ -723,12 +712,11 @@ function preloadDatabase {
   prepare_password_generator
   install_password_generator
   prepare_server_id_generator
+  prepare_database
   atl_log preloadDatabase "ready to hydrate db dump"
-  hydrate_db_dump
   if [ $DB_TYPE == "postgres" ]; then
     apply_postgres_database_dump
   else
-    install_liquibase
     apply_database_dump
   fi
 }
