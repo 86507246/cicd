@@ -2,14 +2,14 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "baseUrl": {
+        "_artifactsLocation": {
             "type": "string",
             "metadata": {
                 "description": "Base URL for Marketplace",
                 "artifactsBaseUrl": ""
             }
         },
-        "provisioningStorageToken": {
+        "_artifactsLocationSasToken": {
             "type": "string",
             "defaultValue": "",
             "metadata": {
@@ -17,38 +17,30 @@
             }
         },
         "location": {
-            "type": "string",
-            "defaultValue": "[resourceGroup().location]"
+            "type": "string"
         },
         "clusterSize": {
             "type": "int",
-            "allowedValues": [
-                2,
-                3,
-                4,
-                5,
-                6
-            ],
             "defaultValue": 2,
             "metadata": {
                 "description": "The number of JIRA nodes in the cluster"
             }
         },
-        "jiraVmSize": {
+        "clusterVmSize": {
             "type": "string",
             "defaultValue": "Standard_DS3_v2",
             "metadata": {
                 "description": "The size of the virtual machine used for each JIRA node."
             }
         },
-        "nodeSshUser": {
+        "clusterSshUser": {
             "type": "string",
             "defaultValue": "jiraadmin",
             "metadata": {
                 "description": "The username used to SSH into each JIRA node from the jumpbox."
             }
         },
-        "nodeSshPassword": {
+        "clusterSshPassword": {
             "type": "securestring",
             "metadata": {
                 "description": "The password used to SSH into each JIRA node from the jumpbox."
@@ -113,20 +105,20 @@
                 "description": "Database password"
             }
         },
-        "userName": {
+        "jiraAdminUserName": {
             "type": "string",
             "defaultValue": "admin"
         },
-        "userCredential": {
+        "jiraAdminUserPassword": {
             "type": "securestring"
         },
-        "supportUserFullname": {
+        "jiraAdminUserFullname": {
             "type": "string"
         },
-        "supportUserEmail": {
+        "jiraAdminUserEmail": {
             "type": "string"
         },
-        "applicationTitle": {
+        "jiraAppTitle": {
             "type": "string",
             "defaultValue": "Atlassian Jira"
         },
@@ -158,25 +150,26 @@
         },
         "jiraDbServerName": {
             "type": "string"
+        },
+        "storageAccessKey": {
+            "type": "securestring"
         }
     },
     "variables": {
         "namespace": "jira",
-        "url": "[if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/'))]",
+        "url": "[if(endsWith(parameters('_artifactsLocation'), '/'), parameters('_artifactsLocation'), concat(parameters('_artifactsLocation'), '/'))]",
         "scriptsUrl": "[concat(variables('url'), 'scripts/')]",
         "templatesUrl": "[concat(variables('url'), 'templates/')]",
-        "userFullname": "[if(empty(parameters('supportUserFullname')), 'Admin Admin', parameters('supportUserFullname'))]",
-        "userEmail": "[if(empty(parameters('supportUserEmail')), 'admin@example.com', parameters('supportUserEmail'))]",
         "isSslSpecified": "[not(empty(parameters('sslBase64EncodedPfxCertificate')))]",
         "env": {
             "storage": [
                 {
                     "name": "STORAGE_BASE_URL",
-                    "value": "[if(endsWith(parameters('baseUrl'), '/'), parameters('baseUrl'), concat(parameters('baseUrl'), '/'))]"
+                    "value": "[if(endsWith(parameters('_artifactsLocation'), '/'), parameters('_artifactsLocation'), concat(parameters('_artifactsLocation'), '/'))]"
                 },
                 {
                     "name": "STORAGE_TOKEN",
-                    "value": "[parameters('provisioningStorageToken')]"
+                    "value": "[parameters('_artifactsLocationSasToken')]"
                 },
                 {
                     "name": "STORAGE_ACCOUNT",
@@ -246,31 +239,31 @@
             "sql": [
                 {
                     "name": "USER_NAME",
-                    "value": "[parameters('userName')]"
+                    "value": "[parameters('jiraAdminUserName')]"
                 },
                 {
                     "name": "USER_NAME_LOWERCASE",
-                    "value": "[toLower(parameters('userName'))]"
+                    "value": "[toLower(parameters('jiraAdminUserName'))]"
                 },
                 {
                     "name": "USER_FULLNAME",
-                    "value": "[variables('userFullname')]"
+                    "value": "[parameters('jiraAdminUserFullname')]"
                 },
                 {
                     "name": "USER_FULLNAME_LOWERCASE",
-                    "value": "[toLower(variables('userFullname'))]"
+                    "value": "[toLower(parameters('jiraAdminUserFullname'))]"
                 },
                 {
                     "name": "USER_EMAIL",
-                    "value": "[variables('userEmail')]"
+                    "value": "[parameters('jiraAdminUserEmail')]"
                 },
                 {
                     "name": "USER_EMAIL_LOWERCASE",
-                    "value": "[toLower(variables('userEmail'))]"
+                    "value": "[toLower(parameters('jiraAdminUserEmail'))]"
                 },
                 {
                     "name": "USER_CREDENTIAL",
-                    "value": "[parameters('userCredential')]"
+                    "value": "[parameters('jiraAdminUserPassword')]"
                 },
                 {
                     "name": "JIRA_LICENSE",
@@ -278,7 +271,7 @@
                 },
                 {
                     "name": "APPLICATION_TITLE",
-                    "value": "[parameters('applicationTitle')]"
+                    "value": "[parameters('jiraAppTitle')]"
                 }
             ],
             "settings": [
@@ -316,9 +309,9 @@
                 "name": "[concat(variables('namespace'), 'cluster')]",
                 "tier": "Standard",
                 "vm": {
-                    "size": "[parameters('jiraVmSize')]",
-                    "user": "[parameters('nodeSshUser')]",
-                    "pass": "[parameters('nodeSshPassword')]",
+                    "size": "[parameters('clusterVmSize')]",
+                    "user": "[parameters('clusterSshUser')]",
+                    "pass": "[parameters('clusterSshPassword')]",
                     "image": {
                         "publisher": "Canonical",
                         "offer": "UbuntuServer",
@@ -358,7 +351,9 @@
             "disk": {
                 "name": "vm-disk-utils-0.1.sh"
             }
-        }
+        },
+        "jiraPrepareCmd": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', parameters('storageAccessKey'), ' prepare ', parameters('jiraBaseUrl'), ' ', parameters('jiraDbServerName'), ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 2>&1 > ./jira.prepare.log')]",
+        "jiraInstallCmd": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', parameters('storageAccessKey'), ' install ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 2>&1 > ./jira.install.log')]"
     },
     "resources": [
         {
@@ -374,18 +369,17 @@
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "fileUris": [
-                        "[concat(variables('scriptsUrl'), 'prepare_install.sh', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('scriptsUrl'), 'hydrate_jira_config.py', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'dbconfig.xml.template', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'jira_db.sql.template', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'server.xml.template', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'ApplicationInsights.xml.template', parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'jira-collectd.conf.template', parameters('provisioningStorageToken'))]"
+                        "[concat(variables('scriptsUrl'), 'prepare_install.sh', parameters('_artifactsLocationSasToken'))]",
+                        "[concat(variables('scriptsUrl'), 'hydrate_jira_config.py', parameters('_artifactsLocationSasToken'))]",
+                        "[concat(variables('templatesUrl'), 'dbconfig.xml.template', parameters('_artifactsLocationSasToken'))]",
+                        "[concat(variables('templatesUrl'), 'jira_db.sql.template', parameters('_artifactsLocationSasToken'))]",
+                        "[concat(variables('templatesUrl'), 'server.xml.template', parameters('_artifactsLocationSasToken'))]",
+                        "[concat(variables('templatesUrl'), 'ApplicationInsights.xml.template', parameters('_artifactsLocationSasToken'))]",
+                        "[concat(variables('templatesUrl'), 'jira-collectd.conf.template', parameters('_artifactsLocationSasToken'))]"
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', parameters('jiraBaseUrl'), ' ', parameters('jiraDbServerName'), ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 2>&1 > ./jira.prepare.log')]"
-                }
+                    "commandToExecute": "[variables('jiraPrepareCmd')]"                }
             }
         },
         {
@@ -541,13 +535,13 @@
                                     "autoUpgradeMinorVersion": true,
                                     "settings": {
                                         "fileUris": [
-                                            "[concat(uri(variables('scriptsUrl'), variables('scripts').prepare.name), parameters('provisioningStorageToken'))]",
-                                            "[concat(uri(variables('scriptsUrl'), 'appinsights_transform_web_xml.xsl'), parameters('provisioningStorageToken'))]",
-                                            "[concat(uri(variables('scriptsUrl'), variables('scripts').disk.name), parameters('provisioningStorageToken'))]"
+                                            "[concat(uri(variables('scriptsUrl'), variables('scripts').prepare.name), parameters('_artifactsLocationSasToken'))]",
+                                            "[concat(uri(variables('scriptsUrl'), 'appinsights_transform_web_xml.xsl'), parameters('_artifactsLocationSasToken'))]",
+                                            "[concat(uri(variables('scriptsUrl'), variables('scripts').disk.name), parameters('_artifactsLocationSasToken'))]"
                                         ]
                                     },
                                     "protectedSettings": {
-                                        "commandToExecute": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' install ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 2>&1 > ./jira.install.log')]"
+                                        "commandToExecute": "[variables('jiraInstallCmd')]"
                                     }
                                 }
                             }
@@ -560,11 +554,11 @@
     "outputs": {
         "prepareCmdArgs": {
             "type": "string",
-            "value": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' prepare ', parameters('jiraBaseUrl'), ' ', parameters('jiraDbServerName'), ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), 'NOAPPINSIGHTS'), ' 2>&1 > ./jira.prepare.log')]"
+            "value": "[variables('jiraPrepareCmd')]"
         },
         "installJiraCmdArgs": {
             "type": "string",
-            "value": "[concat(variables('scripts').prepare.env, './', variables('scripts').prepare.name, ' ', listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value, ' install ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), 'NOAPPINSIGHTS'), ' 2>&1 > ./jira.install.log')]"
+            "value": "[variables('jiraInstallCmd')]"
         }
     }
 }

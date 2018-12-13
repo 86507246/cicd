@@ -2,14 +2,13 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "baseUrl": {
+        "_artifactsLocation": {
             "type": "string",
             "metadata": {
-                "description": "Base URL for Marketplace",
-                "artifactsBaseUrl": ""
+                "description": "Base URL for Marketplace"
             }
         },
-        "provisioningStorageToken": {
+        "_artifactsLocationSasToken": {
             "type": "string",
             "defaultValue": "",
             "metadata": {
@@ -17,38 +16,30 @@
             }
         },
         "location": {
-            "type": "string",
-            "defaultValue": "[resourceGroup().location]"
+            "type": "string"
         },
         "clusterSize": {
             "type": "int",
-            "allowedValues": [
-                2,
-                3,
-                4,
-                5,
-                6
-            ],
             "defaultValue": 2,
             "metadata": {
                 "description": "The number of JIRA nodes in the cluster"
             }
         },
-        "jiraVmSize": {
+        "clusterVmSize": {
             "type": "string",
             "defaultValue": "Standard_DS3_v2",
             "metadata": {
                 "description": "The size of the virtual machine used for each JIRA node."
             }
         },
-        "nodeSshUser": {
+        "clusterSshUser": {
             "type": "string",
             "defaultValue": "jiraadmin",
             "metadata": {
                 "description": "The username used to SSH into each JIRA node from the jumpbox."
             }
         },
-        "nodeSshPassword": {
+        "clusterSshPassword": {
             "type": "securestring",
             "metadata": {
                 "description": "The password used to SSH into each JIRA node from the jumpbox."
@@ -123,32 +114,57 @@
         "dbTier": {
             "type": "string",
             "allowedValues": [
+                "Basic",
                 "Standard",
                 "Premium"
             ],
-            "defaultValue": "Premium",
+            "defaultValue": "Standard",
             "metadata": {
                 "description": "The database service tier"
             }
         },
-        "userName": {
+        "dbTierSize": {
+            "type": "string",
+            "allowedValues": [
+                "Basic",
+                "S1",
+                "S2",
+                "S3",
+                "S4",
+                "S6",
+                "S7",
+                "S9",
+                "S12",
+                "P1",
+                "P2",
+                "P4",
+                "P6",
+                "P11",
+                "P15"
+            ],
+            "defaultValue": "S2",
+            "metadata": {
+                "description": "The database service tier size"
+            }
+        },
+        "jiraAdminUserName": {
             "type": "string",
             "defaultValue": "admin"
         },
-        "userCredential": {
+        "jiraAdminUserPassword": {
             "type": "securestring"
         },
-        "supportUserFullname": {
+        "jiraAdminUserFullname": {
             "type": "string"
         },
-        "supportUserEmail": {
+        "jiraAdminUserEmail": {
             "type": "string"
         },
-        "applicationTitle": {
+        "jiraAppTitle": {
             "type": "string",
             "defaultValue": "Atlassian Jira"
         },
-        "applicationGatewayClusterSize": {
+        "appGtwyClusterSize": {
             "type": "int",
             "allowedValues": [
                 1,
@@ -164,7 +180,7 @@
                 "description": "The number of nodes for the App Gateway cluster"
             }
         },
-        "applicationGatewaySize": {
+        "appGtwyTier": {
             "type": "string",
             "allowedValues": [
                 "Standard_Small",
@@ -202,24 +218,31 @@
         "enableApplicationInsights": {
             "type": "bool",
             "defaultValue": true
+        },
+        "enableAnalytics": {
+            "type": "bool",
+            "defaultValue": true
         }
     },
     "variables": {
         "namespace": "jira",
         "dbTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-db.json')]"
+            "templateUrl": "[concat(parameters('_artifactsLocation'),'nestedtemplates/azuredeploy-db.json')]"
         },
         "vmssTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-jira-vmss.json')]"
+            "templateUrl": "[concat(parameters('_artifactsLocation'),'nestedtemplates/azuredeploy-jira-vmss.json')]"
         },
         "byodbTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'),'azuredeploy-byodb.json')]"
+            "templateUrl": "[concat(parameters('_artifactsLocation'),'nestedtemplates/azuredeploy-byodb.json')]"
         },
         "appGtwyTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-jira-gtwy.json')]"
+            "templateUrl": "[concat(parameters('_artifactsLocation'), 'nestedtemplates/azuredeploy-jira-gtwy.json')]"
         },
         "appInsightsTemplate": {
-            "templateUrl": "[concat(parameters('baseUrl'), 'azuredeploy-app-insights.json')]"
+            "templateUrl": "[concat(parameters('_artifactsLocation'), 'nestedtemplates/azuredeploy-app-insights.json')]"
+        },
+        "analyticsTemplate": {
+            "templateUrl": "[concat(parameters('_artifactsLocation'), 'nestedtemplates/azuredeploy-analytics.json')]"
         },
         "tags": {
             "vendor": "Atlassian",
@@ -234,9 +257,9 @@
                 "name": "[concat(variables('namespace'), 'cluster')]",
                 "tier": "Standard",
                 "vm": {
-                    "size": "[parameters('jiraVmSize')]",
-                    "user": "[parameters('nodeSshUser')]",
-                    "pass": "[parameters('nodeSshPassword')]",
+                    "size": "[parameters('clusterVmSize')]",
+                    "user": "[parameters('clusterSshUser')]",
+                    "pass": "[parameters('clusterSshPassword')]",
                     "image": {
                         "publisher": "Canonical",
                         "offer": "UbuntuServer",
@@ -269,6 +292,7 @@
             "type": "Microsoft.OperationalInsights/workspaces",
             "name": "[variables('workspace').name]",
             "apiVersion": "2015-11-01-preview",
+            "condition": "[parameters('enableAnalytics')]",
             "location": "[parameters('location')]",
             "scale": null,
             "properties": {
@@ -289,7 +313,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('dbTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "uri": "[concat(variables('dbTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -302,9 +326,6 @@
                     "dbDatabaseName": {
                         "value": "[parameters('dbDatabase')]"
                     },
-                    "clusterSize": {
-                        "value": "[parameters('clusterSize')]"
-                    },
                     "dbPassword": {
                         "value": "[parameters('dbPassword')]"
                     },
@@ -314,6 +335,9 @@
                     "dbTier": {
                         "value": "[parameters('dbTier')]"
                     },
+                    "dbTierSize": {
+                        "value": "[parameters('dbTierSize')]"
+                    },
                     "vnetName": {
                         "value": "[parameters('vnetName')]"
                     },
@@ -322,6 +346,9 @@
                     },
                     "workspaceName": {
                         "value": "[variables('workspace').name]"
+                    },
+                    "enableAnalytics": {
+                        "value": "[parameters('enableAnalytics')]"
                     }
                 }
             }
@@ -337,7 +364,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('byodbTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "uri": "[concat(variables('byodbTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -383,7 +410,29 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('appInsightsTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "uri": "[concat(variables('appInsightsTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-01-01",
+            "name": "analyticsTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[parameters('enableAnalytics')]",
+            "dependsOn": [
+                "[variables('workspace').name]",
+                "dbTemplate"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('analyticsTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -427,7 +476,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('appGtwyTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "uri": "[concat(variables('appGtwyTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -443,11 +492,11 @@
                     "gtwyAddressPoolName": {
                         "value": "[variables('gtwyAddressPoolName')]"
                     },
-                    "applicationGatewayClusterSize": {
-                        "value": "[parameters('applicationGatewayClusterSize')]"
+                    "appGtwyClusterSize": {
+                        "value": "[parameters('appGtwyClusterSize')]"
                     },
-                    "applicationGatewaySize": {
-                        "value": "[parameters('applicationGatewaySize')]"
+                    "appGtwyTier": {
+                        "value": "[parameters('appGtwyTier')]"
                     },
                     "vnetName": {
                         "value": "[parameters('vnetName')]"
@@ -463,6 +512,9 @@
                     },
                     "workspaceName": {
                         "value": "[variables('workspace').name]"
+                    },
+                    "enableAnalytics": {
+                        "value": "[parameters('enableAnalytics')]"
                     }
                 }
             }
@@ -478,15 +530,15 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('vmssTemplate').templateUrl, parameters('provisioningStorageToken'))]",
+                    "uri": "[concat(variables('vmssTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "baseUrl": {
-                        "value": "[parameters('baseUrl')]"
+                    "_artifactsLocation": {
+                        "value": "[parameters('_artifactsLocation')]"
                     },
-                    "provisioningStorageToken": {
-                        "value": "[parameters('provisioningStorageToken')]"
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
                     },
                     "location": {
                         "value": "[parameters('location')]"
@@ -494,14 +546,14 @@
                     "clusterSize": {
                         "value": "[parameters('clusterSize')]"
                     },
-                    "jiraVmSize": {
-                        "value": "[parameters('jiraVmSize')]"
+                    "clusterVmSize": {
+                        "value": "[parameters('clusterVmSize')]"
                     },
-                    "nodeSshUser": {
-                        "value": "[parameters('nodeSshUser')]"
+                    "clusterSshUser": {
+                        "value": "[parameters('clusterSshUser')]"
                     },
-                    "nodeSshPassword": {
-                        "value": "[parameters('nodeSshPassword')]"
+                    "clusterSshPassword": {
+                        "value": "[parameters('clusterSshPassword')]"
                     },
                     "cname": {
                         "value": "[parameters('cname')]"
@@ -527,20 +579,20 @@
                     "dbPassword": {
                         "value": "[parameters('dbPassword')]"
                     },
-                    "userName": {
-                        "value": "[parameters('userName')]"
+                    "jiraAdminUserName": {
+                        "value": "[parameters('jiraAdminUserName')]"
                     },
-                    "userCredential": {
-                        "value": "[parameters('userCredential')]"
+                    "jiraAdminUserPassword": {
+                        "value": "[parameters('jiraAdminUserPassword')]"
                     },
-                    "supportUserFullname": {
-                        "value": "[parameters('supportUserFullname')]"
+                    "jiraAdminUserFullname": {
+                        "value": "[parameters('jiraAdminUserFullname')]"
                     },
-                    "supportUserEmail": {
-                        "value": "[parameters('supportUserEmail')]"
+                    "jiraAdminUserEmail": {
+                        "value": "[parameters('jiraAdminUserEmail')]"
                     },
-                    "applicationTitle": {
-                        "value": "[parameters('applicationTitle')]"
+                    "jiraAppTitle": {
+                        "value": "[parameters('jiraAppTitle')]"
                     },
                     "vnetName": {
                         "value": "[parameters('vnetName')]"
@@ -568,6 +620,9 @@
                     },
                     "jiraDbServerName": {
                         "value": "[if(parameters('dbCreateNew'), reference('dbTemplate').outputs.serverName.value, parameters('dbHost'))]"
+                    },
+                    "storageAccessKey": {
+                        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value]"
                     }
                 }
             }
@@ -627,7 +682,7 @@
         },
         "appInsightsName": {
             "type": "string",
-            "value": "[reference('appInsightsTemplate').outputs.appInsightsName.value]"
+            "value": "[if(parameters('enableApplicationInsights'), reference('appInsightsTemplate').outputs.appInsightsName.value, '')]"
         },
         "dbDatabaseServerName": {
             "type": "string",
