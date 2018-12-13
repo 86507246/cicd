@@ -5,7 +5,7 @@
         "location": {
             "type": "string"
         },
-        "supportUserEmail": {
+        "jiraAdminUserEmail": {
             "type": "string"
         },
         "gtwyName": {
@@ -87,7 +87,7 @@
                 "emailReceivers": [
                     {
                         "name": "JiraEmailAction_-EmailAction-",
-                        "emailAddress": "[parameters('supportUserEmail')]"
+                        "emailAddress": "[parameters('jiraAdminUserEmail')]"
                     }
                 ],
                 "smsReceivers": [],
@@ -330,7 +330,7 @@
                         "odata.type": "Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
                         "sendToServiceOwners": false,
                         "customEmails": [
-                            "[parameters('supportUserEmail')]"
+                            "[parameters('jiraAdminUserEmail')]"
                         ]
                     }
                 ]
@@ -362,7 +362,7 @@
                         "odata.type": "Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
                         "sendToServiceOwners": false,
                         "customEmails": [
-                            "[parameters('supportUserEmail')]"
+                            "[parameters('jiraAdminUserEmail')]"
                         ]
                     }
                 ]
@@ -394,7 +394,7 @@
                         "odata.type": "Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
                         "sendToServiceOwners": false,
                         "customEmails": [
-                            "[parameters('supportUserEmail')]"
+                            "[parameters('jiraAdminUserEmail')]"
                         ]
                     }
                 ]

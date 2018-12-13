@@ -23,11 +23,6 @@
         }
     },
     "variables": {
-        "namespace": "jira",
-        "appinsights": {
-            "name": "[concat(variables('namespace'), '-AppInsights-', uniqueString(resourceGroup().id))]",
-            "type": "java"
-        },
         "solutionTypes": "AzureSQLAnalytics",
         "sqlanalytics": {
             "name": "[concat(variables('solutionTypes'), '(', parameters('workspaceName'), ')')]"
@@ -38,16 +33,6 @@
         }
     },
     "resources": [
-        {
-            "name": "[variables('appinsights').name]",
-            "type": "Microsoft.Insights/components",
-            "location": "[parameters('location')]",
-            "apiVersion": "2014-04-01",
-            "properties": {
-                "ApplicationId": "[variables('appinsights').name]",
-                "Application_Type": "[variables('appinsights').type]"
-            }
-        },
         {
             "comments": "name has to match the plan name or get into issues - see https://github.com/Azure/azure-quickstart-templates/issues/3172",
             "type": "Microsoft.OperationsManagement/solutions",
@@ -82,13 +67,5 @@
         }
     ],
     "outputs": {
-        "instrumentkey": {
-            "value": "[reference(variables('appinsights').name).InstrumentationKey]",
-            "type": "string"
-        },
-        "appInsightsName": {
-            "value": "[variables('appinsights').name]",
-            "type": "string"
-        }
     }
 }

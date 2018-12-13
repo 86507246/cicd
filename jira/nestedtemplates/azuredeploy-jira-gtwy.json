@@ -3,8 +3,7 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "location": {
-            "type": "string",
-            "defaultValue": "[resourceGroup().location]"
+            "type": "string"
         },
         "gtwyIpName": {
             "type": "string"
@@ -15,7 +14,7 @@
         "gtwyAddressPoolName": {
            "type": "string"
         },
-        "applicationGatewayClusterSize": {
+        "appGtwyClusterSize": {
             "type": "int",
             "allowedValues": [
                 1,
@@ -30,7 +29,7 @@
                 "description": "The number of nodes for the App Gateway cluster"
             }
         },
-        "applicationGatewaySize": {
+        "appGtwyTier": {
             "type": "string",
             "allowedValues": [
                 "Standard_Small",
@@ -58,6 +57,10 @@
         },
         "workspaceName": {
             "type": "string"
+        },
+        "enableAnalytics": {
+            "type": "bool",
+            "defaultValue": true
         }
     },
     "variables": {
@@ -104,9 +107,9 @@
                 "name": "[concat(variables('namespace'), 'appgwyHttpsListenerCert')]"
             },
             "sku": {
-                "name": "[parameters('applicationGatewaySize')]",
+                "name": "[parameters('appGtwyTier')]",
                 "tier": "Standard",
-                "capacity": "[parameters('applicationGatewayClusterSize')]"
+                "capacity": "[parameters('appGtwyClusterSize')]"
             },
             "redirect": {
                 "rule": {
@@ -245,7 +248,7 @@
                     "type": "providers/diagnosticSettings",
                     "name": "Microsoft.Insights/JiraAppGatewayDiagnostics",
                     "apiVersion": "2017-05-01-preview",
-                    "condition": "[empty(parameters('sslPfxCertificatePassword'))]",
+                    "condition": "[and(parameters('enableAnalytics'), empty(parameters('sslPfxCertificatePassword')))]",
                     "dependsOn": [
                         "[resourceId('Microsoft.Network/applicationGateways/', concat(variables('namespace'), 'appgateway'))]"
                     ],
@@ -486,7 +489,7 @@
                 {
                     "type": "providers/diagnosticSettings",
                     "name": "Microsoft.Insights/JiraAppGatewayDiagnostics",
-                    "condition": "[not(empty(parameters('sslPfxCertificatePassword')))]",
+                    "condition": "[and(parameters('enableAnalytics'), not(empty(parameters('sslPfxCertificatePassword'))))]",
                     "apiVersion": "2017-05-01-preview",
                     "dependsOn": [
                         "[resourceId('Microsoft.Network/applicationGateways/', concat(variables('namespace'), 'appgateway-https'))]"
