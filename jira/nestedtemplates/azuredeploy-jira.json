@@ -20,13 +20,6 @@
         },
         "clusterSize": {
             "type": "int",
-            "allowedValues": [
-                2,
-                3,
-                4,
-                5,
-                6
-            ],
             "defaultValue": 2,
             "metadata": {
                 "description": "The number of JIRA nodes in the cluster"
@@ -121,12 +114,37 @@
         "dbTier": {
             "type": "string",
             "allowedValues": [
+                "Basic",
                 "Standard",
                 "Premium"
             ],
-            "defaultValue": "Premium",
+            "defaultValue": "Standard",
             "metadata": {
                 "description": "The database service tier"
+            }
+        },
+        "dbTierSize": {
+            "type": "string",
+            "allowedValues": [
+                "Basic",
+                "S1",
+                "S2",
+                "S3",
+                "S4",
+                "S6",
+                "S7",
+                "S9",
+                "S12",
+                "P1",
+                "P2",
+                "P4",
+                "P6",
+                "P11",
+                "P15"
+            ],
+            "defaultValue": "S2",
+            "metadata": {
+                "description": "The database service tier size"
             }
         },
         "jiraAdminUserName": {
@@ -308,9 +326,6 @@
                     "dbDatabaseName": {
                         "value": "[parameters('dbDatabase')]"
                     },
-                    "clusterSize": {
-                        "value": "[parameters('clusterSize')]"
-                    },
                     "dbPassword": {
                         "value": "[parameters('dbPassword')]"
                     },
@@ -319,6 +334,9 @@
                     },
                     "dbTier": {
                         "value": "[parameters('dbTier')]"
+                    },
+                    "dbTierSize": {
+                        "value": "[parameters('dbTierSize')]"
                     },
                     "vnetName": {
                         "value": "[parameters('vnetName')]"

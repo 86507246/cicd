@@ -33,6 +33,22 @@
         "clusterVmSize": {
             "type": "string",
             "defaultValue": "Standard_DS3_v2",
+            "allowedValues": [
+                "Standard_DS2_v2",
+                "Standard_DS3_v2",
+                "Standard_DS4_v2",
+                "Standard_DS5_v2",
+                "Standard_F4s_v2",
+                "Standard_F8s_v2",
+                "Standard_F16s_v2",
+                "Standard_F32s_v2",
+                "Standard_F64s_v2",
+                "Standard_F72s_v2",
+                "Standard_E8s_v3",
+                "Standard_E16s_v3",
+                "Standard_E20s_v3",
+                "Standard_E32s_v3"
+            ],
             "metadata": {
                 "description": "The size of the virtual machine used for each JIRA node."
             }
@@ -128,12 +144,37 @@
         "dbTier": {
             "type": "string",
             "allowedValues": [
+                "Basic",
                 "Standard",
                 "Premium"
             ],
-            "defaultValue": "Premium",
+            "defaultValue": "Standard",
             "metadata": {
                 "description": "The database service tier"
+            }
+        },
+        "dbTierSize": {
+            "type": "string",
+            "allowedValues": [
+                "Basic",
+                "S1",
+                "S2",
+                "S3",
+                "S4",
+                "S6",
+                "S7",
+                "S9",
+                "S12",
+                "P1",
+                "P2",
+                "P4",
+                "P6",
+                "P11",
+                "P15"
+            ],
+            "defaultValue": "S2",
+            "metadata": {
+                "description": "The database service tier size"
             }
         },
         "jiraAdminUserName": {
@@ -173,18 +214,11 @@
         },
         "clusterSize": {
             "type": "int",
-            "allowedValues": [
-                2,
-                3,
-                4,
-                5,
-                6
-            ],
             "defaultValue": 2,
             "metadata": {
                 "description": "The number of JIRA nodes in the cluster"
             },
-            "minValue": 2
+            "minValue": 1
         },
         "sslBase64EncodedPfxCertificate": {
             "type": "string",
@@ -233,6 +267,18 @@
         "enableAnalytics": {
             "type": "bool",
             "defaultValue": true
+        },
+        "jiraClusterSize": {
+            "type": "string",
+            "allowedValues": [
+                "",
+                "trial",
+                "small",
+                "medium",
+                "large",
+                "enterprise"
+            ],
+            "defaultValue": ""
         }
     },
     "variables": {
@@ -249,7 +295,59 @@
             "templateUrl": "[concat(parameters('_artifactsLocation'), 'nestedtemplates/azuredeploy-alerts.json')]"
         },
         "namespace": "jira",
-        "dbServerName": "[concat(variables('namespace'), 'sqlserver', uniqueString(resourceGroup().id))]"
+        "dbServerName": "[concat(variables('namespace'), 'sqlserver', uniqueString(resourceGroup().id))]",
+        "isJiraClusterSizeUsed": "[not(empty(parameters('jiraClusterSize')))]",
+        "clusterLookup": {
+            "appGtwyTier": {
+                "trial": "Standard_Small",
+                "small": "Standard_Medium",
+                "medium": "Standard_Medium",
+                "large": "Standard_Large",
+                "enterprise": "Standard_Large"
+            },
+            "appGtwySize": {
+                "trial": 1,
+                "small": 2,
+                "medium": 2,
+                "large": 4,
+                "enterprise": 6
+            },
+            "dbTier": {
+                "trial": "Basic",
+                "small": "Standard",
+                "medium": "Standard",
+                "large": "Premium",
+                "enterprise": "Premium"
+            },
+            "dbTierSize": {
+                "trial": "Basic",
+                "small": "S2",
+                "medium": "S4",
+                "large": "P4",
+                "enterprise": "P6"
+            },
+            "clusterVmSize": {
+                "trial": "Standard_DS2_v2",
+                "small": "Standard_DS3_v2",
+                "medium": "Standard_DS3_v2",
+                "large": "Standard_DS4_v2",
+                "enterprise": "Standard_DS5_v2"
+            },
+            "clusterSize": {
+                "trial": 1,
+                "small": 2,
+                "medium": 3,
+                "large": 8,
+                "enterprise": 10
+            },
+            "jumpboxVmSize": {
+                "trial": "Standard_B1s",
+                "small": "Standard_B1s",
+                "medium": "Standard_B1s",
+                "large": "Standard_B1s",
+                "enterprise": "Standard_B1s"
+            }
+        }
     },
     "resources": [
         {
@@ -281,7 +379,7 @@
                         "value": "[parameters('location')]"
                     },
                     "jumpboxVmSize": {
-                        "value": "[parameters('jumpboxVmSize')]"
+                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').jumpboxVmSize[parameters('jiraClusterSize')], parameters('jumpboxVmSize'))]"
                     },
                     "jumpboxSshKey": {
                         "value": "[parameters('jumpboxSshKey')]"
@@ -313,10 +411,10 @@
                         "value": "[parameters('_artifactsLocationSasToken')]"
                     },
                     "clusterSize": {
-                        "value": "[parameters('clusterSize')]"
+                        "value": "[if(variables('isJiraClusterSizeUsed'), int(variables('clusterLookup').clusterSize[parameters('jiraClusterSize')]), parameters('clusterSize'))]"
                     },
                     "clusterVmSize": {
-                        "value": "[parameters('clusterVmSize')]"
+                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').clusterVmSize[parameters('jiraClusterSize')], parameters('clusterVmSize'))]"
                     },
                     "dbCreateNew": {
                         "value": "[parameters('dbCreateNew')]"
@@ -343,7 +441,10 @@
                         "value": "[parameters('dbPassword')]"
                     },
                     "dbTier": {
-                        "value": "[parameters('dbTier')]"
+                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').dbTier[parameters('jiraClusterSize')], parameters('dbTier'))]"
+                    },
+                    "dbTierSize": {
+                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').dbTierSize[parameters('jiraClusterSize')], parameters('dbTierSize'))]"
                     },
                     "jiraAppTitle": {
                         "value": "[parameters('jiraAppTitle')]"
@@ -370,10 +471,10 @@
                         "value": "[parameters('jiraAdminUserFullname')]"
                     },
                     "appGtwyClusterSize": {
-                        "value": "[parameters('appGtwyClusterSize')]"
-                    }, 
+                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').appGtwySize[parameters('jiraClusterSize')], parameters('appGtwyClusterSize'))]"
+                    },
                     "appGtwyTier": {
-                        "value": "[parameters('appGtwyTier')]"
+                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').appGtwyTier[parameters('jiraClusterSize')], parameters('appGtwyTier'))]"
                     },
                     "vnetName": {
                         "value": "[reference('vpcTemplate').outputs.vnetName.value]"
@@ -453,7 +554,7 @@
                     "jiraAdminUserEmail": {
                         "value": "[parameters('jiraAdminUserEmail')]"
                     },
-                    "gtwyName" : {
+                    "gtwyName": {
                         "value": "[reference('jiraTemplate').outputs.gtwyName.value]"
                     },
                     "storageAccountName": {

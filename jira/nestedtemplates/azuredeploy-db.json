@@ -32,27 +32,35 @@
         "dbTier": {
             "type": "string",
             "allowedValues": [
+                "Basic",
                 "Standard",
                 "Premium"
             ],
-            "defaultValue": "Premium",
+            "defaultValue": "Standard",
             "metadata": {
                 "description": "The database service tier"
             }
         },
-        "clusterSize": {
-            "type": "int",
+        "dbTierSize": {
+            "type": "string",
             "allowedValues": [
-                2,
-                3,
-                4,
-                5,
-                6
+                "Basic",
+                "S1",
+                "S2",
+                "S3",
+                "S4",
+                "S6",
+                "S7",
+                "S9",
+                "S12",
+                "P1",
+                "P2",
+                "P4",
+                "P6",
+                "P11",
+                "P15"
             ],
-            "defaultValue": 2,
-            "metadata": {
-                "description": "The number of JIRA nodes in the cluster"
-            }
+            "defaultValue": "S2"
         },
         "vnetName": {
             "type": "string"
@@ -82,27 +90,17 @@
             "database": {
                 "name": "[parameters('dbDatabaseName')]",
                 "tier": "[parameters('dbTier')]",
-                "tierName": "[variables('lookup').clusterSizeToDbTier[string(parameters('clusterSize'))]]",
+                "tierName": "[parameters('dbTierSize')]",
                 "maxSizeBytes": "[variables('lookup').maxSizeInBytes[string(parameters('dbTier'))]]",
                 "collation": "SQL_Latin1_General_CP437_CI_AI"
             }
         },
         "lookup": {
-            "clusterSizeToDbTier": {
-                "2": "[variables('conditions').smallCluster]",
-                "3": "[variables('conditions').smallCluster]",
-                "4": "[variables('conditions').largeCluster]",
-                "5": "[variables('conditions').largeCluster]",
-                "6": "[variables('conditions').largeCluster]"
-            },
             "maxSizeInBytes": {
+                "Basic": 2147483648,
                 "Standard": 268435456000,
                 "Premium": 536870912000
             }
-        },
-        "conditions": {
-            "smallCluster": "[if(equals(parameters('dbTier'),'Standard'),'S4','P2')]",
-            "largeCluster": "[if(equals(parameters('dbTier'),'Standard'),'S6','P4')]"
         },
         "tags": {
             "vendor": "Atlassian",
