@@ -227,7 +227,6 @@
     "variables": {
         "namespace": "jira",
         "dbTemplate": {
-            "templateUrl": "[concat(parameters('_artifactsLocation'), if(equals(parameters('dbType'),'postgres'),'azuredeploy-postgres-db.json','azuredeploy-db.json'))]"
             "templateUrl": "[concat(parameters('_artifactsLocation'), if(equals(parameters('dbType'),'postgres'),'nestedtemplates/azuredeploy-postgres-db.json','nestedtemplates/azuredeploy-db.json'))]"
         },
         "vmssTemplate": {
@@ -345,11 +344,11 @@
                     "appSubnetName": {
                         "value": "[parameters('appSubnetName')]"
                     },
-                    "workspaceName": {
-                        "value": "[variables('workspace').name]"
-                    },
                     "jumpboxPublicIpAddress": {
                         "value": "[parameters('jumpboxPublicIpAddress')]"
+                    },
+                    "workspaceName": {
+                        "value": "[variables('workspace').name]"
                     },
                     "enableAnalytics": {
                         "value": "[parameters('enableAnalytics')]"
