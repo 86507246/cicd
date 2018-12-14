@@ -282,18 +282,10 @@
         }
     },
     "variables": {
-        "vpcTemplate": {
-            "templateUrl": "[concat(parameters('_artifactsLocation'),'nestedtemplates/azuredeploy-vpc.json')]"
-        },
-        "jiraTemplate": {
-            "templateUrl": "[concat(parameters('_artifactsLocation'),'nestedtemplates/azuredeploy-jira.json')]"
-        },
-        "domainTemplate": {
-            "templateUrl": "[concat(parameters('_artifactsLocation'),'nestedtemplates/azuredeploy-domain.json')]"
-        },
-        "alertsTemplate": {
-            "templateUrl": "[concat(parameters('_artifactsLocation'), 'nestedtemplates/azuredeploy-alerts.json')]"
-        },
+        "vpcTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-vpc.json', parameters('_artifactsLocationSasToken')))]",
+        "jiraTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-jira.json', parameters('_artifactsLocationSasToken')))]",
+        "domainTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-domain.json', parameters('_artifactsLocationSasToken')))]",
+        "alertsTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-alerts.json', parameters('_artifactsLocationSasToken')))]",
         "namespace": "jira",
         "dbServerName": "[concat(variables('namespace'), 'sqlserver', uniqueString(resourceGroup().id))]",
         "isJiraClusterSizeUsed": "[not(empty(parameters('jiraClusterSize')))]",
@@ -371,7 +363,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('vpcTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
+                    "uri": "[variables('vpcTemplateUri')]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -397,7 +389,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('jiraTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
+                    "uri": "[variables('jiraTemplateUri')]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -517,7 +509,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('domainTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
+                    "uri": "[variables('domainTemplateUri')]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -544,7 +536,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('alertsTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
+                    "uri": "[variables('alertsTemplateUri')]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {

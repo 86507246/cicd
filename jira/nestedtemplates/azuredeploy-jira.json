@@ -226,24 +226,12 @@
     },
     "variables": {
         "namespace": "jira",
-        "dbTemplate": {
-            "templateUrl": "[concat(parameters('_artifactsLocation'),'nestedtemplates/azuredeploy-db.json')]"
-        },
-        "vmssTemplate": {
-            "templateUrl": "[concat(parameters('_artifactsLocation'),'nestedtemplates/azuredeploy-jira-vmss.json')]"
-        },
-        "byodbTemplate": {
-            "templateUrl": "[concat(parameters('_artifactsLocation'),'nestedtemplates/azuredeploy-byodb.json')]"
-        },
-        "appGtwyTemplate": {
-            "templateUrl": "[concat(parameters('_artifactsLocation'), 'nestedtemplates/azuredeploy-jira-gtwy.json')]"
-        },
-        "appInsightsTemplate": {
-            "templateUrl": "[concat(parameters('_artifactsLocation'), 'nestedtemplates/azuredeploy-app-insights.json')]"
-        },
-        "analyticsTemplate": {
-            "templateUrl": "[concat(parameters('_artifactsLocation'), 'nestedtemplates/azuredeploy-analytics.json')]"
-        },
+        "dbTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-db.json', parameters('_artifactsLocationSasToken')))]",
+        "vmssTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-jira-vmss.json', parameters('_artifactsLocationSasToken')))]",
+        "byodbTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-byodb.json', parameters('_artifactsLocationSasToken')))]",
+        "appGtwyTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-jira-gtwy.json', parameters('_artifactsLocationSasToken')))]",
+        "appInsightsTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-app-insights.json', parameters('_artifactsLocationSasToken')))]",
+        "analyticsTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-analytics.json', parameters('_artifactsLocationSasToken')))]",
         "tags": {
             "vendor": "Atlassian",
             "product": "JIRA",
@@ -313,7 +301,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('dbTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
+                    "uri": "[variables('dbTemplateUri')]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -364,7 +352,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('byodbTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
+                    "uri": "[variables('byodbTemplateUri')]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -410,7 +398,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('appInsightsTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
+                    "uri": "[variables('appInsightsTemplateUri')]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -432,7 +420,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('analyticsTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
+                    "uri": "[variables('analyticsTemplateUri')]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -476,7 +464,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('appGtwyTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
+                    "uri": "[variables('appGtwyTemplateUri')]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -530,7 +518,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(variables('vmssTemplate').templateUrl, parameters('_artifactsLocationSasToken'))]",
+                    "uri": "[variables('vmssTemplateUri')]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
