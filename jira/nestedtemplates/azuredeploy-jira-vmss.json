@@ -153,7 +153,14 @@
         },
         "storageAccessKey": {
             "type": "securestring"
-        }
+        },
+        "enableAcceleratedNetworking": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                 "description": "Enable accelerated networking? Needs to be a supported instance type."
+             }
+         }
     },
     "variables": {
         "namespace": "jira",
@@ -500,6 +507,7 @@
                                 "name": "[concat(variables('namespace'), 'scaleset-nic')]",
                                 "properties": {
                                     "primary": true,
+                                    "enableAcceleratedNetworking": "[parameters('enableAcceleratedNetworking')]",
                                     "ipConfigurations": [
                                         {
                                             "name": "[concat(variables('namespace'), 'scalset-ipconfig')]",

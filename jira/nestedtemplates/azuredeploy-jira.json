@@ -222,7 +222,14 @@
         "enableAnalytics": {
             "type": "bool",
             "defaultValue": true
-        }
+        },
+        "enableAcceleratedNetworking": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                 "description": "Enable accelerated networking? Needs to be a supported instance type."
+             }
+         }
     },
     "variables": {
         "namespace": "jira",
@@ -267,7 +274,7 @@
             }
         },
         "workspace": {
-            "name": "[concat(variables('namespace'), '-OmsWorkspace-', uniqueString(resourceGroup().id))]",
+            "name": "[concat(variables('namespace'), '-Workspace-', uniqueString(resourceGroup().id))]",
             "sku": "free",
             "retentionInDays": 7
         },
@@ -611,6 +618,9 @@
                     },
                     "storageAccessKey": {
                         "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value]"
+                    },
+                    "enableAcceleratedNetworking": {
+                        "value": "[parameters('enableAcceleratedNetworking')]"
                     }
                 }
             }
