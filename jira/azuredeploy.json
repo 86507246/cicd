@@ -78,7 +78,6 @@
         },
         "clusterSshPassword": {
             "type": "securestring",
-            "defaultValue": "W0rk@T0gether1",
             "metadata": {
                 "description": "The password used to SSH into each JIRA node from the jumpbox."
             },
@@ -139,7 +138,6 @@
         },
         "dbPassword": {
             "type": "securestring",
-            "defaultValue": "W0rk@T0gether1",
             "metadata": {
                 "description": "Database password"
             }
@@ -212,7 +210,6 @@
         "jiraAdminUserPassword": {
             "type": "securestring",
             "minLength": 5,
-            "defaultValue": "admin",
             "metadata": {
                 "description": "The Jira Admin password"
             }
@@ -251,7 +248,7 @@
         },
         "sslPfxCertificatePassword": {
             "type": "securestring",
-            "defaultValue": "W0rk@T0gether1"
+            "defaultValue": ""
         },
         "appGtwyClusterSize": {
             "type": "int",
