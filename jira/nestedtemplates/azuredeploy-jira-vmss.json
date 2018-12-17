@@ -88,7 +88,7 @@
         },
         "dbSchema": {
             "type": "string",
-            "defaultValue": "public",
+            "defaultValue": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'sqlserver'), 'jiraschema', 'public'), 'jiraschema')]",
             "metadata": {
                 "description": "Database schema to use"
             }

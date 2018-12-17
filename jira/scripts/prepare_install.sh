@@ -293,7 +293,6 @@ function hydrate_shared_config {
          export DB_DRIVER_CLASS="com.microsoft.sqlserver.jdbc.SQLServerDriver"
          export DB_JDBCURL="jdbc:sqlserver://${DB_SERVER_NAME}:${DB_PORT};database=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=${DB_TRUSTED_HOST}"
          export DB_USER_LIQUIBASE="${DB_USER}@${DB_SERVER_NAME}"
-
          ;;
      postgres)
          export DB_CONFIG_TYPE="postgres72"
@@ -352,6 +351,7 @@ function hydrate_db_dump {
 
   if [ $DB_TYPE == "postgres" ]; then
     template_file="jira_postgres_db.sql.template"
+    #export DB_USER=`echo ${DB_USER} 2 | cut -d @ -f 1`
   else
     template_file="jira_db.sql.template"
   fi
@@ -382,7 +382,6 @@ function get_trusted_dbhost {
 }
 
 function apply_database_dump {
-  atl_log apply_database_dump "${DB_DRIVER_JAR} - ${DB_DRIVER_CLASS} - ${DB_JDBCURL} - ${DB_USER_LIQUIBASE} - ${DB_PASSWORD}"
   java -jar liquibase-core-3.5.3.jar \
     --classpath="${DB_DRIVER_JAR}" \
     --driver=${DB_DRIVER_CLASS} \

@@ -196,7 +196,7 @@
             "minValue": 1,
             "maxValue": 64,
             "metadata": {
-                "description": "The number of vCores"
+                "description": "The number of vCores to be assigned to the database. Compute resources are provided as vCores, they represent the logical CPU oif the underlying hardware."
             }
         },
         "jiraAdminUserName": {

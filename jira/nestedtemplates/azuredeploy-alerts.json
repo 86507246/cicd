@@ -399,6 +399,120 @@
                     }
                 ]
             }
+        },
+        {
+            "type": "microsoft.insights/metricAlerts",
+            "name": "[variables('alerts').dbCpuPercentage.name]",
+            "apiVersion": "2018-03-01",
+            "location": "global",
+            "properties": {
+                "name": "[variables('alerts').dbCpuPercentage.name]",
+                "description": "[variables('alerts').dbCpuPercentage.description]",
+                "severity": 1,
+                "enabled": true,
+                "scopes": ["[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.DBforPostgreSQL/servers/', parameters('dbDatabaseServerName'))]"
+                ],
+                "evaluationFrequency": "PT1M",
+                "windowSize": "PT5M",
+                "criteria": {
+                    "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+                    "allOf": [
+                        {
+                            "name" : "[variables('alerts').dbCpuPercentage.name]",
+                            "metricName": "cpu_percent",
+                            "dimensions":[],
+                            "operator": "GreaterThan",
+                            "threshold" : "80",
+                            "timeAggregation": "Average"
+                        }
+                    ]
+                },
+                "actions": [
+                    {
+                        "actionGroupId": "[resourceId('microsoft.insights/actionGroups', variables('supportTeam').name)]",
+                        "webHookProperties": {}
+                    }
+                ]
+            },
+            "dependsOn": [
+                "[resourceId('microsoft.insights/actionGroups', variables('supportTeam').name)]"
+            ]
+        },
+        {
+            "type": "microsoft.insights/metricAlerts",
+            "name": "[variables('alerts').dbIoConsumptionPercentage.name]",
+            "apiVersion": "2018-03-01",
+            "location": "global",
+            "properties": {
+                "name": "[variables('alerts').dbIoConsumptionPercentage.name]",
+                "description": "[variables('alerts').dbIoConsumptionPercentage.description]",
+                "severity": 1,
+                "enabled": true,
+                "scopes": ["[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.DBforPostgreSQL/servers/', parameters('dbDatabaseServerName'))]"
+                ],
+                "evaluationFrequency": "PT1M",
+                "windowSize": "PT5M",
+                "criteria": {
+                    "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+                    "allOf": [
+                        {
+                            "name" : "[variables('alerts').dbIoConsumptionPercentage.name]",
+                            "metricName": "io_consumption_percent",
+                            "dimensions":[],
+                            "operator": "GreaterThan",
+                            "threshold" : "80",
+                            "timeAggregation": "Average"
+                        }
+                    ]
+                },
+                "actions": [
+                    {
+                        "actionGroupId": "[resourceId('microsoft.insights/actionGroups', variables('supportTeam').name)]",
+                        "webHookProperties": {}
+                    }
+                ]
+            },
+            "dependsOn": [
+                "[resourceId('microsoft.insights/actionGroups', variables('supportTeam').name)]"
+            ]
+        },
+        {
+            "type": "microsoft.insights/metricAlerts",
+            "name": "[variables('alerts').dbSizePercentage.name]",
+            "apiVersion": "2018-03-01",
+            "location": "global",
+            "properties": {
+                "name": "[variables('alerts').dbSizePercentage.name]",
+                "description": "[variables('alerts').dbSizePercentage.description]",
+                "severity": 1,
+                "enabled": true,
+                "scopes": ["[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.DBforPostgreSQL/servers/', parameters('dbDatabaseServerName'))]"
+                ],
+                "evaluationFrequency": "PT1M",
+                "windowSize": "PT5M",
+                "criteria": {
+                    "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+                    "allOf": [
+                        {
+                            "name" : "[variables('alerts').dbSizePercentage.name]",
+                            "metricName": "storage_percent",
+                            "dimensions":[],
+                            "operator": "GreaterThan",
+                            "threshold" : "80",
+                            "timeAggregation": "Average"
+                        }
+                    ]
+                },
+                "actions": [
+                    {
+                        "actionGroupId": "[resourceId('microsoft.insights/actionGroups', variables('supportTeam').name)]",
+                        "webHookProperties": {}
+                    }
+                ]
+            },
+            "dependsOn": [
+                "[resourceId('microsoft.insights/actionGroups', variables('supportTeam').name)]"
+            ]
         }
     ],
     "outputs": {}
