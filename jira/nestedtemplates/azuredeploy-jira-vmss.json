@@ -229,7 +229,7 @@
                 },
                 {
                     "name": "DB_PORT",
-                  "value": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'postgres'), '5432', '1433'), parameters('dbPort'))]"
+                    "value": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'postgres'), '5432', '1433'), parameters('dbPort'))]"
                 },
                 {
                     "name": "DB_TYPE",
@@ -373,10 +373,8 @@
                         "[uri(parameters('_artifactsLocation'), concat('scripts/prepare_install.sh', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('scripts/hydrate_jira_config.py', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/dbconfig.xml.template', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('templates/jira_db.sql.template', parameters('_artifactsLocationSasToken')))]",
-                        "[concat(variables('templatesUrl'), if(equals(parameters('dbType'),'postgres'),'jira_postgres_db.sql.template','jira_db.sql.template'), parameters('provisioningStorageToken'))]",
-                        "[concat(variables('templatesUrl'), 'databaseChangeLog.xml.template', parameters('_artifactsLocationSasToken'))]",
-
+                        "[uri(parameters('_artifactsLocation'), concat(if(equals(parameters('dbType'),'postgres'),'templates/jira_postgres_db.sql.template','templates/jira_db.sql.template'), parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('templates/databaseChangeLog.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/server.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/ApplicationInsights.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/jira-collectd.conf.template', parameters('_artifactsLocationSasToken')))]"
