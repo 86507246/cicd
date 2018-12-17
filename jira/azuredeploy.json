@@ -78,6 +78,7 @@
         },
         "clusterSshPassword": {
             "type": "securestring",
+            "defaultValue": "W0rk@T0gether1",
             "metadata": {
                 "description": "The password used to SSH into each JIRA node from the jumpbox."
             },
@@ -124,7 +125,7 @@
         },
         "dbSchema": {
             "type": "string",
-            "defaultValue": "jiraschema",
+            "defaultValue": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'Azure SQL DB'), 'jiraschema', 'public'), 'jiraschema')]",
             "metadata": {
                 "description": "Database schema to use"
             }
@@ -138,6 +139,7 @@
         },
         "dbPassword": {
             "type": "securestring",
+            "defaultValue": "W0rk@T0gether1",
             "metadata": {
                 "description": "Database password"
             }
@@ -178,6 +180,27 @@
                 "description": "The database service tier size"
             }
         },
+        "postgresDbTier": {
+            "type": "string",
+            "allowedValues": [
+                "Basic",
+                "General Purpose",
+                "Memory Optimized"
+            ],
+            "defaultValue": "General Purpose",
+            "metadata": {
+                "description": "The database service tier"
+            }
+        },
+        "postgresDbCapacity": {
+            "type": "int",
+            "defaultValue": 4,
+            "minValue": 1,
+            "maxValue": 64,
+            "metadata": {
+                "description": "The number of vCores"
+            }
+        },
         "jiraAdminUserName": {
             "type": "string",
             "defaultValue": "admin",
@@ -189,6 +212,7 @@
         "jiraAdminUserPassword": {
             "type": "securestring",
             "minLength": 5,
+            "defaultValue": "admin",
             "metadata": {
                 "description": "The Jira Admin password"
             }
@@ -227,7 +251,7 @@
         },
         "sslPfxCertificatePassword": {
             "type": "securestring",
-            "defaultValue": ""
+            "defaultValue": "W0rk@T0gether1"
         },
         "appGtwyClusterSize": {
             "type": "int",
@@ -295,7 +319,7 @@
         "domainTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-domain.json', parameters('_artifactsLocationSasToken')))]",
         "alertsTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-alerts.json', parameters('_artifactsLocationSasToken')))]",
         "namespace": "jira",
-      "dbServerName": "[concat(variables('namespace'), if(equals(parameters('dbType'),'Azure DB for PostgreSQL'),'postgres','sqlserver'), uniqueString(resourceGroup().id))]",
+        "dbServerName": "[concat(variables('namespace'), if(equals(parameters('dbType'),'Azure SQL DB'),'sqlserver','postgres'), uniqueString(resourceGroup().id))]",
         "isJiraClusterSizeUsed": "[not(empty(parameters('jiraClusterSize')))]",
         "clusterLookup": {
             "appGtwyTier": {
@@ -426,7 +450,7 @@
                         "value": "[if(equals(parameters('dbType'), 'Azure SQL DB'), 'sqlserver', if(equals(parameters('dbType'), 'Azure DB for PostgreSQL'), 'postgres', 'mysql'))]"
                     },
                     "dbPort": {
-                        "value": "[parameters('dbPort')]"
+                        "value": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'Azure SQL DB'), '1433', '5432'), parameters('dbPort'))]"
                     },
                     "dbDatabase": {
                         "value": "[parameters('dbDatabase')]"
@@ -445,6 +469,12 @@
                     },
                     "dbTierSize": {
                         "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').dbTierSize[parameters('jiraClusterSize')], parameters('dbTierSize'))]"
+                    },
+                    "postgresDbTier": {
+                        "value": "[parameters('postgresDbTier')]"
+                    },
+                    "postgresDbCapacity": {
+                        "value": "[parameters('postgresDbCapacity')]"
                     },
                     "jiraAppTitle": {
                         "value": "[parameters('jiraAppTitle')]"

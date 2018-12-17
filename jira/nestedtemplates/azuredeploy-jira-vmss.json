@@ -74,7 +74,7 @@
         },
         "dbPort": {
             "type": "string",
-            "defaultValue": "[if(equals(parameters('dbType'), 'MS SQL Server'), '1433', if(equals(parameters('dbType'), 'PostgresSQL'), '5432', '3306'))]",
+            "defaultValue": "[if(equals(parameters('dbType'), 'sqlserver'), '1433', if(equals(parameters('dbType'), 'postgres'), '5432', '3306'))]",
             "metadata": {
                 "description": "Database port to use"
             }
@@ -229,7 +229,7 @@
                 },
                 {
                     "name": "DB_PORT",
-                    "value": "[parameters('dbPort')]"
+                  "value": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'postgres'), '5432', '1433'), parameters('dbPort'))]"
                 },
                 {
                     "name": "DB_TYPE",

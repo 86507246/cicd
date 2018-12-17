@@ -3,8 +3,7 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "location": {
-      "type": "string",
-      "defaultValue": "[resourceGroup().location]"
+      "type": "string"
     },
     "dbServerName": {
       "type": "string",
@@ -30,29 +29,25 @@
         "description": "Database password"
       }
     },
-    "dbTier": {
+    "postgresDbTier": {
       "type": "string",
       "allowedValues": [
-        "Standard",
-        "Premium"
+        "Basic",
+        "General Purpose",
+        "Memory Optimized"
       ],
-      "defaultValue": "Premium",
+      "defaultValue": "General Purpose",
       "metadata": {
         "description": "The database service tier"
       }
     },
-    "clusterSize": {
+    "postgresDbCapacity": {
       "type": "int",
-      "allowedValues": [
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "defaultValue": 2,
+      "defaultValue": 4,
+      "minValue": 1,
+      "maxValue": 64,
       "metadata": {
-        "description": "The number of JIRA nodes in the cluster"
+        "description": "The number of vCores"
       }
     },
     "vnetName": {
@@ -67,14 +62,11 @@
     },
     "jumpboxPublicIpAddress": {
       "type": "string"
-    },
-    "workspaceName": {
-      "type": "string"
     }
   },
   "variables": {
     "namespace": "jira",
-    "sql": {
+    "postgresql": {
       "server": {
         "name": "[parameters('dbServerName')]",
         "username": "[parameters('dbUsername')]",
@@ -82,30 +74,34 @@
       },
       "database": {
         "name": "[parameters('dbDatabaseName')]",
-        "tier": "[parameters('dbTier')]",
-        "tierName" : "[variables('lookup').clusterSizeToDbTier[string(parameters('clusterSize'))]]",
-        "maxSizeBytes": "[variables('lookup').maxSizeInBytes[string(parameters('dbTier'))]]",
-        "collation": "SQL_Latin1_General_CP437_CI_AI"
+        "tier": "[variables('lookup').tier[string(parameters('postgresDbTier'))]]",
+        "tierName": "[variables('lookup').tierName[string(parameters('postgresDbTier'))]]",
+        "family": "Gen5",
+        "capacity": "[parameters('postgresDbCapacity')]",
+        "storage": "[variables('lookup').storage[string(parameters('postgresDbTier'))]]",
+        "backupRetentionPeriod": 7,
+        "geoRedundantBackup": "[if(equals(parameters('postgresDbTier'), 'Basic'), 'Disabled', 'Enabled')]",
+        "charset": "UTF8",
+        "collation": "English_United States.1252"
 
       }
     },
     "lookup": {
-      "clusterSizeToDbTier": {
-        "1": "[variables('conditions').smallCluster]",
-        "2": "[variables('conditions').smallCluster]",
-        "3": "[variables('conditions').smallCluster]",
-        "4": "[variables('conditions').largeCluster]",
-        "5": "[variables('conditions').largeCluster]",
-        "6": "[variables('conditions').largeCluster]"
+      "tier": {
+        "Basic": "Basic",
+        "General Purpose": "GeneralPurpose",
+        "Memory Optimized": "MemoryOptimized"
       },
-      "maxSizeInBytes": {
-        "Standard" : 268435456000,
-        "Premium" : 536870912000
+      "tierName": {
+        "Basic": "B_Gen5_2",
+        "General Purpose": "GP_Gen5_4",
+        "Memory Optimized": "MO_Gen5_4"
+      },
+      "storage": {
+        "Basic": 51200,
+        "General Purpose": 102400,
+        "Memory Optimized": 102400
       }
-    },
-    "conditions": {
-      "smallCluster": "[if(equals(parameters('dbTier'),'Standard'),'S4','P2')]",
-      "largeCluster": "[if(equals(parameters('dbTier'),'Standard'),'S6','P4')]"
     },
     "tags": {
       "vendor": "Atlassian",
@@ -115,36 +111,36 @@
   },
   "resources": [
     {
-      "name": "[variables('sql').server.name]",
+      "name": "[variables('postgresql').server.name]",
       "type": "Microsoft.DBforPostgreSQL/servers",
       "location": "[parameters('location')]",
       "sku": {
-        "name": "GP_Gen5_4",
-        "tier": "GeneralPurpose",
-        "family": "Gen5",
-        "capacity": 4
+        "name": "[variables('postgresql').database.tierName]",
+        "tier": "[variables('postgresql').database.tier]",
+        "family": "[variables('postgresql').database.family]",
+        "capacity": "[variables('postgresql').database.capacity]"
       },
       "apiVersion": "2017-12-01-preview",
       "properties": {
         "storageProfile": {
-          "storageMB": 102400,
-          "backupRetentionDays": 7,
-          "geoRedundantBackup": "Enabled"
+          "storageMB": "[variables('postgresql').database.storage]",
+          "backupRetentionDays": "[variables('postgresql').database.backupRetentionPeriod]",
+          "geoRedundantBackup": "[variables('postgresql').database.geoRedundantBackup]"
         },
-        "administratorLogin": "[variables('sql').server.username]",
-        "administratorLoginPassword": "[variables('sql').server.password]",
+        "administratorLogin": "[variables('postgresql').server.username]",
+        "administratorLoginPassword": "[variables('postgresql').server.password]",
         "version": "9.6",
         "sslEnforcement": "Enabled"
       }
     },
     {
       "type": "Microsoft.DBforPostgreSQL/servers/databases",
-      "name": "[concat(variables('sql').server.name, '/',variables('sql').database.name)]",
+      "name": "[concat(variables('postgresql').server.name, '/',variables('postgresql').database.name)]",
       "apiVersion": "2017-12-01-preview",
       "scale": null,
       "properties": {
-        "charset": "UTF8",
-        "collation": "English_United States.1252"
+        "charset": "[variables('postgresql').database.charset]",
+        "collation": "[variables('postgresql').database.collation]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('dbServerName'))]"
@@ -179,11 +175,11 @@
   "outputs": {
     "serverName": {
       "type": "string",
-      "value": "[reference(variables('sql').server.name).fullyQualifiedDomainName]"
+      "value": "[reference(variables('postgresql').server.name).fullyQualifiedDomainName]"
     },
     "jdbcUrl": {
       "type": "string",
-      "value": "[concat('jdbc:postgresql://', reference(variables('sql').server.name).fullyQualifiedDomainName, ':5432;/', variables('sql').database.name, '?user=', variables('sql').server.username, '@', variables('sql').server.name, '?password=', variables('sql').server.password)]"
+      "value": "[concat('jdbc:postgresql://', reference(variables('postgresql').server.name).fullyQualifiedDomainName, ':5432;/', variables('postgresql').database.name, '?user=', variables('postgresql').server.username, '@', variables('postgresql').server.name, '?password=', variables('postgresql').server.password, '?ssl=true')]"
     }
   }
 }

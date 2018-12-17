@@ -289,14 +289,19 @@ function hydrate_shared_config {
   case $DB_TYPE in
      sqlserver)
          export DB_CONFIG_TYPE="mssql"
+         export DB_DRIVER_JAR="mssql-jdbc-6.1.0.jre8.jar"
          export DB_DRIVER_CLASS="com.microsoft.sqlserver.jdbc.SQLServerDriver"
          export DB_JDBCURL="jdbc:sqlserver://${DB_SERVER_NAME}:${DB_PORT};database=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=${DB_TRUSTED_HOST}"
+         export DB_USER_LIQUIBASE="${DB_USER}@${DB_SERVER_NAME}"
+
          ;;
      postgres)
          export DB_CONFIG_TYPE="postgres72"
+         export DB_DRIVER_JAR="postgresql-9.4.1211.jar"
+         export DB_DRIVER_CLASS="org.postgresql.Driver"
          export DB_USER="$DB_USER@$(echo ${DB_SERVER_NAME} | cut -d '.' -f1)"
          export DB_JDBCURL="jdbc:postgresql://${DB_SERVER_NAME}:${DB_PORT}/${DB_NAME}?ssl=true"
-         export DB_DRIVER_CLASS="org.postgresql.Driver"
+         export DB_USER_LIQUIBASE="${DB_USER}"
          ;;
      *)
          error "Unsupported DB Type: ${DB_TYPE}"
@@ -377,22 +382,12 @@ function get_trusted_dbhost {
 }
 
 function apply_database_dump {
+  atl_log apply_database_dump "${DB_DRIVER_JAR} - ${DB_DRIVER_CLASS} - ${DB_JDBCURL} - ${DB_USER_LIQUIBASE} - ${DB_PASSWORD}"
   java -jar liquibase-core-3.5.3.jar \
-    --classpath="mssql-jdbc-6.1.0.jre8.jar" \
-    --driver=com.microsoft.sqlserver.jdbc.SQLServerDriver \
-    --url="jdbc:sqlserver://${DB_SERVER_NAME}:${DB_PORT};database=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=$(get_trusted_dbhost);loginTimeout=30;" \
-    --username="${DB_USER}@${DB_SERVER_NAME}" \
-    --password="${DB_PASSWORD}" \
-    --changeLogFile=databaseChangeLog.xml \
-    update
-}
-
-function apply_postgres_database_dump {
-  java -jar liquibase-core-3.5.3.jar \
-    --classpath="postgresql-9.4.1211.jar" \
-    --driver=org.postgresql.Driver \
-    --url="jdbc:postgresql://${DB_SERVER_NAME}:${DB_PORT}/${DB_NAME}?ssl=true" \
-    --username="${DB_USER}" \
+    --classpath="${DB_DRIVER_JAR}" \
+    --driver=${DB_DRIVER_CLASS} \
+    --url="${DB_JDBCURL}" \
+    --username="${DB_USER_LIQUIBASE}" \
     --password="${DB_PASSWORD}" \
     --changeLogFile=databaseChangeLog.xml \
     update
@@ -715,11 +710,7 @@ function preloadDatabase {
   prepare_server_id_generator
   prepare_database
   atl_log preloadDatabase "ready to hydrate db dump"
-  if [ $DB_TYPE == "postgres" ]; then
-    apply_postgres_database_dump
-  else
-    apply_database_dump
-  fi
+  apply_database_dump
 }
 
 function prepare_install {
