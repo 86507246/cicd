@@ -280,7 +280,14 @@
                 "enterprise"
             ],
             "defaultValue": ""
-        }
+        },
+        "enableAcceleratedNetworking": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                 "description": "Enable accelerated networking? Needs to be a supported instance type."
+             }
+         }
     },
     "variables": {
         "vpcTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-vpc.json', parameters('_artifactsLocationSasToken')))]",
@@ -495,6 +502,9 @@
                     },
                     "enableAnalytics": {
                         "value": "[parameters('enableAnalytics')]"
+                    },
+                    "enableAcceleratedNetworking": {
+                        "value": "[parameters('enableAcceleratedNetworking')]"
                     }
                 }
             }
