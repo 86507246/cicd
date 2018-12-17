@@ -18,7 +18,6 @@
             "name": "adminEmail",
             "label": "Admin Email",
             "type": "Microsoft.Common.TextBox",
-            "defaultValue": "smontgomery@atlassian.com",
             "constraints": {
               "required": true,
               "regex": "[^@]+@[^@]+\\.[A-z]{2,4}",
@@ -29,7 +28,6 @@
             "name": "adminfullname",
             "label": "Admin Full Name",
             "type": "Microsoft.Common.TextBox",
-            "defaultValue": "Stephen Montgomery",
             "constraints": {
               "required": true,
               "regex": "^[a-zA-Z0-9 ]*$",
@@ -457,7 +455,7 @@
                 "constraints": {
                   "required": true,
                   "regex": ".+\\..+",
-                  "validationMessage": "You must specify a valid domain name"
+                  "validationMessage": "You must specify a valid domain name eg domain.com"
                 },
                 "visible": "[equals('yes', steps('domain').cnameSection.hascname)]"
               }
@@ -623,8 +621,6 @@
     ],
     "outputs": {
       "location": "[location()]",
-      "_artifactsLocation": "",
-      "_artifactsLocationSasToken": "",
       "jiraAdminUserName": "[steps('administrator').adminUsername]",
       "jiraAdminUserPassword": "[steps('administrator').adminPassword]",
       "jiraAdminUserEmail": "[steps('administrator').username]",
