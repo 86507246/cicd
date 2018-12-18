@@ -147,6 +147,17 @@
                 "description": "The database service tier size"
             }
         },
+        "jiraProduct": {
+            "type": "string",
+            "allowedValues": [
+                "jira-software",
+                "servicedesk"
+            ],
+            "defaultValue": "jira-software",
+            "metadata": {
+                 "description": "JIRA software product to install"
+             }
+         },
         "jiraAdminUserName": {
             "type": "string",
             "defaultValue": "admin"
@@ -573,6 +584,9 @@
                     },
                     "dbPassword": {
                         "value": "[parameters('dbPassword')]"
+                    },
+                    "jiraProduct": {
+                        "value": "[parameters('jiraProduct')]"
                     },
                     "jiraAdminUserName": {
                         "value": "[parameters('jiraAdminUserName')]"
