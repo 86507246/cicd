@@ -69,6 +69,10 @@
             "dbSizePercentage": {
                 "name": "[concat(variables('namespace'), '-AlertDbSizePercentage-', uniqueString(resourceGroup().id))]",
                 "description": "Monitors DB Storage Utilisation"
+            },
+            "dbIoConsumptionPercentage": {
+                "name": "[concat(variables('namespace'), '-AlertDbIoConsumptionPercentage-', uniqueString(resourceGroup().id))]",
+                "description": "Monitors DB IO Consumption"
             }
         },
         "webTestName": "[toLower(concat('AppHeartBeat-', parameters('appInsightsName')))]",
@@ -405,6 +409,7 @@
             "name": "[variables('alerts').dbCpuPercentage.name]",
             "apiVersion": "2018-03-01",
             "location": "global",
+            "condition": "[equals(parameters('dbType'), 'postgres')]",
             "properties": {
                 "name": "[variables('alerts').dbCpuPercentage.name]",
                 "description": "[variables('alerts').dbCpuPercentage.description]",
@@ -443,6 +448,7 @@
             "name": "[variables('alerts').dbIoConsumptionPercentage.name]",
             "apiVersion": "2018-03-01",
             "location": "global",
+            "condition": "[equals(parameters('dbType'), 'postgres')]",
             "properties": {
                 "name": "[variables('alerts').dbIoConsumptionPercentage.name]",
                 "description": "[variables('alerts').dbIoConsumptionPercentage.description]",
@@ -481,6 +487,7 @@
             "name": "[variables('alerts').dbSizePercentage.name]",
             "apiVersion": "2018-03-01",
             "location": "global",
+            "condition": "[equals(parameters('dbType'), 'postgres')]",
             "properties": {
                 "name": "[variables('alerts').dbSizePercentage.name]",
                 "description": "[variables('alerts').dbSizePercentage.description]",

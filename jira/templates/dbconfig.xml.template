@@ -8,7 +8,7 @@
   <jdbc-datasource>
     <url>${db.jdbcurl}</url>
     <driver-class>${db.driver.class}</driver-class>
-    <username>${db.user}@${db.server.name}</username>
+    <username>${db.user}</username>
     <password>${db.password}</password>
     <pool-min-size>20</pool-min-size>
     <pool-max-size>100</pool-max-size>

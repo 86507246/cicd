@@ -351,7 +351,7 @@ function hydrate_db_dump {
 
   if [ $DB_TYPE == "postgres" ]; then
     template_file="jira_postgres_db.sql.template"
-    #export DB_USER=`echo ${DB_USER} 2 | cut -d @ -f 1`
+    export DB_USER=`echo ${DB_USER} 2 | cut -d '@' -f 1`
   else
     template_file="jira_db.sql.template"
   fi
