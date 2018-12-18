@@ -13460,7 +13460,7 @@ INSERT INTO public.priority (id, sequence, pname, description, iconurl, status_c
 -- Data for Name: productlicense; Type: TABLE DATA; Schema: public; Owner: ${db.user}
 --
 
-INSERT INTO public.productlicense (id, license) VALUES (10002, '${${db.user}.license}');
+INSERT INTO public.productlicense (id, license) VALUES (10002, '${jira.license}');
 
 
 --
