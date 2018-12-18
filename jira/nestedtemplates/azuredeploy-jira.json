@@ -80,7 +80,7 @@
         },
         "dbPort": {
             "type": "string",
-            "defaultValue": "[if(equals(parameters('dbType'), 'MS SQL Server'), '1433', if(equals(parameters('dbType'), 'PostgresSQL'), '5432', '3306'))]",
+            "defaultValue": "[if(equals(parameters('dbType'), 'sqlserver'), '1433', if(equals(parameters('dbType'), 'postgres'), '5432', '3306'))]",
             "metadata": {
                 "description": "Database port to use"
             }
@@ -94,7 +94,7 @@
         },
         "dbSchema": {
             "type": "string",
-            "defaultValue": "public",
+            "defaultValue": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'sqlserver'), 'jiraschema', 'public'), 'jiraschema')]",
             "metadata": {
                 "description": "Database schema to use"
             }
@@ -145,6 +145,45 @@
             "defaultValue": "S2",
             "metadata": {
                 "description": "The database service tier size"
+            }
+        },
+        "postgresDbTier": {
+            "type": "string",
+            "allowedValues": [
+                "Basic",
+                "General Purpose",
+                "Memory Optimized"
+            ],
+            "defaultValue": "General Purpose",
+            "metadata": {
+                "description": "The database service tier"
+            }
+        },
+        "postgresDbCapacity": {
+            "type": "int",
+            "defaultValue": 2,
+            "minValue": 2,
+            "maxValue": 32,
+            "metadata": {
+                "description": "The number of vCores"
+            }
+        },
+        "postgresDbStorage": {
+            "type": "int",
+            "defaultValue": 100,
+            "minValue": 5,
+            "maxValue": 1024,
+            "metadata": {
+                "description": "The amount of storage per vCore"
+            }
+        },
+        "postgresDbBackupRetentionPeriod": {
+            "type": "int",
+            "defaultValue": 7,
+            "minValue": 7,
+            "maxValue": 35,
+            "metadata": {
+                "description": "The database backup retention period in days"
             }
         },
         "jiraAdminUserName": {
@@ -233,7 +272,7 @@
     },
     "variables": {
         "namespace": "jira",
-        "dbTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-db.json', parameters('_artifactsLocationSasToken')))]",
+        "dbTemplateUri": "[uri(parameters('_artifactsLocation'), concat(if(equals(parameters('dbType'),'sqlserver'),'nestedtemplates/azuredeploy-db.json','nestedtemplates/azuredeploy-postgres-db.json'), parameters('_artifactsLocationSasToken')))]",
         "vmssTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-jira-vmss.json', parameters('_artifactsLocationSasToken')))]",
         "byodbTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-byodb.json', parameters('_artifactsLocationSasToken')))]",
         "appGtwyTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-jira-gtwy.json', parameters('_artifactsLocationSasToken')))]",
@@ -280,7 +319,8 @@
         },
         "gtwyIpName": "[concat(variables('namespace'), '-appgtwyip-', uniqueString(resourceGroup().id))]",
         "gtwyName": "[if(empty(parameters('sslBase64EncodedPfxCertificate')), concat(variables('namespace'), 'appgateway'), concat(variables('namespace'), 'appgateway-https'))]",
-        "gtwyAddressPoolName": "[concat(variables('namespace'), 'appgwaddrpool')]"
+        "gtwyAddressPoolName": "[concat(variables('namespace'), 'appgwaddrpool')]",
+        "dbTemplate": "[if(equals(parameters('dbType'),'sqlserver'), 'sqlDbTemplate', 'postgresDbTemplate')]"
     },
     "resources": [
         {
@@ -299,9 +339,9 @@
         },
         {
             "apiVersion": "2015-01-01",
-            "name": "dbTemplate",
+            "name": "sqlDbTemplate",
             "type": "Microsoft.Resources/deployments",
-            "condition": "[parameters('dbCreateNew')]",
+            "condition": "[and(parameters('dbCreateNew'), equals(parameters('dbType'), 'sqlserver'))]",
             "dependsOn": [
                 "[variables('workspace').name]"
             ],
@@ -344,6 +384,55 @@
                     },
                     "enableAnalytics": {
                         "value": "[parameters('enableAnalytics')]"
+                    },
+                    "jumpboxPublicIpAddress": {
+                        "value": "[parameters('jumpboxPublicIpAddress')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-01-01",
+            "name": "postgresDbTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[and(parameters('dbCreateNew'), equals(parameters('dbType'), 'postgres'))]",
+            "dependsOn": [],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                  "uri": "[variables('dbTemplateUri')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "dbServerName": {
+                        "value": "[parameters('dbHost')]"
+                    },
+                    "dbDatabaseName": {
+                        "value": "[parameters('dbDatabase')]"
+                    },
+                    "dbUsername": {
+                        "value": "[parameters('dbUsername')]"
+                    },
+                    "dbPassword": {
+                        "value": "[parameters('dbPassword')]"
+                    },
+                    "postgresDbTier": {
+                        "value": "[parameters('postgresDbTier')]"
+                    },
+                    "postgresDbCapacity": {
+                        "value": "[parameters('postgresDbCapacity')]"
+                    },
+                    "vnetName": {
+                        "value": "[parameters('vnetName')]"
+                    },
+                    "appSubnetName": {
+                        "value": "[parameters('appSubnetName')]"
+                    },
+                    "jumpboxPublicIpAddress": {
+                        "value": "[parameters('jumpboxPublicIpAddress')]"
                     }
                 }
             }
@@ -400,7 +489,7 @@
             "condition": "[parameters('enableApplicationInsights')]",
             "dependsOn": [
                 "[variables('workspace').name]",
-                "dbTemplate"
+                "[variables('dbTemplate')]"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -422,7 +511,7 @@
             "condition": "[parameters('enableAnalytics')]",
             "dependsOn": [
                 "[variables('workspace').name]",
-                "dbTemplate"
+                "[variables('dbTemplate')]"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -520,7 +609,7 @@
             "type": "Microsoft.Resources/deployments",
             "dependsOn": [
                 "[concat('Microsoft.Storage/storageAccounts/', variables('jira').storage.name)]",
-                "dbTemplate"
+                "[variables('dbTemplate')]"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -614,7 +703,7 @@
                         "value": "[if(not(empty(parameters('cname'))), parameters('cname'), reference(variables('gtwyIpName')).dnsSettings.fqdn)]"
                     },
                     "jiraDbServerName": {
-                        "value": "[if(parameters('dbCreateNew'), reference('dbTemplate').outputs.serverName.value, parameters('dbHost'))]"
+                        "value": "[if(parameters('dbCreateNew'), reference(variables('dbTemplate')).outputs.serverName.value, parameters('dbHost'))]"
                     },
                     "storageAccessKey": {
                         "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value]"
@@ -637,26 +726,12 @@
             "kind": "StorageV2",
             "properties": {},
             "tags": "[variables('tags')]"
-        },
-        {
-            "comments": "Required for bastion host to populate/configure database. Not needed if going to use existing DB",
-            "type": "Microsoft.Sql/servers/firewallRules",
-            "apiVersion": "2015-05-01-preview",
-            "name": "[concat(parameters('dbHost'), '/', 'AllowAccessToSetupVMPublicIP')]",
-            "condition": "[parameters('dbCreateNew')]",
-            "dependsOn": [
-                "dbTemplate"
-            ],
-            "properties": {
-                "startIpAddress": "[parameters('jumpboxPublicIpAddress')]",
-                "endIpAddress": "[parameters('jumpboxPublicIpAddress')]"
-            }
         }
     ],
     "outputs": {
         "jdbcUrl": {
             "type": "string",
-            "value": "[if(parameters('dbCreateNew'), reference('dbTemplate').outputs.jdbcUrl.value, reference('byodbTemplate').outputs.jdbcUrl.value)]"
+            "value": "[if(parameters('dbCreateNew'), reference(variables('dbTemplate')).outputs.jdbcUrl.value, reference('byodbTemplate').outputs.jdbcUrl.value)]"
         },
         "jiraAppEndpoint": {
             "type": "string",
