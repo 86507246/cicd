@@ -150,7 +150,6 @@
         "postgresDbTier": {
             "type": "string",
             "allowedValues": [
-                "Basic",
                 "General Purpose",
                 "Memory Optimized"
             ],
@@ -159,31 +158,13 @@
                 "description": "The database service tier"
             }
         },
-        "postgresDbCapacity": {
-            "type": "int",
-            "defaultValue": 2,
-            "minValue": 2,
-            "maxValue": 32,
-            "metadata": {
-                "description": "The number of vCores"
-            }
-        },
         "postgresDbStorage": {
             "type": "int",
-            "defaultValue": 100,
-            "minValue": 5,
-            "maxValue": 1024,
+            "defaultValue": 102400,
+            "minValue": 102400,
+            "maxValue": 4194304,
             "metadata": {
-                "description": "The amount of storage per vCore"
-            }
-        },
-        "postgresDbBackupRetentionPeriod": {
-            "type": "int",
-            "defaultValue": 7,
-            "minValue": 7,
-            "maxValue": 35,
-            "metadata": {
-                "description": "The database backup retention period in days"
+                "description": "The number of storage in MB per vCore to be assigned to the PostgresSQL Managed Database Service. Compute resources are provided as vCores, they represent the logical CPU of the underlying hardware"
             }
         },
         "jiraAdminUserName": {
@@ -422,8 +403,8 @@
                     "postgresDbTier": {
                         "value": "[parameters('postgresDbTier')]"
                     },
-                    "postgresDbCapacity": {
-                        "value": "[parameters('postgresDbCapacity')]"
+                    "postgresDbStorage": {
+                        "value": "[parameters('postgresDbStorage')]"
                     },
                     "vnetName": {
                         "value": "[parameters('vnetName')]"
