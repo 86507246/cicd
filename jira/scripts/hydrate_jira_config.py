@@ -53,6 +53,8 @@ def main():
   db_sql_env_variables = [
       'DB_NAME',
       'USER_ENCRYPTION_METHOD',
+      'USER_FULLNAME',
+      'USER_FULLNAME_LOWERCASE',
       'USER_NAME',
       'USER_NAME_LOWERCASE',
       'USER_FIRSTNAME',

@@ -369,7 +369,8 @@
             }
         },
         "jiraPrepareCmd": "[concat(variables('scripts').prepare.env, './prepare_install.sh ', parameters('storageAccessKey'), ' prepare ', parameters('jiraBaseUrl'), ' ', parameters('jiraDbServerName'), ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 2>&1 > ./jira.prepare.log')]",
-        "jiraInstallCmd": "[concat(variables('scripts').prepare.env, './prepare_install.sh ', parameters('storageAccessKey'), ' install ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 2>&1 > ./jira.install.log')]"
+        "jiraInstallCmd": "[concat(variables('scripts').prepare.env, './prepare_install.sh ', parameters('storageAccessKey'), ' install ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 2>&1 > ./jira.install.log')]",
+        "dbScriptTemplate": "[if(variables('isJiraProduct'), 'templates/jira_db.sql.template', 'templates/jsd_mssql_db.sql.template')]"
     },
     "resources": [
         {
@@ -388,7 +389,7 @@
                         "[uri(parameters('_artifactsLocation'), concat('scripts/prepare_install.sh', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('scripts/hydrate_jira_config.py', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/dbconfig.xml.template', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('templates/jira_db.sql.template', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat(variables('dbScriptTemplate'), parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/server.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/ApplicationInsights.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/jira-collectd.conf.template', parameters('_artifactsLocationSasToken')))]"

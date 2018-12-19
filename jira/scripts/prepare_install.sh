@@ -343,7 +343,7 @@ function hydrate_db_dump {
 
   log "Prepare database dump [user=${USER_NAME}, password=${USER_PASSWORD}, credential=${USER_CREDENTIAL}]"
 
-  local template_file="jira_db.sql.template"
+  local template_file=$(ls -C1 *db.sql.template)
   local output_file=`echo "${template_file}" | sed 's/\.template$//'`
 
   cat ${template_file} | python3 hydrate_jira_config.py > ${output_file}
@@ -367,7 +367,7 @@ function install_liquibase {
       <sqlFile dbms="mssql"
                encoding="utf8"
                endDelimiter="\nGO"
-               path="jira_db.sql"
+               path="$(ls -C1 *db.sql.template | sed 's/\.template$//')"
                relativeToChangelogFile="true" />
     </changeSet>
 </databaseChangeLog>
