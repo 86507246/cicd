@@ -147,43 +147,32 @@
                 "description": "The database service tier size"
             }
         },
-        "postgresDbTier": {
+        "postgresDbSku": {
             "type": "string",
+            "defaultValue": "GP_Gen5_4",
             "allowedValues": [
-                "Basic",
-                "General Purpose",
-                "Memory Optimized"
+                "GP_Gen5_2",
+                "GP_Gen5_4",
+                "GP_Gen5_8",
+                "GP_Gen5_16",
+                "GP_Gen5_32",
+                "MO_Gen5_2",
+                "MO_Gen5_4",
+                "MO_Gen5_8",
+                "MO_Gen5_16",
+                "MO_Gen5_32"
             ],
-            "defaultValue": "General Purpose",
             "metadata": {
-                "description": "The database service tier"
-            }
-        },
-        "postgresDbCapacity": {
-            "type": "int",
-            "defaultValue": 2,
-            "minValue": 2,
-            "maxValue": 32,
-            "metadata": {
-                "description": "The number of vCores"
+                "description": "The name of the sku (stock keeping unit) of the PostgresSQL Managed Database Service. Follows the convention {pricing tier}{compute generation}{vCores} in shorthand. For example General Purpose, Generation 5, 4 cores is GP_Gen5_4"
             }
         },
         "postgresDbStorage": {
             "type": "int",
-            "defaultValue": 100,
-            "minValue": 5,
-            "maxValue": 1024,
+            "defaultValue": 102400,
+            "minValue": 102400,
+            "maxValue": 4194304,
             "metadata": {
-                "description": "The amount of storage per vCore"
-            }
-        },
-        "postgresDbBackupRetentionPeriod": {
-            "type": "int",
-            "defaultValue": 7,
-            "minValue": 7,
-            "maxValue": 35,
-            "metadata": {
-                "description": "The database backup retention period in days"
+                "description": "The storage size of the PostgresSQL Managed Database Service"
             }
         },
         "jiraAdminUserName": {
@@ -419,11 +408,11 @@
                     "dbPassword": {
                         "value": "[parameters('dbPassword')]"
                     },
-                    "postgresDbTier": {
-                        "value": "[parameters('postgresDbTier')]"
+                    "postgresDbSku": {
+                        "value": "[parameters('postgresDbSku')]"
                     },
-                    "postgresDbCapacity": {
-                        "value": "[parameters('postgresDbCapacity')]"
+                    "postgresDbStorage": {
+                        "value": "[parameters('postgresDbStorage')]"
                     },
                     "vnetName": {
                         "value": "[parameters('vnetName')]"

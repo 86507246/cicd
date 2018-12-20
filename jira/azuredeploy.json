@@ -178,25 +178,32 @@
                 "description": "The database service tier size"
             }
         },
-        "postgresDbTier": {
+        "postgresDbSku": {
             "type": "string",
+            "defaultValue": "GP_Gen5_4",
             "allowedValues": [
-                "Basic",
-                "General Purpose",
-                "Memory Optimized"
+                "GP_Gen5_2",
+                "GP_Gen5_4",
+                "GP_Gen5_8",
+                "GP_Gen5_16",
+                "GP_Gen5_32",
+                "MO_Gen5_2",
+                "MO_Gen5_4",
+                "MO_Gen5_8",
+                "MO_Gen5_16",
+                "MO_Gen5_32"
             ],
-            "defaultValue": "General Purpose",
             "metadata": {
-                "description": "The database service tier for PostgresSQL Managed Database Service"
+                "description": "The name of the sku. Follows the convention {pricing tier}{compute generation}{vCores} in shorthand. For example General Purpose, Generation 5, 4 cores is GP_Gen5_4"
             }
         },
-        "postgresDbCapacity": {
+        "postgresDbStorage": {
             "type": "int",
-            "defaultValue": 4,
-            "minValue": 1,
-            "maxValue": 64,
+            "defaultValue": 102400,
+            "minValue": 102400,
+            "maxValue": 4194304,
             "metadata": {
-                "description": "The number of vCores to be assigned to the PostgresSQL Managed Database Service. Compute resources are provided as vCores, they represent the logical CPU of the underlying hardware"
+                "description": "The storage size of the PostgresSQL Managed Database Service"
             }
         },
         "jiraAdminUserName": {
@@ -347,19 +354,19 @@
                 "large": "P4",
                 "enterprise": "P6"
             },
-            "postgresDbTierSize": {
-                "trial": "Basic",
-                "small": "General Purpose",
-                "medium": "General Purpose",
-                "large": "General Purpose",
-                "enterprise": "Memory Optimized"
+            "postgresDbSku": {
+                "trial": "GP_Gen5_2",
+                "small": "GP_Gen5_2",
+                "medium": "GP_Gen5_4",
+                "large": "GP_Gen5_8",
+                "enterprise": "MO_Gen5_8"
             },
-            "postgresDbCapacity": {
-                "trial": "1",
-                "small": "2",
-                "medium": "4",
-                "large": "8",
-                "enterprise": "16"
+            "postgresDbStorageSize": {
+                "trial": 102400,
+                "small": 102400,
+                "medium": 256000,
+                "large": 512000,
+                "enterprise": 1024000
             },
             "clusterVmSize": {
                 "trial": "Standard_DS2_v2",
@@ -481,11 +488,11 @@
                     "dbTierSize": {
                         "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').dbTierSize[parameters('jiraClusterSize')], parameters('dbTierSize'))]"
                     },
-                    "postgresDbTier": {
-                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').postgresDbTier[parameters('jiraClusterSize')], parameters('postgresDbTier'))]"
+                    "postgresDbSku": {
+                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').postgresDbSku[parameters('jiraClusterSize')], parameters('postgresDbSku'))]"
                     },
-                    "postgresDbCapacity": {
-                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').postgresDbCapacity[parameters('jiraClusterSize')], parameters('postgresDbCapacity'))]"
+                    "postgresDbStorage": {
+                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').postgresDbStorageSize[parameters('jiraClusterSize')], parameters('postgresDbStorage'))]"
                     },
                     "jiraAppTitle": {
                         "value": "[parameters('jiraAppTitle')]"
