@@ -164,7 +164,7 @@
             "minValue": 102400,
             "maxValue": 4194304,
             "metadata": {
-                "description": "The number of storage in MB per vCore to be assigned to the PostgresSQL Managed Database Service. Compute resources are provided as vCores, they represent the logical CPU of the underlying hardware"
+                "description": "The storage size of the PostgresSQL Managed Database Service."
             }
         },
         "jiraAdminUserName": {
