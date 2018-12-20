@@ -124,7 +124,7 @@
         },
         "dbSchema": {
             "type": "string",
-            "defaultValue": "jiraschema",
+            "defaultValue": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'Azure SQL DB'), 'jiraschema', 'public'), 'jiraschema')]",
             "metadata": {
                 "description": "Database schema to use"
             }
@@ -176,6 +176,34 @@
             "defaultValue": "S2",
             "metadata": {
                 "description": "The database service tier size"
+            }
+        },
+        "postgresDbSku": {
+            "type": "string",
+            "defaultValue": "GP_Gen5_4",
+            "allowedValues": [
+                "GP_Gen5_2",
+                "GP_Gen5_4",
+                "GP_Gen5_8",
+                "GP_Gen5_16",
+                "GP_Gen5_32",
+                "MO_Gen5_2",
+                "MO_Gen5_4",
+                "MO_Gen5_8",
+                "MO_Gen5_16",
+                "MO_Gen5_32"
+            ],
+            "metadata": {
+                "description": "The name of the sku. Follows the convention {pricing tier}{compute generation}{vCores} in shorthand. For example General Purpose, Generation 5, 4 cores is GP_Gen5_4"
+            }
+        },
+        "postgresDbStorage": {
+            "type": "int",
+            "defaultValue": 102400,
+            "minValue": 102400,
+            "maxValue": 4194304,
+            "metadata": {
+                "description": "The storage size of the PostgresSQL Managed Database Service"
             }
         },
         "jiraProduct": {
@@ -306,7 +334,7 @@
         "domainTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-domain.json', parameters('_artifactsLocationSasToken')))]",
         "alertsTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-alerts.json', parameters('_artifactsLocationSasToken')))]",
         "namespace": "jira",
-        "dbServerName": "[concat(variables('namespace'), 'sqlserver', uniqueString(resourceGroup().id))]",
+        "dbServerName": "[concat(variables('namespace'), if(equals(parameters('dbType'),'Azure SQL DB'),'sqlserver','postgres'), uniqueString(resourceGroup().id))]",
         "isJiraClusterSizeUsed": "[not(empty(parameters('jiraClusterSize')))]",
         "clusterLookup": {
             "appGtwyTier": {
@@ -336,6 +364,20 @@
                 "medium": "S4",
                 "large": "P4",
                 "enterprise": "P6"
+            },
+            "postgresDbSku": {
+                "trial": "GP_Gen5_2",
+                "small": "GP_Gen5_2",
+                "medium": "GP_Gen5_4",
+                "large": "GP_Gen5_8",
+                "enterprise": "MO_Gen5_8"
+            },
+            "postgresDbStorageSize": {
+                "trial": 102400,
+                "small": 102400,
+                "medium": 256000,
+                "large": 512000,
+                "enterprise": 1024000
             },
             "clusterVmSize": {
                 "trial": "Standard_DS2_v2",
@@ -437,7 +479,7 @@
                         "value": "[if(equals(parameters('dbType'), 'Azure SQL DB'), 'sqlserver', if(equals(parameters('dbType'), 'Azure DB for PostgreSQL'), 'postgres', 'mysql'))]"
                     },
                     "dbPort": {
-                        "value": "[parameters('dbPort')]"
+                        "value": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'Azure SQL DB'), '1433', '5432'), parameters('dbPort'))]"
                     },
                     "dbDatabase": {
                         "value": "[parameters('dbDatabase')]"
@@ -456,6 +498,12 @@
                     },
                     "dbTierSize": {
                         "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').dbTierSize[parameters('jiraClusterSize')], parameters('dbTierSize'))]"
+                    },
+                    "postgresDbSku": {
+                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').postgresDbSku[parameters('jiraClusterSize')], parameters('postgresDbSku'))]"
+                    },
+                    "postgresDbStorage": {
+                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').postgresDbStorageSize[parameters('jiraClusterSize')], parameters('postgresDbStorage'))]"
                     },
                     "jiraAppTitle": {
                         "value": "[parameters('jiraAppTitle')]"
@@ -590,7 +638,7 @@
                         "value": "[if(equals(parameters('dbCreateNew'), 'Yes (Azure SQL DB Only)'), bool('true'), bool('false'))]"
                     },
                     "dbType": {
-                        "value": "[if(equals(parameters('dbType'), 'Azure SQL DB'), 'sqlserver', if(equals(parameters('dbType'), 'PostgresSQL'), 'postgres', 'mysql'))]"
+                        "value": "[if(equals(parameters('dbType'), 'Azure SQL DB'), 'sqlserver', if(equals(parameters('dbType'), 'Azure DB for PostgreSQL'), 'postgres', 'mysql'))]"
                     },
                     "dbDatabaseServerName": {
                         "value": "[split(reference('jiraTemplate').outputs.dbDatabaseServerName.value, '.')[0]]"

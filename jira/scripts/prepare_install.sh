@@ -285,27 +285,32 @@ function prepare_share {
 function hydrate_shared_config {
   export SERVER_PROXY_NAME="${SERVER_CNAME:-${SERVER_AZURE_DOMAIN}}"
   export DB_TRUSTED_HOST=$(get_trusted_dbhost)
+  export DB_SCRIPT_NAME_LOC=$(ls -C1 *db.sql.template | sed 's/\.template$//')
 
   case $DB_TYPE in
      sqlserver)
          export DB_CONFIG_TYPE="mssql"
+         export DB_DRIVER_JAR="mssql-jdbc-6.1.0.jre8.jar"
          export DB_DRIVER_CLASS="com.microsoft.sqlserver.jdbc.SQLServerDriver"
          export DB_JDBCURL="jdbc:sqlserver://${DB_SERVER_NAME}:${DB_PORT};database=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=${DB_TRUSTED_HOST}"
+         export DB_USER_LIQUIBASE="${DB_USER}@${DB_SERVER_NAME}"
          ;;
      postgres)
          export DB_CONFIG_TYPE="postgres72"
+         export DB_DRIVER_JAR="postgresql-9.4.1211.jar"
+         export DB_DRIVER_CLASS="org.postgresql.Driver"
          export DB_USER="$DB_USER@$(echo ${DB_SERVER_NAME} | cut -d '.' -f1)"
          export DB_JDBCURL="jdbc:postgresql://${DB_SERVER_NAME}:${DB_PORT}/${DB_NAME}?ssl=true"
-         export DB_DRIVER_CLASS="org.postgresql.Driver"
+         export DB_USER_LIQUIBASE="${DB_USER}"
          ;;
      *)
          error "Unsupported DB Type: ${DB_TYPE}"
          ;;
   esac
- 
+
   atl_log hdyrate_shared_config "Created DB_JDBCURL=${DB_JDBCURL}"
 
-  local template_files=(dbconfig.xml.template server.xml.template ApplicationInsights.xml.template jira-collectd.conf.template)
+  local template_files=(dbconfig.xml.template server.xml.template ApplicationInsights.xml.template jira-collectd.conf.template databaseChangeLog.xml.template)
   local output_file=""
   for template_file in ${template_files[@]};
   do
@@ -329,15 +334,13 @@ function copy_artefacts {
 
 function hydrate_db_dump {
   export USER_ENCRYPTION_METHOD="atlassian-security"
-
   export USER_PASSWORD=`run_password_generator ${USER_CREDENTIAL}`
-
   export USER_FIRSTNAME=`echo ${USER_FULLNAME} | cut -d ' ' -f 1`
   export USER_LASTNAME=`echo ${USER_FULLNAME} | cut -d ' ' -f 2-`
-
   export USER_FIRSTNAME_LOWERCASE=`echo ${USER_FULLNAME_LOWERCASE} | cut -d ' ' -f 1`
   export USER_LASTNAME_LOWERCASE=`echo ${USER_FULLNAME_LOWERCASE} | cut -d ' ' -f 2-`
   export SERVER_ID=`generate_server_id`
+  export DB_USER=`echo ${DB_USER} | cut -d '@' -f 1`
 
   log "Generated server id [${SERVER_ID}]"
 
@@ -354,26 +357,6 @@ function install_liquibase {
   atl_log install_liquibase "Downloading liquibase"
   mvn dependency:get -Dartifact=org.liquibase:liquibase-core:3.5.3 -Dtransitive=false -Ddest=.
   atl_log install_liquibase "Liquibase has been downloaded"
-  atl_log install_liquibase "Preparing liquibase migration file"
-
-  cat <<EOT >> "databaseChangeLog.xml"
-<databaseChangeLog
-    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd
-    http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
-    <changeSet id="1" author="jira">
-      <sqlFile dbms="mssql"
-               encoding="utf8"
-               endDelimiter="\nGO"
-               path="$(ls -C1 *db.sql.template | sed 's/\.template$//')"
-               relativeToChangelogFile="true" />
-    </changeSet>
-</databaseChangeLog>
-EOT
-
-  atl_log install_liquibase "Prepared liquibase migration file"
 }
 
 function prepare_database {
@@ -381,7 +364,7 @@ function prepare_database {
   install_liquibase
   atl_log prepare_database "liquibase has been installed"
   atl_log prepare_database "ready to hydrate db dump"
-  hydrate_db_dump  
+  hydrate_db_dump
 }
 
 function get_trusted_dbhost {
@@ -391,11 +374,12 @@ function get_trusted_dbhost {
 
 function apply_database_dump {
   java -jar liquibase-core-3.5.3.jar \
-    --classpath="mssql-jdbc-6.1.0.jre8.jar" \
-    --driver=com.microsoft.sqlserver.jdbc.SQLServerDriver \
-    --url="jdbc:sqlserver://${DB_SERVER_NAME}:1433;database=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=$(get_trusted_dbhost);loginTimeout=30;" \
-    --username="${DB_USER}@${DB_SERVER_NAME}" \
+    --classpath="${DB_DRIVER_JAR}" \
+    --driver=${DB_DRIVER_CLASS} \
+    --url="${DB_JDBCURL}" \
+    --username="${DB_USER_LIQUIBASE}" \
     --password="${DB_PASSWORD}" \
+    --logLevel=info \
     --changeLogFile=databaseChangeLog.xml \
     update
 }
@@ -666,7 +650,6 @@ function configure_jira {
     fi  
   done
 
-  atl_log configure_jira "Ready to configure Tomcat"
   local tomcat_configs=(server.xml)
   for cfg in ${tomcat_configs}; do
     cp "${ATL_JIRA_SHARED_HOME}/${cfg}" "${ATL_JIRA_INSTALL_DIR}/conf/${cfg}"
@@ -717,6 +700,7 @@ function preloadDatabase {
   install_password_generator
   prepare_server_id_generator
   prepare_database
+  atl_log preloadDatabase "ready to hydrate db dump"
   apply_database_dump
 }
 
@@ -732,7 +716,7 @@ function prepare_install {
   install_jdbc_drivers "`pwd`"
 
   if [ $DB_CREATE = 'true' ]
-  then 
+  then
      preloadDatabase
   fi
 }

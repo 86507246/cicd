@@ -74,7 +74,7 @@
         },
         "dbPort": {
             "type": "string",
-            "defaultValue": "[if(equals(parameters('dbType'), 'MS SQL Server'), '1433', if(equals(parameters('dbType'), 'PostgresSQL'), '5432', '3306'))]",
+            "defaultValue": "[if(equals(parameters('dbType'), 'sqlserver'), '1433', if(equals(parameters('dbType'), 'postgres'), '5432', '3306'))]",
             "metadata": {
                 "description": "Database port to use"
             }
@@ -88,7 +88,7 @@
         },
         "dbSchema": {
             "type": "string",
-            "defaultValue": "public",
+            "defaultValue": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'sqlserver'), 'jiraschema', 'public'), 'jiraschema')]",
             "metadata": {
                 "description": "Database schema to use"
             }
@@ -240,7 +240,7 @@
                 },
                 {
                     "name": "DB_PORT",
-                    "value": "[parameters('dbPort')]"
+                    "value": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'sqlserver'), '1433', '5432'), parameters('dbPort'))]"
                 },
                 {
                     "name": "DB_TYPE",
@@ -372,7 +372,7 @@
         "jiraInstallCmd": "[concat(variables('scripts').prepare.env, './prepare_install.sh ', parameters('storageAccessKey'), ' install ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 2>&1 > ./jira.install.log')]",
         "isMsSql": "[equals(parameters('dbType'), 'sqlserver')]",
         "jsdDbScriptTemplate": "[if(variables('isMsSql'), 'templates/jsd_mssql_db.sql.template', 'templates/jsd_postgres_db.sql.template')]",
-        "jiraDbScriptTemplate": "[if(variables('isMsSql'), 'templates/jira_db.sql.template', 'templates/jira_db.sql.template')]",
+        "jiraDbScriptTemplate": "[if(variables('isMsSql'), 'templates/jira_db.sql.template', 'templates/jira_postgres_db.sql.template')]",
         "dbScriptTemplate": "[if(variables('isJiraProduct'), variables('jiraDbScriptTemplate'), variables('jsdDbScriptTemplate'))]"
     },
     "resources": [
@@ -393,6 +393,7 @@
                         "[uri(parameters('_artifactsLocation'), concat('scripts/hydrate_jira_config.py', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/dbconfig.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat(variables('dbScriptTemplate'), parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('templates/databaseChangeLog.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/server.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/ApplicationInsights.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/jira-collectd.conf.template', parameters('_artifactsLocationSasToken')))]"

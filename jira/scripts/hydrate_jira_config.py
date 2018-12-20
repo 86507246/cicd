@@ -67,7 +67,8 @@ def main():
       'JIRA_LICENSE',
       'APPLICATION_TITLE',
       'BASEURL',
-      'SERVER_ID'
+      'SERVER_ID',
+      'DB_SCRIPT_NAME_LOC'
   ]
 
   misc_env_variables = [
