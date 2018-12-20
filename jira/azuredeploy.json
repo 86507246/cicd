@@ -178,15 +178,23 @@
                 "description": "The database service tier size"
             }
         },
-        "postgresDbTier": {
+        "postgresDbSku": {
             "type": "string",
+            "defaultValue": "GP_Gen5_4",
             "allowedValues": [
-                "General Purpose",
-                "Memory Optimized"
+                "GP_Gen5_2",
+                "GP_Gen5_4",
+                "GP_Gen5_8",
+                "GP_Gen5_16",
+                "GP_Gen5_32",
+                "MO_Gen5_2",
+                "MO_Gen5_4",
+                "MO_Gen5_8",
+                "MO_Gen5_16",
+                "MO_Gen5_32"
             ],
-            "defaultValue": "General Purpose",
             "metadata": {
-                "description": "The database service tier for PostgresSQL Managed Database Service"
+                "description": "The name of the sku. Follows the convention {pricing tier}{compute generation}{vCores} in shorthand. For example General Purpose, Generation 5, 4 cores is GP_Gen5_4"
             }
         },
         "postgresDbStorage": {
@@ -195,7 +203,7 @@
             "minValue": 102400,
             "maxValue": 4194304,
             "metadata": {
-                "description": "The number of storage in MB per vCore to be assigned to the PostgresSQL Managed Database Service. Compute resources are provided as vCores, they represent the logical CPU of the underlying hardware"
+                "description": "The storage size of the PostgresSQL Managed Database Service"
             }
         },
         "jiraAdminUserName": {
@@ -346,12 +354,12 @@
                 "large": "P4",
                 "enterprise": "P6"
             },
-            "postgresDbTierSize": {
-                "trial": "General Purpose",
-                "small": "General Purpose",
-                "medium": "General Purpose",
-                "large": "Memory Optimized",
-                "enterprise": "Memory Optimized"
+            "postgresDbSku": {
+                "trial": "GP_Gen5_2",
+                "small": "GP_Gen5_2",
+                "medium": "GP_Gen5_4",
+                "large": "GP_Gen5_8",
+                "enterprise": "MO_Gen5_8"
             },
             "postgresDbStorageSize": {
                 "trial": 102400,
@@ -480,8 +488,8 @@
                     "dbTierSize": {
                         "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').dbTierSize[parameters('jiraClusterSize')], parameters('dbTierSize'))]"
                     },
-                    "postgresDbTier": {
-                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').postgresDbTierSize[parameters('jiraClusterSize')], parameters('postgresDbTier'))]"
+                    "postgresDbSku": {
+                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').postgresDbSku[parameters('jiraClusterSize')], parameters('postgresDbSku'))]"
                     },
                     "postgresDbStorage": {
                         "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').postgresDbStorageSize[parameters('jiraClusterSize')], parameters('postgresDbStorage'))]"

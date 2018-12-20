@@ -29,15 +29,23 @@
         "description": "Database password"
       }
     },
-    "postgresDbTier": {
+    "postgresDbSku": {
       "type": "string",
+      "defaultValue": "GP_Gen5_4",
       "allowedValues": [
-        "General Purpose",
-        "Memory Optimized"
+        "GP_Gen5_2",
+        "GP_Gen5_4",
+        "GP_Gen5_8",
+        "GP_Gen5_16",
+        "GP_Gen5_32",
+        "MO_Gen5_2",
+        "MO_Gen5_4",
+        "MO_Gen5_8",
+        "MO_Gen5_16",
+        "MO_Gen5_32"
       ],
-      "defaultValue": "General Purpose",
       "metadata": {
-        "description": "The database service tier"
+        "description": "The name of the sku (stock keeping unit) of the PostgresSQL Managed Database Service. Follows the convention {pricing tier}{compute generation}{vCores} in shorthand. For example General Purpose, Generation 5, 4 cores is GP_Gen5_4"
       }
     },
     "postgresDbStorage": {
@@ -46,7 +54,7 @@
       "minValue": 102400,
       "maxValue": 4194304,
       "metadata": {
-        "description": "The storage size of the PostgresSQL Managed Database Service."
+        "description": "The storage size of the PostgresSQL Managed Database Service"
       }
     },
     "vnetName": {
@@ -73,10 +81,10 @@
       },
       "database": {
         "name": "[parameters('dbDatabaseName')]",
-        "tier": "[variables('lookup').tier[string(parameters('postgresDbTier'))]]",
-        "tierName": "[variables('lookup').tierName[string(parameters('postgresDbTier'))]]",
+        "tier": "[if(startsWith(parameters('postgresDbSku'), 'MO'), 'MemoryOptimized', 'GeneralPurpose')]",
+        "skuName": "[parameters('postgresDbSku')]",
         "family": "Gen5",
-        "capacity": 4,
+        "capacity": "[variables('lookup').capacity[parameters('postgresDbSku')]]",
         "storage": "[parameters('postgresDbStorage')]",
         "backupRetentionPeriod": 7,
         "geoRedundantBackup": "Enabled",
@@ -86,13 +94,17 @@
       }
     },
     "lookup": {
-      "tier": {
-        "General Purpose": "GeneralPurpose",
-        "Memory Optimized": "MemoryOptimized"
-      },
-      "tierName": {
-        "General Purpose": "GP_Gen5_4",
-        "Memory Optimized": "MO_Gen5_4"
+      "capacity": {
+        "GP_Gen5_2": 2,
+        "GP_Gen5_4": 4,
+        "GP_Gen5_8": 8,
+        "GP_Gen5_16": 16,
+        "GP_Gen5_32": 32,
+        "MO_Gen5_2": 2,
+        "MO_Gen5_4": 4,
+        "MO_Gen5_8": 8,
+        "MO_Gen5_16": 16,
+        "MO_Gen5_32": 32
       }
     },
     "tags": {
@@ -107,7 +119,7 @@
       "type": "Microsoft.DBforPostgreSQL/servers",
       "location": "[parameters('location')]",
       "sku": {
-        "name": "[variables('postgresql').database.tierName]",
+        "name": "[variables('postgresql').database.skuName]",
         "tier": "[variables('postgresql').database.tier]",
         "family": "[variables('postgresql').database.family]",
         "capacity": "[variables('postgresql').database.capacity]"
