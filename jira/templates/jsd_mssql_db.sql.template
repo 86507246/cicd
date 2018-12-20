@@ -5424,7 +5424,7 @@ INSERT [${db.schema}].[audit_changed_value] ([ID], [LOG_ID], [NAME], [DELTA_FROM
 INSERT [${db.schema}].[audit_changed_value] ([ID], [LOG_ID], [NAME], [DELTA_FROM], [DELTA_TO]) VALUES (CAST(10008 AS Numeric(18, 0)), CAST(10005 AS Numeric(18, 0)), N'Organisation', NULL, N'Example Company')
 INSERT [${db.schema}].[audit_changed_value] ([ID], [LOG_ID], [NAME], [DELTA_FROM], [DELTA_TO]) VALUES (CAST(10009 AS Numeric(18, 0)), CAST(10005 AS Numeric(18, 0)), N'Date Purchased', NULL, N'17/Dec/18')
 INSERT [${db.schema}].[audit_changed_value] ([ID], [LOG_ID], [NAME], [DELTA_FROM], [DELTA_TO]) VALUES (CAST(10010 AS Numeric(18, 0)), CAST(10005 AS Numeric(18, 0)), N'License Type', NULL, N'Test license for plugin developers')
-INSERT [${db.schema}].[audit_changed_value] ([ID], [LOG_ID], [NAME], [DELTA_FROM], [DELTA_TO]) VALUES (CAST(10011 AS Numeric(18, 0)), CAST(10005 AS Numeric(18, 0)), N'Server ID', NULL, N'BE7E-4DZ2-6OJ7-G398')
+INSERT [${db.schema}].[audit_changed_value] ([ID], [LOG_ID], [NAME], [DELTA_FROM], [DELTA_TO]) VALUES (CAST(10011 AS Numeric(18, 0)), CAST(10005 AS Numeric(18, 0)), N'Server ID', NULL, N'${server.id}')
 INSERT [${db.schema}].[audit_changed_value] ([ID], [LOG_ID], [NAME], [DELTA_FROM], [DELTA_TO]) VALUES (CAST(10012 AS Numeric(18, 0)), CAST(10005 AS Numeric(18, 0)), N'Support Entitlement Number (SEN)', NULL, N'SEN-500')
 INSERT [${db.schema}].[audit_changed_value] ([ID], [LOG_ID], [NAME], [DELTA_FROM], [DELTA_TO]) VALUES (CAST(10013 AS Numeric(18, 0)), CAST(10005 AS Numeric(18, 0)), N'User Limit', NULL, N'10')
 INSERT [${db.schema}].[audit_changed_value] ([ID], [LOG_ID], [NAME], [DELTA_FROM], [DELTA_TO]) VALUES (CAST(10014 AS Numeric(18, 0)), CAST(10005 AS Numeric(18, 0)), N'jira-servicedesk', NULL, N'10')
