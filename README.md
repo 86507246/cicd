@@ -1,5 +1,8 @@
 # Azure Deployment Template
 
+## Note
+Please note that these templates are for evaluation or 'proof of concept' deployments. These are not currently recommended for a production deployment 'as is' and will require adjustment to meet your needs.
+
 ## Dependencies
 * Node (`brew install node`), version 7.6+ for support for `async`
 * Gulp
