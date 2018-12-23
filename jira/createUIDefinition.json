@@ -102,6 +102,27 @@
         },
         "elements": [
           {
+            "name": "dbType",
+            "label": "Database Type",
+            "type": "Microsoft.Common.OptionsGroup",
+            "defaultValue": "Azure SQL DB",
+            "toolTip": "Database type either Azure SQL or Postgres",
+            "constraints": {
+              "allowedValues": [
+                {
+                  "label": "Azure SQL DB",
+                  "value": "Azure SQL DB"
+                },
+                {
+                  "label": "Azure DB for PostgreSQL",
+                  "value": "Azure DB for PostgreSQL"
+                }
+              ],
+              "required": true
+            },
+            "visible": true
+          },
+          {
             "name": "hasDatabase",
             "type": "Microsoft.Common.OptionsGroup",
             "label": "Do you have an existing database (in same location/resource group)?",
@@ -122,27 +143,6 @@
             }
           },
           {
-            "name": "dbType",
-            "label": "Database Type",
-            "type": "Microsoft.Common.OptionsGroup",
-            "defaultValue": "Azure SQL DB",
-            "toolTip": "Database type either Azure SQL or Postgres",
-            "constraints": {
-              "allowedValues": [
-                {
-                  "label": "Azure SQL DB",
-                  "value": "Azure SQL DB"
-                },
-                {
-                  "label": "Azure DB for PostgreSQL",
-                  "value": "Azure DB for PostgreSQL"
-                }
-              ],
-              "required": true
-            },
-            "visible": "[equals('yes', steps('database').hasDatabase)]"
-          },
-          {
             "name": "dbHost",
             "label": "Database Server",
             "type": "Microsoft.Common.TextBox",
@@ -158,10 +158,10 @@
             "name": "dbPort",
             "label": "Database Port",
             "type": "Microsoft.Common.TextBox",
-            "defaultValue": "1433",
             "toolTip": "Specify port of existing Azure DB",
+            "defaultValue": "",
             "constraints": {
-              "required": true,
+              "required": "[equals('yes', steps('database').hasDatabase)]",
               "regex": "[0-9]*",
               "validationMessage": "Expected a numeric value for DB port eg 1433 or 5852"
             },
@@ -502,6 +502,7 @@
     ],
     "outputs": {
       "location": "[location()]",
+      "jiraProduct": "jira-software",
       "jiraAdminUserName": "[steps('administrator').adminUsername]",
       "jiraAdminUserPassword": "[steps('administrator').adminPassword]",
       "jiraAdminUserEmail": "[steps('administrator').username]",
