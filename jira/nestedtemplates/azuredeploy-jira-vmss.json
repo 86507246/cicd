@@ -105,6 +105,17 @@
                 "description": "Database password"
             }
         },
+        "jiraProduct": {
+            "type": "string",
+            "allowedValues": [
+                "jira-software",
+                "servicedesk"
+            ],
+            "defaultValue": "jira-software",
+            "metadata": {
+                "description": "JIRA software product to install"
+            }
+        },
         "jiraAdminUserName": {
             "type": "string",
             "defaultValue": "admin"
@@ -158,9 +169,9 @@
             "type": "bool",
             "defaultValue": true,
             "metadata": {
-                 "description": "Enable accelerated networking? Needs to be a supported instance type."
-             }
-         }
+                "description": "Enable accelerated networking? Needs to be a supported instance type."
+            }
+        }
     },
     "variables": {
         "namespace": "jira",
@@ -271,7 +282,7 @@
                 },
                 {
                     "name": "JIRA_LICENSE",
-                    "value": "[variables('jira').license]"
+                    "value": "[if(variables('isJiraProduct'), variables('jira').license, variables('servicedesk').license)]"
                 },
                 {
                     "name": "APPLICATION_TITLE",
@@ -301,7 +312,7 @@
                 },
                 {
                     "name": "ATL_JIRA_PRODUCT",
-                    "value": "jira-software"
+                    "value": "[parameters('jiraProduct')]"
                 }
             ]
         },
@@ -335,6 +346,10 @@
             },
             "license": "AAAB8A0ODAoPeNp9Ul1vmzAUfedXWNrLFgmSknaVIiEtA2/L1EAEZB9a9+CYm8QtsS3btMt+/Yyh6gddEDyY63PuueeeN9+hQgVIFF6iSTg7n87OL9DnZYnCydmlt1MAfC+kBBVcMQpcA66YYYJHOC1xvsoXBfbS5rABlW3XGpSOwgsvFtwQalJygEg3UgplPhBTE60Z4QEVB++GKRIMcKtG0T3RkBADUSvAn5zZ1+tbl0cJjjPOlkucx4v51UMJ/5FMHR1uNZ2+//IgAS8Jq09pkEpUDTVBe/C12Jp7oiCwSHYHkVENnLpm+5EYuAHVXS2ajaaKSWeQ+/OKga9N4Xr83+DRaJRmpf8py/1VniXruFxkqb8usC1EsQI7doU2R2T2gHoWhDkVFShkld8ANejX3hh5PRuPdyJ45sO47hA+dIjfAUoE4sKgimmj2KYxYJmZRkYg2mgjDnZdgWedtZNzwunQfasrzvG8xIn/8WcrkoA6iBr4rXixhF7uIonW/JaLe37K70Fg3N3BFnAa2c//4Z5TfIUhqoVtSa3By9SOcKaJc7+ypD51rD752yjwnM+29DKcvX3frKQWGD7buSOQiuk+TAk8BuTrIp+joteC3rZjoG6Od9czhO9I3biG3QSDSJ6I01MFT3GPnN35Hw9baBMwLAIUarbD2ZcwPRpegxJGdSMJtiQjn/QCFGulFcz4pDzNWDZGR6RTwSNU/ARaX02nf"
         },
+        "servicedesk": {
+            "license": "AAAB7g0ODAoPeNqFkstu2zAQRff6CgLdGaD8iBs7BgS0kdjUQSIJshwgfSxoamwzkUiBpNz47zu2bCRpoXbBhTScuYf3zoe8ARKBIMMpGY5n48lsPCI39zkZDYZT70ka7tdGF41w/uGDWjA7KaAA++xz4eQOAmca8OKmWoFJ1ku8YIPhwAu1cngh5hUE1RZUgf+1+sRdya2VXPlCVx4e//VP1+y0MWLLLUTcQXDgosMRRbo7vKws5PsajjIRe2B3Scqyc4W91NLsj23pxeXg6xmK3XNZdlMtkAPMPAqu2YTRcfRtRC+T2wm9ubiaerfoQnpyBCfzEJQz8I63+1XdxP92urtv0aysMLJ2UqtW/TjpbEAhjwUW5yxLs/mC/Uforxh7vV6c5PRLktE0S6JlmM+TmC4XDAtBaAC9LchqT9wWyEmUMCU0GktQ5QmEI9+3ztU/Zv3+RvvvnO6XbQeFtuOnTyJNlHakkNYZuWoc4GRpidNENNbpCrF8D+NTDhRX4m3EuBlXp81AuDBjn3MW0evHA2ln1idmDHupnpX+pbwFiwM89ONg0Jp1ThlMa3BiNlxJy1tnX3hVl0BCXdVc7b2jJVj4c1cjeI0pB+vI6elkrdGostlIRQrYQalrxGyF3+4U2/GyaSXXvLTg/QbUe0yuMC0CFQCJ2oIvh0hveJWMKS7iMVx9J2XU2AIUQa2ydw3DaUZRGgzW5Q4aiWkd4OI=X02nf"
+        },
+        "isJiraProduct": "[equals(parameters('jiraProduct'), 'jira-software')]",
         "data": {
             "storage": "[concat(' STORAGE_ATL_ENV_DATA=\"', base64(string(variables('env').storage)), '\" ')]",
             "server": "[concat(' SERVER_ATL_ENV_DATA=\"', base64(string(variables('env').server)), '\" ')]",
@@ -354,7 +369,11 @@
             }
         },
         "jiraPrepareCmd": "[concat(variables('scripts').prepare.env, './prepare_install.sh ', parameters('storageAccessKey'), ' prepare ', parameters('jiraBaseUrl'), ' ', parameters('jiraDbServerName'), ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 2>&1 > ./jira.prepare.log')]",
-        "jiraInstallCmd": "[concat(variables('scripts').prepare.env, './prepare_install.sh ', parameters('storageAccessKey'), ' install ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 2>&1 > ./jira.install.log')]"
+        "jiraInstallCmd": "[concat(variables('scripts').prepare.env, './prepare_install.sh ', parameters('storageAccessKey'), ' install ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 2>&1 > ./jira.install.log')]",
+        "isMsSql": "[equals(parameters('dbType'), 'sqlserver')]",
+        "servicedeskDbScriptTemplate": "[if(variables('isMsSql'), 'templates/servicedesk_mssql_db.sql.template', 'templates/servicedesk_postgres_db.sql.template')]",
+        "jiraDbScriptTemplate": "[if(variables('isMsSql'), 'templates/jira_db.sql.template', 'templates/jira_postgres_db.sql.template')]",
+        "dbScriptTemplate": "[if(variables('isJiraProduct'), variables('jiraDbScriptTemplate'), variables('servicedeskDbScriptTemplate'))]"
     },
     "resources": [
         {
@@ -373,7 +392,7 @@
                         "[uri(parameters('_artifactsLocation'), concat('scripts/prepare_install.sh', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('scripts/hydrate_jira_config.py', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/dbconfig.xml.template', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat(if(equals(parameters('dbType'),'sqlserver'),'templates/jira_db.sql.template','templates/jira_postgres_db.sql.template'), parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat(variables('dbScriptTemplate'), parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/databaseChangeLog.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/server.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/ApplicationInsights.xml.template', parameters('_artifactsLocationSasToken')))]",

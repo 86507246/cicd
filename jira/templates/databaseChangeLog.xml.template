@@ -6,17 +6,15 @@
     http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
 
     <property name="dbms" value="mssql" dbms="mssql"/>
-    <property name="path" value="jira_db.sql" dbms="mssql"/>
     <property name="delimiter" value="\nGO" dbms="mssql"/>
 
     <property name="dbms" value="postgresql" dbms="postgresql"/>
-    <property name="path" value="jira_postgres_db.sql" dbms="postgresql"/>
     <property name="delimiter" value=";" dbms="postgresql"/>
 
     <changeSet author="jira" id="1">
       <sqlFile dbms="${dbms}"
                encoding="utf8"
-               path="${path}"
+               path="${db.script.name.loc}"
                endDelimiter="${delimiter}"
                relativeToChangelogFile="true" />
     </changeSet>

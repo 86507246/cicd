@@ -80,11 +80,6 @@
                 "public": "[concat(variables('namespace'), 'jumpbox', 'nic', 'public')]",
                 "private": "[concat(variables('namespace'), 'jumpbox', 'nic', 'private')]"
             }
-        },
-        "routing": {
-            "outbound": {
-                "name": "[concat(variables('namespace'), 'routes', 'outbound')]"
-            }
         }
     },
     "resources": [

@@ -89,124 +89,6 @@
             },
             "visible": true,
             "defaultValue": "Small (25 Concurrent Users)"
-          },
-          {
-            "name": "monitoring",
-            "bladeTitle": "Configure Monitoring",
-            "label": "Configure Monitoring",
-            "subLabel": {
-              "preValidation": "To do",
-              "postValidation": "Done"
-            },
-            "elements": [
-              {
-                "name": "enableEmailAlerts",
-                "type": "Microsoft.Common.OptionsGroup",
-                "label": "Enable Email Alerts",
-                "defaultValue": "Yes",
-                "toolTip": "Enable Email Alerts",
-                "constraints": {
-                  "allowedValues": [
-                    {
-                      "label": "Yes",
-                      "value": "yes"
-                    },
-                    {
-                      "label": "No",
-                      "value": "no"
-                    }
-                  ],
-                  "required": true
-                },
-                "visible": true
-              },
-              {
-                "name": "enableAppInsights",
-                "type": "Microsoft.Common.OptionsGroup",
-                "label": "Enable App Insights",
-                "defaultValue": "Yes",
-                "toolTip": "Enable App Insights",
-                "constraints": {
-                  "allowedValues": [
-                    {
-                      "label": "Yes",
-                      "value": "yes"
-                    },
-                    {
-                      "label": "No",
-                      "value": "no"
-                    }
-                  ],
-                  "required": true
-                },
-                "visible": true
-              },
-              {
-                "name": "allowedAppInsightsLocations",
-                "type": "Microsoft.Common.TextBox",
-                "label": "allowedAppInsightsLocations",
-                "defaultValue": "eastus, westeurope, southeastasia, centralindia, canadacentral, southcentralus, northeurope, westus2, uksouth.",
-                "constraints": {
-                  "required": true,
-                  "regex": "^[a-z]*$",
-                  "validationMessage": "You must specify a full name"
-                },
-                "visible": false
-              },
-              {
-                "name": "appInsightsCheck",
-                "type": "Microsoft.Common.InfoBox",
-                "visible": "[and(equals(steps('monitoring').enableAppInsights, 'yes'),  not(contains(steps('monitoring').allowedAppInsightsLocations, location())))]",
-                "options": {
-                  "icon": "Error",
-                  "text": "[concat('App Insights product only available in regions: ', steps('monitoring').allowedAppInsightsLocations, ' Please disable or change resource group location!')]",
-                  "uri": "https://azure.microsoft.com/en-gb/global-infrastructure/services/?products=monitor&regions=us-east,us-east-2,us-central,us-north-central,us-south-central,us-west-central,us-west,us-west-2,canada-east,canada-central,non-regional,europe-north,europe-west,france-central,france-south,united-kingdom-south,united-kingdom-west,asia-pacific-east,asia-pacific-southeast,australia-central,australia-central-2,australia-east,australia-southeast,germany-non-regional,germany-central,germany-northeast,usgov-non-regional,us-dod-central,us-dod-east,usgov-arizona,usgov-iowa,usgov-texas,usgov-virginia,brazil-south,japan-east,japan-west,central-india,south-india,west-india,korea-central,korea-south"
-                }
-              },
-              {
-                "name": "enableAnalytics",
-                "type": "Microsoft.Common.OptionsGroup",
-                "label": "Enable Analytics for Gateway and DB?",
-                "defaultValue": "Yes",
-                "toolTip": "Enable Analytics for Gateway and DB?",
-                "constraints": {
-                  "allowedValues": [
-                    {
-                      "label": "Yes",
-                      "value": "yes"
-                    },
-                    {
-                      "label": "No",
-                      "value": "no"
-                    }
-                  ],
-                  "required": true
-                },
-                "visible": true
-              },
-              {
-                "name": "allowedAnalyticsLocations",
-                "type": "Microsoft.Common.TextBox",
-                "label": "allowedAnalyticsLocations",
-                "defaultValue": "eastus, westeurope, southeastasia, centralindia, canadacentral, australiasoutheast, westcentralus, japaneast, uksouth.",
-                "constraints": {
-                  "required": true,
-                  "regex": "^[a-z]{1,50}$",
-                  "validationMessage": "You must specify a full name"
-                },
-                "visible": false
-              },
-              {
-                "name": "appAnalyticsCheck",
-                "type": "Microsoft.Common.InfoBox",
-                "visible": "[and(equals(steps('monitoring').enableAnalytics, 'yes'), not(contains(steps('monitoring').allowedAnalyticsLocations, location())))]",
-                "options": {
-                  "icon": "Error",
-                  "text": "[concat('Analytics products only available in regions: ', steps('monitoring').allowedAnalyticsLocations, ' Please disable or change resource group location!')]",
-                  "uri": "https://azure.microsoft.com/en-gb/global-infrastructure/services/?products=monitor&regions=us-east,us-east-2,us-central,us-north-central,us-south-central,us-west-central,us-west,us-west-2,canada-east,canada-central,non-regional,europe-north,europe-west,france-central,france-south,united-kingdom-south,united-kingdom-west,asia-pacific-east,asia-pacific-southeast,australia-central,australia-central-2,australia-east,australia-southeast,germany-non-regional,germany-central,germany-northeast,usgov-non-regional,us-dod-central,us-dod-east,usgov-arizona,usgov-iowa,usgov-texas,usgov-virginia,brazil-south,japan-east,japan-west,central-india,south-india,west-india,korea-central,korea-south"
-                }
-              }
-            ]
           }
         ]
       },
@@ -375,7 +257,6 @@
                   "hidePassword": true
                 },
                 "osPlatform": "Linux",
-                "defaultValue": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDzHL0anA/uLc70WunKBtY9TckYliFDB68jXsHb9z5os/8gcTacocaFzFlx/e6C2kJNeBh2IA1CZ5rInE6ice2B7dyuwP7JCSmZHk7ybMtRiE0SPy8yk0BwNnMTDctnStTG6VdLAm3tja7h6q84g/hlzyDQs4r66agKNdm4NOxoVxMsXK3OwLRfIrhPjEBiEHYuLg77LB60O9AKzKvJOe2SlMhfuX1+RTJys6SPhf88YTo9xBwu8eXaGYrUawpQtW8ik6PL3PdBT4wMx9JJCTd7w3EKvbf9qgnc4wDaoFC3fIUgmaVfIkCMx7yTAoL0P5TIDkX46IR7hWVjOU6eyKrz monty@monty-XPS-15-9570",
                 "visible": true
               }
             ]

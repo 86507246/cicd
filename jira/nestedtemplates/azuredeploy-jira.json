@@ -175,6 +175,17 @@
                 "description": "The storage size of the PostgresSQL Managed Database Service"
             }
         },
+        "jiraProduct": {
+            "type": "string",
+            "allowedValues": [
+                "jira-software",
+                "servicedesk"
+            ],
+            "defaultValue": "jira-software",
+            "metadata": {
+                 "description": "JIRA software product to install"
+             }
+         },
         "jiraAdminUserName": {
             "type": "string",
             "defaultValue": "admin"
@@ -261,7 +272,7 @@
     },
     "variables": {
         "namespace": "jira",
-        "dbTemplateUri": "[uri(parameters('_artifactsLocation'), concat(if(equals(parameters('dbType'),'sqlserver'),'nestedtemplates/azuredeploy-db.json','nestedtemplates/azuredeploy-postgres-db.json'), parameters('_artifactsLocationSasToken')))]",
+        "dbTemplateUri": "[uri(parameters('_artifactsLocation'), concat(if(equals(parameters('dbType'),'sqlserver'),'nestedtemplates/azuredeploy-db-mssql.json','nestedtemplates/azuredeploy-db-postgres.json'), parameters('_artifactsLocationSasToken')))]",
         "vmssTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-jira-vmss.json', parameters('_artifactsLocationSasToken')))]",
         "byodbTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-byodb.json', parameters('_artifactsLocationSasToken')))]",
         "appGtwyTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-jira-gtwy.json', parameters('_artifactsLocationSasToken')))]",
@@ -651,6 +662,9 @@
                     },
                     "dbPassword": {
                         "value": "[parameters('dbPassword')]"
+                    },
+                    "jiraProduct": {
+                        "value": "[parameters('jiraProduct')]"
                     },
                     "jiraAdminUserName": {
                         "value": "[parameters('jiraAdminUserName')]"

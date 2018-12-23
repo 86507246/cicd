@@ -23,9 +23,6 @@
         "statusCheckUrl": {
             "type": "string"
         },
-        "dbCreateNew": {
-            "type": "bool"
-        },
         "dbType": {
             "type": "string",
             "allowedValues": [

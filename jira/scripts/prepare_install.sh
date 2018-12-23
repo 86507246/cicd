@@ -285,6 +285,7 @@ function prepare_share {
 function hydrate_shared_config {
   export SERVER_PROXY_NAME="${SERVER_CNAME:-${SERVER_AZURE_DOMAIN}}"
   export DB_TRUSTED_HOST=$(get_trusted_dbhost)
+  export DB_SCRIPT_NAME_LOC=$(ls -C1 *db.sql.template | sed 's/\.template$//')
 
   case $DB_TYPE in
      sqlserver)
@@ -333,29 +334,19 @@ function copy_artefacts {
 
 function hydrate_db_dump {
   export USER_ENCRYPTION_METHOD="atlassian-security"
-
   export USER_PASSWORD=`run_password_generator ${USER_CREDENTIAL}`
-
   export USER_FIRSTNAME=`echo ${USER_FULLNAME} | cut -d ' ' -f 1`
   export USER_LASTNAME=`echo ${USER_FULLNAME} | cut -d ' ' -f 2-`
-
   export USER_FIRSTNAME_LOWERCASE=`echo ${USER_FULLNAME_LOWERCASE} | cut -d ' ' -f 1`
   export USER_LASTNAME_LOWERCASE=`echo ${USER_FULLNAME_LOWERCASE} | cut -d ' ' -f 2-`
   export SERVER_ID=`generate_server_id`
+  export DB_USER=`echo ${DB_USER} | cut -d '@' -f 1`
 
   log "Generated server id [${SERVER_ID}]"
 
   log "Prepare database dump [user=${USER_NAME}, password=${USER_PASSWORD}, credential=${USER_CREDENTIAL}]"
 
-  local template_file
-
-  if [ $DB_TYPE == "postgres" ]; then
-    template_file="jira_postgres_db.sql.template"
-    export DB_USER=`echo ${DB_USER} 2 | cut -d '@' -f 1`
-  else
-    template_file="jira_db.sql.template"
-  fi
-
+  local template_file=$(ls -C1 *db.sql.template)
   local output_file=`echo "${template_file}" | sed 's/\.template$//'`
 
   cat ${template_file} | python3 hydrate_jira_config.py > ${output_file}
@@ -388,6 +379,7 @@ function apply_database_dump {
     --url="${DB_JDBCURL}" \
     --username="${DB_USER_LIQUIBASE}" \
     --password="${DB_PASSWORD}" \
+    --logLevel=info \
     --changeLogFile=databaseChangeLog.xml \
     update
 }

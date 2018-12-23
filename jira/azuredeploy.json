@@ -206,6 +206,17 @@
                 "description": "The storage size of the PostgresSQL Managed Database Service"
             }
         },
+        "jiraProduct": {
+            "type": "string",
+            "allowedValues": [
+                "jira-software",
+                "servicedesk"
+            ],
+            "defaultValue": "jira-software",
+            "metadata": {
+                 "description": "JIRA software product to install"
+             }
+         },
         "jiraAdminUserName": {
             "type": "string",
             "defaultValue": "admin",
@@ -506,6 +517,9 @@
                     "cname": {
                         "value": "[if(greater(length(parameters('cname')), 0), concat('jira.', parameters('cname')), parameters('cname'))]"
                     },
+                    "jiraProduct": {
+                        "value": "[parameters('jiraProduct')]"
+                    },
                     "jiraAdminUserName": {
                         "value": "[parameters('jiraAdminUserName')]"
                     },
@@ -619,9 +633,6 @@
                     },
                     "statusCheckUrl": {
                         "value": "[concat(if(not(empty(parameters('sslBase64EncodedPfxCertificate'))), concat('https://', if(greater(length(parameters('cname')), 0), reference('domainTemplate').outputs.alias.value, reference('jiraTemplate').outputs.jiraAppEndpoint.value)), concat('http://', if(greater(length(parameters('cname')), 0), reference('domainTemplate').outputs.alias.value, reference('jiraTemplate').outputs.jiraAppEndpoint.value))), '/status')]"
-                    },
-                    "dbCreateNew": {
-                        "value": "[if(equals(parameters('dbCreateNew'), 'Yes (Azure SQL DB Only)'), bool('true'), bool('false'))]"
                     },
                     "dbType": {
                         "value": "[if(equals(parameters('dbType'), 'Azure SQL DB'), 'sqlserver', if(equals(parameters('dbType'), 'Azure DB for PostgreSQL'), 'postgres', 'mysql'))]"
