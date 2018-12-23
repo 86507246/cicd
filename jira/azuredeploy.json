@@ -634,9 +634,6 @@
                     "statusCheckUrl": {
                         "value": "[concat(if(not(empty(parameters('sslBase64EncodedPfxCertificate'))), concat('https://', if(greater(length(parameters('cname')), 0), reference('domainTemplate').outputs.alias.value, reference('jiraTemplate').outputs.jiraAppEndpoint.value)), concat('http://', if(greater(length(parameters('cname')), 0), reference('domainTemplate').outputs.alias.value, reference('jiraTemplate').outputs.jiraAppEndpoint.value))), '/status')]"
                     },
-                    "dbCreateNew": {
-                        "value": "[if(equals(parameters('dbCreateNew'), 'Yes (Azure SQL DB Only)'), bool('true'), bool('false'))]"
-                    },
                     "dbType": {
                         "value": "[if(equals(parameters('dbType'), 'Azure SQL DB'), 'sqlserver', if(equals(parameters('dbType'), 'Azure DB for PostgreSQL'), 'postgres', 'mysql'))]"
                     },
