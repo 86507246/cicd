@@ -713,6 +713,15 @@
                     },
                     "enableAcceleratedNetworking": {
                         "value": "[parameters('enableAcceleratedNetworking')]"
+                    },
+                    "workspaceId": {
+                        "value": "[reference(resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name), '2015-11-01-preview').customerId]"
+                    },
+                    "workspacePrimaryKey": {
+                        "value": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name), '2015-11-01-preview').primarySharedKey]"
+                    },
+                    "workspaceSecondaryKey": {
+                        "value": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name), '2015-11-01-preview').secondarySharedKey]"
                     }
                 }
             }

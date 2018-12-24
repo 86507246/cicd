@@ -12,6 +12,8 @@ SET default_tablespace = '';
 
 SET default_with_oids = false;
 
+CREATE SCHEMA IF NOT EXISTS ${db.schema} AUTHORIZATION ${db.user};
+
 CREATE TABLE ${db.schema}."AO_0201F0_KB_HELPFUL_AGGR" (
     "COUNT" bigint,
     "ID" bigint NOT NULL,

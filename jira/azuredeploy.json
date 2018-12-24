@@ -335,6 +335,8 @@
         "alertsTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-alerts.json', parameters('_artifactsLocationSasToken')))]",
         "namespace": "jira",
         "dbServerName": "[concat(variables('namespace'), if(equals(parameters('dbType'),'Azure SQL DB'),'sqlserver','postgres'), uniqueString(resourceGroup().id))]",
+        "isJiraProduct": "[equals(parameters('jiraProduct'), 'jira-software')]",
+        "customerUsageId": "[if(variables('isJiraProduct'), 'a717b299-5535-534f-aecb-a702a63c94bd', '225d520e-9e13-5706-b071-0df518243a2c')]",
         "isJiraClusterSizeUsed": "[not(empty(parameters('jiraClusterSize')))]",
         "clusterLookup": {
             "appGtwyTier": {
@@ -407,7 +409,7 @@
             "comments": "Azure tracking GUID for Jira - ensure right one being used for the delivery channel ie via Azure Marketplace, BitBucket Quickstart etc",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2015-01-01",
-            "name": "pid-a717b299-5535-534f-aecb-a702a63c94bd",
+            "name": "[concat('pid-',variables('customerUsageId'))]",
             "properties": {
                 "mode": "Incremental",
                 "template": {
@@ -485,7 +487,7 @@
                         "value": "[parameters('dbDatabase')]"
                     },
                     "dbSchema": {
-                        "value": "[parameters('dbSchema')]"
+                        "value": "[if(and(parameters('dbCreateNew'), equals(parameters('dbType'), 'Azure DB for PostgreSQL')), 'public', parameters('dbSchema'))]"
                     },
                     "dbUsername": {
                         "value": "[parameters('dbUsername')]"
