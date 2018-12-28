@@ -600,6 +600,10 @@
         }
     ],
     "outputs": {
+        "clusterName": {
+            "type": "string",
+            "value": "[variables('jira').cluster.name]"
+        },
         "prepareCmdArgs": {
             "type": "string",
             "value": "[variables('jiraPrepareCmd')]"
