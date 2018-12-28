@@ -382,6 +382,13 @@ function apply_database_dump {
     --logLevel=info \
     --changeLogFile=databaseChangeLog.xml \
     update
+  
+  if [ "$?" -ne "0" ]; then
+    copy_artefacts
+    error "Liquibase dump failed with and error. Check logs and rectify!!"
+  else
+    atl_log apply_database_dump "Liquibase has been sucessfully executed"
+  fi
 }
 
 function prepare_env {
@@ -694,6 +701,13 @@ function prepare_datadisks {
   atl_log prepare_datadisks "Done preparing and configuring data disks"
 }
 
+function set_shared_home_permissions {
+  atl_log set_shared_home_permissions "Setting permissions for SSH user ${SERVER_SSH_USER} to access logs etc on shared home ${ATL_JIRA_HOME}"
+  usermod -a -G jira ${SERVER_SSH_USER}
+  chmod -R 774 ${ATL_JIRA_HOME}
+  chmod -R 774 ${ATL_JIRA_INSTALL_DIR}
+}
+
 function preloadDatabase {
   atl_log preloadDatabase  "Preloading new database"
   prepare_password_generator
@@ -712,13 +726,12 @@ function prepare_install {
   download_installer
   preserve_installer
   hydrate_shared_config
-  copy_artefacts
   install_jdbc_drivers "`pwd`"
-
   if [ $DB_CREATE = 'true' ]
   then
      preloadDatabase
   fi
+  copy_artefacts
 }
 
 function install_jira {
@@ -736,6 +749,7 @@ function install_jira {
   atl_log install_jira "Done installing JIRA! Starting..."
   /etc/init.d/jira start
   install_appinsights_collectd
+  set_shared_home_permissions
 }
 
 atl_log main "Got args: $@"

@@ -79,7 +79,7 @@
         "password": "[parameters('dbPassword')]"
       },
       "database": {
-        "name": "[parameters('dbDatabaseName')]",
+        "name": "[toLower(parameters('dbDatabaseName'))]",
         "tier": "[if(startsWith(parameters('postgresDbSku'), 'MO'), 'MemoryOptimized', 'GeneralPurpose')]",
         "skuName": "[parameters('postgresDbSku')]",
         "family": "[split(parameters('postgresDbSku'),'_')[1]]",
