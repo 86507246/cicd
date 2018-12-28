@@ -595,7 +595,7 @@
                         "value": "[reference('jiraTemplate').outputs.gtwyIpName.value]"
                     },
                     "prefix": {
-                        "value": "jira"
+                        "value": "[if(variables('isJiraProduct'), 'jira', 'servicedesk')]"
                     }
                 }
             }

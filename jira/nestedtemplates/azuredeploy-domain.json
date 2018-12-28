@@ -20,7 +20,7 @@
             "type": "string",
             "defaultValue": "jira",
             "metadata": {
-                "description": "domain prefix to use"
+                "description": "The Domain Prefix to use eg <prefix>.<cname>"
             },
             "minLength": 1
         }
