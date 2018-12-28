@@ -708,6 +708,12 @@ function set_shared_home_permissions {
   chmod -R 774 ${ATL_JIRA_INSTALL_DIR}
 }
 
+function install_oms_linx_agent {
+  atl_log install_oms_linx_agent  "Installing OMS Linux Agent with workspace id: ${OMS_WORKSPACE_ID} and primary key: ${OMS_PRIMARY_KEY}"
+  wget https://raw.githubusercontent.com/Microsoft/OMS-Agent-for-Linux/master/installer/scripts/onboard_agent.sh && sh onboard_agent.sh -w "${OMS_WORKSPACE_ID}" -s "${OMS_PRIMARY_KEY}" -d opinsights.azure.com
+  atl_log install_oms_linx_agent  "Finished installing OMS Linux Agent!"
+}
+
 function preloadDatabase {
   atl_log preloadDatabase  "Preloading new database"
   prepare_password_generator
@@ -746,6 +752,7 @@ function install_jira {
   perform_install
   configure_jira
   remount_share
+  install_oms_linx_agent
   atl_log install_jira "Done installing JIRA! Starting..."
   /etc/init.d/jira start
   install_appinsights_collectd

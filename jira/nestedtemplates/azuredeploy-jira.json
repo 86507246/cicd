@@ -183,9 +183,9 @@
             ],
             "defaultValue": "jira-software",
             "metadata": {
-                 "description": "JIRA software product to install"
-             }
-         },
+                "description": "JIRA software product to install"
+            }
+        },
         "jiraAdminUserName": {
             "type": "string",
             "defaultValue": "admin"
@@ -266,9 +266,9 @@
             "type": "bool",
             "defaultValue": true,
             "metadata": {
-                 "description": "Enable accelerated networking? Needs to be a supported instance type."
-             }
-         }
+                "description": "Enable accelerated networking? Needs to be a supported instance type."
+            }
+        }
     },
     "variables": {
         "namespace": "jira",
@@ -286,30 +286,6 @@
         "jira": {
             "storage": {
                 "name": "[concat(variables('namespace'), 'storage', uniqueString(resourceGroup().id))]"
-            },
-            "cluster": {
-                "name": "[concat(variables('namespace'), 'cluster')]",
-                "tier": "Standard",
-                "vm": {
-                    "size": "[parameters('clusterVmSize')]",
-                    "user": "[parameters('clusterSshUser')]",
-                    "pass": "[parameters('clusterSshPassword')]",
-                    "image": {
-                        "publisher": "Canonical",
-                        "offer": "UbuntuServer",
-                        "sku": "16.04-LTS",
-                        "version": "latest"
-                    },
-                    "osdisk": {
-                        "type": "Premium_LRS",
-                        "size": "100"
-                    },
-                    "datadisk": {
-                        "type": "Premium_LRS",
-                        "caching": "ReadWrite",
-                        "size": "100"
-                    }
-                }
             }
         },
         "workspace": {
@@ -335,7 +311,65 @@
                     "name": "[variables('workspace').sku]"
                 },
                 "retentionInDays": "[variables('workspace').retentionInDays]"
-            }
+            },
+            "resources": [
+                {
+                    "apiVersion": "2015-11-01-preview",
+                    "type": "dataSources",
+                    "name": "JiraLogs",
+                    "dependsOn": [
+                        "[concat('Microsoft.OperationalInsights/workspaces/', variables('workspace').name)]"
+                    ],
+                    "kind": "CustomLog",
+                    "properties": {
+                        "customLogName": "JiraLogs",
+                        "description": "Captures all Atlassian logs found at /var/atlassian/application-data/jira/log",
+                        "inputs": [
+                            {
+                                "location": {
+                                    "fileSystemLocations": {
+                                        "linuxFileTypeLogPaths": [
+                                            "/var/atlassian/application-data/jira/log/atlassian*.log"
+                                        ]
+                                    }
+                                },
+                                "recordDelimiter": {
+                                    "regexDelimiter": {
+                                        "pattern": "((\\d{2})|(\\d{4}))-([0-1]\\d)-(([0-3]\\d)|(\\d))\\s((\\d)|([0-1]\\d)|(2[0-4])):[0-5][0-9]:[0-5][0-9]",
+                                        "matchIndex": 0,
+                                        "matchIndexSpecified": true,
+                                        "numberedGroup": null
+                                    }
+                                }
+                            }
+                        ],
+                        "extractions": [
+                            {
+                                "extractionName": "TimeGenerated",
+                                "extractionType": "DateTime",
+                                "extractionProperties": {
+                                    "dateTimeExtraction": {
+                                        "regex": null,
+                                        "joinStringRegex": null
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "apiVersion": "2015-11-01-preview",
+                    "type": "dataSources",
+                    "name": "jiraLogCollection",
+                    "dependsOn": [
+                        "[concat('Microsoft.OperationalInsights/workspaces/', variables('workspace').name)]"
+                    ],
+                    "kind": "CustomLogCollection",
+                    "properties": {
+                        "state": "LinuxLogsEnabled"
+                    }
+                }
+            ]
         },
         {
             "apiVersion": "2015-01-01",
@@ -400,7 +434,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                  "uri": "[variables('dbTemplateUri')]",
+                    "uri": "[variables('dbTemplateUri')]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -763,7 +797,7 @@
         },
         "clusterName": {
             "type": "string",
-            "value": "[variables('jira').cluster.name]"
+            "value": "[reference('vmssTemplate').outputs.clusterName.value]"
         },
         "appInsightsName": {
             "type": "string",
