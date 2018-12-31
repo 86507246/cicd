@@ -69,7 +69,6 @@
                 }
             },
             "ip": {
-                "address": "10.0.2.99",
                 "name": "[concat(variables('namespace'), '-jumpboxip-', uniqueString(resourceGroup().id))]"
             },
             "subnet": {
@@ -77,8 +76,7 @@
                 "prefix": "10.0.3.0/24"
             },
             "nics": {
-                "public": "[concat(variables('namespace'), 'jumpbox', 'nic', 'public')]",
-                "private": "[concat(variables('namespace'), 'jumpbox', 'nic', 'private')]"
+                "public": "[concat(variables('namespace'), 'jumpbox', 'nic', 'public')]"
             }
         }
     },
@@ -248,40 +246,13 @@
             }
         },
         {
-            "type": "Microsoft.Network/networkInterfaces",
-            "apiVersion": "2018-08-01",
-            "name": "[variables('jumpbox').nics.private]",
-            "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
-            "dependsOn": [
-                "[concat('Microsoft.Network/publicIPAddresses/', variables('jumpbox').ip.name)]",
-                "[concat('Microsoft.Network/virtualNetworks/', variables('vnet').name)]"
-            ],
-            "properties": {
-                "ipConfigurations": [
-                    {
-                        "name": "public-access",
-                        "properties": {
-                            "privateIPAllocationMethod": "Static",
-                            "privateIPAddress": "[variables('jumpbox').ip.address]",
-                            "subnet": {
-                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('vnet').name), '/subnets/', variables('appSubnet').name)]"
-                            }
-                        }
-                    }
-                ],
-                "enableIPForwarding": true
-            }
-        },
-        {
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2018-06-01",
             "name": "[variables('jumpbox').name]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
-                "[concat('Microsoft.Network/networkInterfaces/', variables('jumpbox').nics.public)]",
-                "[concat('Microsoft.Network/networkInterfaces/', variables('jumpbox').nics.private)]"
+                "[concat('Microsoft.Network/networkInterfaces/', variables('jumpbox').nics.public)]"
             ],
             "properties": {
                 "hardwareProfile": {
@@ -320,16 +291,7 @@
                 "networkProfile": {
                     "networkInterfaces": [
                         {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces/', variables('jumpbox').nics.public)]",
-                            "properties": {
-                                "primary": true
-                            }
-                        },
-                        {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces/', variables('jumpbox').nics.private)]",
-                            "properties": {
-                                "primary": false
-                            }
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces/', variables('jumpbox').nics.public)]"
                         }
                     ]
                 }
