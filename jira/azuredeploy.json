@@ -138,6 +138,7 @@
         },
         "dbPassword": {
             "type": "securestring",
+            "minLength": 8,
             "metadata": {
                 "description": "Database password"
             }
@@ -203,7 +204,7 @@
             "minValue": 102400,
             "maxValue": 4194304,
             "metadata": {
-                "description": "The storage size of the PostgresSQL Managed Database Service"
+                "description": "The storage size of the PostgresSQL Managed Database Service in MB"
             }
         },
         "jiraProduct": {
