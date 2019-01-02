@@ -483,7 +483,7 @@ function ensure_readable {
 # Check if we already have installer in shared home and restores it if we do
 # otherwise just downloads the installer and puts it into shared home
 function prepare_installer {
-  atl_log prepare_install "Checking if installer has been downloaded aready"
+  atl_log prepare_installer "Checking if installer has been downloaded already"
   ensure_readable "${ATL_JIRA_SHARED_HOME}/server.xml"
   if [[ -f ${ATL_JIRA_SHARED_HOME}/$ATL_JIRA_PRODUCT.version ]]; then
     atl_log prepare_installer "Detected installer, restoring it"
@@ -708,6 +708,13 @@ function set_shared_home_permissions {
   chmod -R 774 ${ATL_JIRA_INSTALL_DIR}
 }
 
+function copy_jira_installation_log {
+  NODE_IP=`hostname -I`
+  FILENAME="jira-install-${NODE_IP::-1}.log"
+  atl_log copy_jira_installation_log "Copying the jira installation log for node ${NODE_IP} to shared home ${ATL_JIRA_HOME}/deployments"
+  cp -fp /var/lib/waagent/custom-script/download/1/jira.install.log ${ATL_JIRA_SHARED_HOME}/deployments/${FILENAME}
+}
+
 function install_oms_linx_agent {
   atl_log install_oms_linx_agent  "Installing OMS Linux Agent with workspace id: ${OMS_WORKSPACE_ID} and primary key: ${OMS_PRIMARY_KEY}"
   wget https://raw.githubusercontent.com/Microsoft/OMS-Agent-for-Linux/master/installer/scripts/onboard_agent.sh && sh onboard_agent.sh -w "${OMS_WORKSPACE_ID}" -s "${OMS_PRIMARY_KEY}" -d opinsights.azure.com
@@ -738,6 +745,7 @@ function prepare_install {
      preloadDatabase
   fi
   copy_artefacts
+  mkdir ${ATL_JIRA_SHARED_HOME}/deployments
 }
 
 function install_jira {
@@ -757,6 +765,7 @@ function install_jira {
   /etc/init.d/jira start
   install_appinsights_collectd
   set_shared_home_permissions
+  copy_jira_installation_log
 }
 
 atl_log main "Got args: $@"
