@@ -394,7 +394,7 @@
             }
         },
         "jiraPrepareCmd": "[concat(variables('scripts').prepare.env, './prepare_install.sh ', parameters('storageAccessKey'), ' prepare ', parameters('jiraBaseUrl'), ' ', parameters('jiraDbServerName'), ' ', if(variables('isSslSpecified'), 'https', 'http'), ' ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 1>&1 2>&1 > ./jira.prepare.log')]",
-        "jiraInstallCmd": "[concat(variables('scripts').prepare.env, './prepare_install.sh ', parameters('storageAccessKey'), ' install ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 1>&1 2>&1 > ./jira.install.log')]",
+        "jiraInstallCmd": "[concat(variables('scripts').prepare.env, './prepare_install.sh ', parameters('storageAccessKey'), ' install ', if(not(empty(parameters('appInsightsInstrumentKey'))), parameters('appInsightsInstrumentKey'), ' '), ' 1>&1 2>&1 > ./jira.install-$(uname -n).log')]",
         "isMsSql": "[equals(parameters('dbType'), 'sqlserver')]",
         "servicedeskDbScriptTemplate": "[if(variables('isMsSql'), 'templates/servicedesk_mssql_db.sql.template', 'templates/servicedesk_postgres_db.sql.template')]",
         "jiraDbScriptTemplate": "[if(variables('isMsSql'), 'templates/jira_db.sql.template', 'templates/jira_postgres_db.sql.template')]",
