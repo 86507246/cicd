@@ -1,0 +1,823 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "_artifactsLocation": {
+            "type": "string",
+            "metadata": {
+                "description": "Base URL for Marketplace",
+                "artifactsBaseUrl": ""
+            }
+        },
+        "_artifactsLocationSasToken": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Scripts storage access token"
+            }
+        },
+        "location": {
+            "type": "string"
+        },
+        "clusterSize": {
+            "type": "int",
+            "defaultValue": 2,
+            "metadata": {
+                "description": "The number of Confluence nodes in the cluster"
+            }
+        },
+        "clusterVmSize": {
+            "type": "string",
+            "defaultValue": "Standard_DS3_v2",
+            "metadata": {
+                "description": "The size of the virtual machine used for each Confluence node."
+            }
+        },
+        "synchronyClusterSize": {
+            "type": "int",
+            "defaultValue": 2,
+            "metadata": {
+                "description": "The number of Confluence nodes in the cluster"
+            }
+        },
+        "synchronyClusterVmSize": {
+            "type": "string",
+            "defaultValue": "Standard_DS3_v2",
+            "metadata": {
+                "description": "The size of the virtual machine used for each Confluence node."
+            }
+        },
+        "clusterSshUser": {
+            "type": "string",
+            "defaultValue": "confadmin",
+            "metadata": {
+                "description": "The username used to SSH into each Confluence node from the jumpbox."
+            }
+        },
+        "clusterSshPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password used to SSH into each Confluence node from the jumpbox."
+            }
+        },
+        "cname": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "An existing CNAME that will be used to access the Confluence instance."
+            }
+        },
+        "dbCreateNew": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "Creates new database or attempts to use existing specified database"
+            }
+        },
+        "dbType": {
+            "type": "string",
+            "allowedValues": [
+                "sqlserver",
+                "postgres",
+                "mysql"
+            ],
+            "defaultValue": "sqlserver",
+            "metadata": {
+                "description": "Database type"
+            }
+        },
+        "dbPort": {
+            "type": "string",
+            "defaultValue": "[if(equals(parameters('dbType'), 'sqlserver'), '1433', if(equals(parameters('dbType'), 'postgres'), '5432', '3306'))]",
+            "metadata": {
+                "description": "Database port to use"
+            }
+        },
+        "dbDatabase": {
+            "type": "string",
+            "defaultValue": "conf",
+            "metadata": {
+                "description": "Database name"
+            }
+        },
+        "dbSchema": {
+            "type": "string",
+            "defaultValue": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'sqlserver'), 'confschema', 'public'), 'confschema')]",
+            "metadata": {
+                "description": "Database schema to use"
+            }
+        },
+        "dbUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Database username"
+            }
+        },
+        "dbPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Database password"
+            }
+        },
+        "confAdminUserName": {
+            "type": "string",
+            "defaultValue": "admin"
+        },
+        "confAdminUserPassword": {
+            "type": "securestring"
+        },
+        "confAdminUserFullname": {
+            "type": "string"
+        },
+        "confAdminUserEmail": {
+            "type": "string"
+        },
+        "confAppTitle": {
+            "type": "string",
+            "defaultValue": "Atlassian Confluence"
+        },
+        "vnetName": {
+            "type": "string"
+        },
+        "appSubnetName": {
+            "type": "string"
+        },
+        "sychronySubnetName": {
+            "type": "string"
+        },
+        "jumpboxName": {
+            "type": "string"
+        },
+        "sslBase64EncodedPfxCertificate": {
+            "type": "string",
+            "defaultValue": ""
+        },
+        "appInsightsInstrumentKey": {
+            "type": "string",
+            "defaultValue": ""
+        },
+        "gtwyName": {
+            "type": "string"
+        },
+        "gtwyAddressPoolName": {
+            "type": "string"
+        },
+        "gtwySynchronyAddressPoolName": {
+            "type": "string"
+        },
+        "confBaseUrl": {
+            "type": "string"
+        },
+        "confDbServerName": {
+            "type": "string"
+        },
+        "storageAccessKey": {
+            "type": "securestring"
+        },
+        "storageFilesEndpoint": {
+            "type": "string"
+        },
+        "enableAcceleratedNetworking": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "Enable accelerated networking? Needs to be a supported instance type."
+            }
+        },
+        "workspaceId": {
+            "type": "string"
+        },
+        "workspacePrimaryKey": {
+            "type": "string"
+        },
+        "workspaceSecondaryKey": {
+            "type": "string"
+        },
+        "releaseDownloadBaseUrl": {
+            "type": "string",
+            "defaultValue": "https://downloads.atlassian.com/software/confluence/downloads",
+            "metadata": {
+                "description": "Base URL for downloading the confluence artifact."
+            }
+        },
+        "releaseVersionUrl": {
+            "type": "string",
+            "defaultValue": "https://confluencedcversion.blob.core.windows.net/version/latest",
+            "metadata": {
+                "description": "URL for obtaining the latest confluence artifact version."
+            }
+        },
+        "atlassianMavenRepositoryUrl": {
+            "type": "string",
+            "defaultValue": "https://packages.atlassian.com/maven/repository/public/",
+            "metadata": {
+                "description": "The url to the Atlassian public Maven repository. Customize this if you wish to download artifacts from your own repository (must be publically accessible)."
+            }
+        },
+        "confluenceVersion": {
+            "type": "string",
+            "defaultValue": "latest",
+            "metadata": {
+                "description": "The Confluence version to use. Must be 6.4.0 or later. Use 'latest' to obtain the latest released version of Confluence automatically."
+            }
+        },
+        "dbTierSize": {
+            "type": "string",
+            "allowedValues": [
+                "Basic",
+                "S1",
+                "S2",
+                "S3",
+                "S4",
+                "S6",
+                "S7",
+                "S9",
+                "S12",
+                "P1",
+                "P2",
+                "P4",
+                "P6",
+                "P11",
+                "P15"
+            ],
+            "defaultValue": "S2",
+            "metadata": {
+                "description": "The database service tier size"
+            }
+        }
+    },
+    "variables": {
+        "namespace": "conf",
+        "confluence": {
+            "storage": {
+                "name": "[concat(variables('namespace'), 'storage', uniqueString(resourceGroup().id))]"
+            },
+            "cluster": {
+                "name": "[concat(variables('namespace'), 'cluster')]",
+                "tier": "Standard",
+                "capacity": "[parameters('clusterSize')]",
+                "vm": {
+                    "size": "[parameters('clusterVmSize')]",
+                    "user": "[parameters('clusterSshUser')]",
+                    "pass": "[parameters('clusterSshPassword')]",
+                    "image": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "16.04-LTS",
+                        "version": "latest"
+                    },
+                    "osdisk": {
+                        "name": "[concat(variables('namespace'), 'cluster', 'disk')]",
+                        "type": "Premium_LRS",
+                        "size": "100"
+                    },
+                    "datadisk": {
+                        "type": "Premium_LRS",
+                        "caching": "ReadWrite",
+                        "size": "100"
+                    }
+                }
+            },
+            "synchronycluster": {
+                "name": "[concat(variables('namespace'), 'synchronycluster')]",
+                "tier": "Standard",
+                "capacity": "[parameters('synchronyClusterSize')]",
+                "vm": {
+                    "size": "[parameters('synchronyClusterVmSize')]",
+                    "user": "[parameters('clusterSshUser')]",
+                    "pass": "[parameters('clusterSshPassword')]",
+                    "image": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "16.04-LTS",
+                        "version": "latest"
+                    },
+                    "osdisk": {
+                        "name": "[concat(variables('namespace'), 'synchrony', 'disk')]",
+                        "type": "Standard_LRS",
+                        "size": "30"
+                    }
+                }
+            },
+            "license": "AAABHg0ODAoPeNplUNtKw0AQfe9XLPickotaKSwYk2ALuRTbeHkc14kuJJswuwmtX2+aLdTq6zkz53aVtYoVwrDAZd5ieXO39K5ZmMQ75rveYiZaVc2jVhkQJslA1hw+GqnucQ9NV+NctI29GXk5IDfUowU2QEYh5dAgt0gMBiJUBunXWSoFKo27Q4fTaVRkWfIUrcPU8gV9gpIajGwVD00NWktQlksGqHvLnAXHkKOFAiUw2XeSDqMt8k0Q3K5mW6QBaR3zh8f0zSmf3Rfn1Q9zZ+WXW/ud9807UlGVGklzxzt16Ul8gcZJ6riL47lO4F40+GdmO6MWJLsp4zkuq+0Pq1pix1mY3YWNVPjdE17sPu0yzX6CCSeVv2l+ADS1nIEwLAIUYrE66+LiEoBSjmLEkXQfICx+OWgCFBGV5jXbxAkFBPrUt2XQVCBu7lybX02ee"
+        },
+        "lookup": {
+            "dbTierToMaxConnections": {
+                "Basic": 300,
+                "S0": 600,
+                "S1": 900,
+                "S2": 1200,
+                "S3": 2400,
+                "S4": 4800,
+                "S6": 9600,
+                "S7": 19200,
+                "S9": 30000,
+                "S12": 30000,
+                "P1": 30000,
+                "P2": 30000,
+                "P4": 30000,
+                "P6": 30000,
+                "P11": 30000,
+                "P15": 30000
+            }
+        },
+        "c3p0Settings": {
+            "minConnections": "[min(300, div(coalesce(variables('lookup').dbTierToMaxConnections[parameters('dbTierSize')], 300), add(parameters('clusterSize'), parameters('synchronyClusterSize'))))]",
+            "maxConnections": "[min(300, div(coalesce(variables('lookup').dbTierToMaxConnections[parameters('dbTierSize')], 300), add(parameters('clusterSize'), parameters('synchronyClusterSize'))))]"
+        },
+        "isSslSpecified": "[not(empty(parameters('sslBase64EncodedPfxCertificate')))]",
+        "env": {
+            "storage": [
+                {
+                    "name": "STORAGE_BASE_URL",
+                    "value": "[uri(if(endsWith(parameters('_artifactsLocation'), '/'), parameters('_artifactsLocation'), concat(parameters('_artifactsLocation'), '/')), '')]"
+                },
+                {
+                    "name": "STORAGE_TOKEN",
+                    "value": "[parameters('_artifactsLocationSasToken')]"
+                },
+                {
+                    "name": "STORAGE_ACCOUNT",
+                    "value": "[variables('confluence').storage.name]"
+                }
+            ],
+            "server": [
+                {
+                    "name": "SERVER_APP_PORT",
+                    "value": "8080"
+                },
+                {
+                    "name": "SERVER_SYNCHRONY_INTERNAL_PORT",
+                    "value": "8091"
+                },
+                {
+                    "name": "SERVER_CNAME",
+                    "value": "[parameters('cname')]"
+                },
+                {
+                    "name": "SERVER_PROXY_PORT",
+                    "value": "[if(variables('isSslSpecified'), '443', '80')]"
+                },
+                {
+                    "name": "SERVER_APP_SCHEME",
+                    "value": "[if(variables('isSslSpecified'), 'https', 'http')]"
+                },
+                {
+                    "name": "SERVER_CLUSTER_NAME",
+                    "value": "confluencecluster"
+                },
+                {
+                    "name": "SERVER_CATALINA_HOME",
+                    "value": "/catalina/home/placeholder"
+                },
+                {
+                    "name": "SERVER_SECURE_FLAG",
+                    "value": "[if(variables('isSslSpecified'), 'true', 'false')]"
+                },
+                {
+                    "name": "CONFLUENCE_CLUSTER_INTERFACE_NAME",
+                    "value": "eth0"
+                },
+                {
+                    "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_HEADER_SIZE",
+                    "value": "16384"
+                },
+                {
+                    "name": "CONFLUENCE_HTTP_CONNECTOR_DISABLE_UPLOAD_TIMEOUT",
+                    "value": "true"
+                },
+                {
+                    "name": "CONFLUENCE_HTTP_CONNECTOR_CONNECTION_TIMEOUT",
+                    "value": "60000"
+                },
+                {
+                    "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_THREADS",
+                    "value": "[string(sub(variables('c3p0Settings').maxConnections, 50))]"
+                },
+                {
+                    "name": "CONFLUENCE_HTTP_CONNECTOR_MIN_THREADS",
+                    "value": "[string(sub(variables('c3p0Settings').maxConnections, 50))]"
+                },
+                {
+                    "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_ACCEPT_COUNT",
+                    "value": "10"
+                },
+                {
+                    "name": "CONFLUENCE_C3P0_MAX_SIZE",
+                    "value": "[string(variables('c3p0Settings').maxConnections)]"
+                },
+                {
+                    "name": "CONFLUENCE_C3P0_MIN_SIZE",
+                    "value": "[string(variables('c3p0Settings').minConnections)]"
+                },
+                {
+                    "name": "CONFLUENCE_PRELOAD_DARKFEATURES",
+                    "value": "site-wide.shared-drafts,site-wide.synchrony"
+                },
+                {
+                    "name": "EXTRA_CONFLUENCE_JAVA_OPTS",
+                    "value": "-Dconfluence.cluster.index.recovery.num.attempts=0 -Dsynchrony.proxy.enabled=false -Dconfluence.upgrade.recovery.file.enabled=false"
+                },
+                {
+                    "name": "CONFLUENCE_GC_OPTS",
+                    "value": "-XX:G1ReservePercent=20 -XX:+UseG1GC"
+                }
+            ],
+            "db": [
+                {
+                    "name": "DB_USER",
+                    "value": "[parameters('dbUsername')]"
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "value": "[parameters('dbPassword')]"
+                },
+                {
+                    "name": "DB_NAME",
+                    "value": "[parameters('dbDatabase')]"
+                },
+                {
+                    "name": "DB_SCHEMA",
+                    "value": "[parameters('dbSchema')]"
+                },
+                {
+                    "name": "CONFLUENCE_SQLSERVER_DATABASE_COMPATIBILITY_LEVEL",
+                    "value": "100"
+                },
+                {
+                    "name": "CONFLUENCE_SQLSERVER_DRIVER_VERSION",
+                    "value": "6.3.0.jre8-preview"
+                }
+            ],
+            "sql": [
+                {
+                    "name": "USER_NAME",
+                    "value": "[parameters('confAdminUserName')]"
+                },
+                {
+                    "name": "USER_NAME_LOWERCASE",
+                    "value": "[toLower(parameters('confAdminUserName'))]"
+                },
+                {
+                    "name": "USER_FULLNAME",
+                    "value": "[parameters('confAdminUserFullname')]"
+                },
+                {
+                    "name": "USER_FULLNAME_LOWERCASE",
+                    "value": "[toLower(parameters('confAdminUserFullname'))]"
+                },
+                {
+                    "name": "USER_EMAIL",
+                    "value": "[parameters('confAdminUserEmail')]"
+                },
+                {
+                    "name": "USER_EMAIL_LOWERCASE",
+                    "value": "[toLower(parameters('confAdminUserEmail'))]"
+                },
+                {
+                    "name": "USER_CREDENTIAL",
+                    "value": "[parameters('confAdminUserPassword')]"
+                },
+                {
+                    "name": "CONFLUENCE_LICENSE",
+                    "value": "[variables('confluence').license]"
+                },
+                {
+                    "name": "APPLICATION_TITLE",
+                    "value": "[parameters('confAppTitle')]"
+                }
+            ],
+            "settings": [
+                {
+                    "name": "ATL_CONFLUENCE_HOME",
+                    "value": "/var/atlassian/application-data/confluence"
+                },
+                {
+                    "name": "ATL_CONFLUENCE_SHARED_HOME",
+                    "value": "/media/atl/confluence/shared"
+                },
+                {
+                    "name": "ATL_CONFLUENCE_INSTALL_DIR",
+                    "value": "/opt/atlassian/confluence"
+                },
+                {
+                    "name": "ATL_CONFLUENCE_SHARED_HOME_NAME",
+                    "value": "confluence-shared-home"
+                },
+                {
+                    "name": "ATL_CONFLUENCE_RELEASES_BASE_URL",
+                    "value": "[parameters('releaseDownloadBaseUrl')]"
+                },
+                {
+                    "name": "LATEST_CONFLUENCE_PRODUCT_VERSION_URL",
+                    "value": "[parameters('releaseVersionUrl')]"
+                },
+                {
+                    "name": "ATLASSIAN_MAVEN_REPOSITORY_URL",
+                    "value": "[parameters('atlassianMavenRepositoryUrl')]"
+                },
+                {
+                    "name": "ATL_CONFLUENCE_PRODUCT",
+                    "value": "atlassian-confluence"
+                },
+                {
+                    "name": "ATL_CONFLUENCE_VERSION",
+                    "value": "[parameters('confluenceVersion')]"
+                },
+                {
+                    "name": "ATL_CLUSTER_SIZE",
+                    "value": "[string(parameters('clusterSize'))]"
+                },
+                {
+                    "name": "ATL_SYNCHRONY_CLUSTER_SIZE",
+                    "value": "[string(parameters('synchronyClusterSize'))]"
+                },
+                {
+                    "name": "APP_GATEWAY_INTERNAL_IP",
+                    "value": "10.0.1.99"
+                },
+                {
+                    "name": "NAT_INTERNAL_IP",
+                    "value": "10.0.2.4"
+                },
+                {
+                    "name": "NAT_SYNCHRONY_INTERNAL_IP",
+                    "value": "10.0.4.4"
+                }
+            ]
+        },
+        "data": {
+            "storage": "[concat(' STORAGE_ATL_ENV_DATA=\"', base64(string(variables('env').storage)), '\" ')]",
+            "server": "[concat(' SERVER_ATL_ENV_DATA=\"', base64(string(variables('env').server)), '\" ')]",
+            "db": "[concat(' DB_ATL_ENV_DATA=\"', base64(string(variables('env').db)), '\" ')]",
+            "sql": "[concat(' SQL_ATL_ENV_DATA=\"', base64(string(variables('env').sql)), '\" ')]",
+            "settings": "[concat(' SETTINGS_ATL_ENV_DATA=\"', base64(string(variables('env').settings)), '\" ')]"
+        },
+        "scripts": {
+            "prepare": {
+                "env": "[concat(variables('data').storage, variables('data').server, variables('data').db, variables('data').sql, variables('data').settings)]"
+            }
+        },
+        "confPrepareCmd": "[concat(variables('scripts').prepare.env, ' FILE_STORE_URL_DOMAIN=\"', parameters('storageFilesEndpoint'), '\" ', './prepare_install.sh ', parameters('storageAccessKey'), ' prepare ', parameters('confBaseUrl'), ' ', parameters('confDbServerName'), ' 2>&1 > ./confluence.prepare.log')]",
+        "confInstallCmd": "[concat(variables('scripts').prepare.env, ' FILE_STORE_URL_DOMAIN=\"', parameters('storageFilesEndpoint'), '\" ', './prepare_install.sh ', parameters('storageAccessKey'), ' install ', parameters('confBaseUrl'), ' 2>&1 > ./confluence.install-$(uname -n).log')]",
+        "synchronyInstallCmd": "[concat(variables('scripts').prepare.env, ' FILE_STORE_URL_DOMAIN=\"', parameters('storageFilesEndpoint'), '\" ', './prepare_install.sh ', parameters('storageAccessKey'), ' synchrony ', parameters('confBaseUrl'), ' 2>&1 > ./synchrony.install-$(uname -n).log')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "apiVersion": "2018-06-01",
+            "name": "[concat(parameters('jumpboxName'), '/prepare-install-script')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "publisher": "Microsoft.Azure.Extensions",
+                "type": "CustomScript",
+                "typeHandlerVersion": "2.0",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "fileUris": [
+                        "[uri(parameters('_artifactsLocation'), concat('scripts/prepare_install.sh', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('scripts/hydrate_confluence_config.py', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('libs/atlassian-extras-3.2.jar', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('libs/atlassian-password-encoder-3.2.3.jar', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('libs/bcprov-jdk15on-1.50.jar', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('libs/commons-codec-1.9.jar', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('libs/commons-lang-2.6.jar', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('libs/liquibase-core-3.5.3.jar', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('libs/mssql-jdbc-6.3.0.jre8-preview.jar', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('templates/home-confluence.cfg.xml.template', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('templates/shared-confluence.cfg.xml.template', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('templates/server.xml.template', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('templates/configuredb.sql.template', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('templates/constraints.sql.template', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('templates/data.sql.template', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('templates/tables.sql.template', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('templates/index.sql.template', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('templates/install_synchrony_service.sh.template', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('templates/setenv.sh.template', parameters('_artifactsLocationSasToken')))]"
+                    ]
+                },
+                "protectedSettings": {
+                    "commandToExecute": "[variables('confPrepareCmd')]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "name": "[variables('confluence').cluster.name]",
+            "location": "[parameters('location')]",
+            "apiVersion": "2018-06-01",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/',parameters('jumpboxName'),'/extensions/prepare-install-script')]"
+            ],
+            "sku": {
+                "name": "[variables('confluence').cluster.vm.size]",
+                "tier": "[variables('confluence').cluster.tier]",
+                "capacity": "[variables('confluence').cluster.capacity]"
+            },
+            "properties": {
+                "overprovision": false,
+                "singlePlacementGroup": false,
+                "upgradePolicy": {
+                    "mode": "Manual"
+                },
+                "virtualMachineProfile": {
+                    "osProfile": {
+                        "computerNamePrefix": "confluencenode-",
+                        "adminUsername": "[variables('confluence').cluster.vm.user]",
+                        "adminPassword": "[variables('confluence').cluster.vm.pass]",
+                        "linuxConfiguration": {
+                            "disablePasswordAuthentication": false
+                        }
+                    },
+                    "storageProfile": {
+                        "imageReference": {
+                            "publisher": "[variables('confluence').cluster.vm.image.publisher]",
+                            "offer": "[variables('confluence').cluster.vm.image.offer]",
+                            "sku": "[variables('confluence').cluster.vm.image.sku]",
+                            "version": "[variables('confluence').cluster.vm.image.version]"
+                        },
+                        "osDisk": {
+                            "managedDisk": {
+                                "storageAccountType": "[variables('confluence').cluster.vm.osdisk.type]"
+                            },
+                            "diskSizeGB": "[variables('confluence').cluster.vm.osdisk.size]",
+                            "createOption": "FromImage"
+                        },
+                        "copy": [
+                            {
+                                "name": "dataDisks",
+                                "count": 7,
+                                "input": {
+                                    "lun": "[copyIndex('dataDisks')]",
+                                    "caching": "[variables('confluence').cluster.vm.datadisk.caching]",
+                                    "createOption": "Empty",
+                                    "diskSizeGB": "[variables('confluence').cluster.vm.datadisk.size]",
+                                    "managedDisk": {
+                                        "storageAccountType": "[variables('confluence').cluster.vm.datadisk.type]"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "networkProfile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "[concat(variables('namespace'), 'scaleset-nic')]",
+                                "properties": {
+                                    "primary": true,
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "[concat(variables('namespace'), 'scalset-ipconfig')]",
+                                            "properties": {
+                                                "subnet": {
+                                                    "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('appSubnetName'))]"
+                                                },
+                                                "ApplicationGatewayBackendAddressPools": [
+                                                    {
+                                                        "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', parameters('gtwyName'), parameters('gtwyAddressPoolName'))]"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    "extensionProfile": {
+                        "extensions": [
+                            {
+                                "name": "confluence-install-script",
+                                "properties": {
+                                    "publisher": "Microsoft.Azure.Extensions",
+                                    "type": "CustomScript",
+                                    "typeHandlerVersion": "2.0",
+                                    "autoUpgradeMinorVersion": true,
+                                    "settings": {
+                                        "fileUris": [
+                                            "[uri(parameters('_artifactsLocation'), concat('scripts/prepare_install.sh', parameters('_artifactsLocationSasToken')))]",
+                                            "[uri(parameters('_artifactsLocation'), concat('scripts/vm-disk-utils-0.1.sh', parameters('_artifactsLocationSasToken')))]",
+                                            "[uri(parameters('_artifactsLocation'), concat('scripts/hydrate_confluence_config.py', parameters('_artifactsLocationSasToken')))]"
+                                        ]
+                                    },
+                                    "protectedSettings": {
+                                        "commandToExecute": "[variables('confInstallCmd')]"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "name": "[variables('confluence').synchronycluster.name]",
+            "location": "[parameters('location')]",
+            "apiVersion": "2018-06-01",
+            "sku": {
+                "name": "[variables('confluence').synchronycluster.vm.size]",
+                "tier": "[variables('confluence').synchronycluster.tier]",
+                "capacity": "[variables('confluence').synchronycluster.capacity]"
+            },
+            "properties": {
+                "overprovision": false,
+                "singlePlacementGroup": false,
+                "upgradePolicy": {
+                    "mode": "Manual"
+                },
+                "virtualMachineProfile": {
+                    "osProfile": {
+                        "computerNamePrefix": "synchronynode-",
+                        "adminUsername": "[variables('confluence').synchronycluster.vm.user]",
+                        "adminPassword": "[variables('confluence').synchronycluster.vm.pass]",
+                        "linuxConfiguration": {
+                            "disablePasswordAuthentication": false
+                        }
+                    },
+                    "storageProfile": {
+                        "imageReference": {
+                            "publisher": "[variables('confluence').synchronycluster.vm.image.publisher]",
+                            "offer": "[variables('confluence').synchronycluster.vm.image.offer]",
+                            "sku": "[variables('confluence').synchronycluster.vm.image.sku]",
+                            "version": "[variables('confluence').synchronycluster.vm.image.version]"
+                        },
+                        "osDisk": {
+                            "managedDisk": {
+                                "storageAccountType": "[variables('confluence').synchronycluster.vm.osdisk.type]"
+                            },
+                            "diskSizeGB": "[variables('confluence').synchronycluster.vm.osdisk.size]",
+                            "createOption": "FromImage"
+                        }
+                    },
+                    "networkProfile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "[concat(variables('namespace'), 'synch-scaleset-nic')]",
+                                "properties": {
+                                    "primary": true,
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "[concat(variables('namespace'), 'sync-scalset-ipconfig')]",
+                                            "properties": {
+                                                "subnet": {
+                                                    "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('sychronySubnetName'))]"
+                                                },
+                                                "ApplicationGatewayBackendAddressPools": [
+                                                    {
+                                                        "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', parameters('gtwyName'), parameters('gtwySynchronyAddressPoolName'))]"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    "extensionProfile": {
+                        "extensions": [
+                            {
+                                "name": "synchrony-install-script",
+                                "properties": {
+                                    "publisher": "Microsoft.Azure.Extensions",
+                                    "type": "CustomScript",
+                                    "typeHandlerVersion": "2.0",
+                                    "autoUpgradeMinorVersion": true,
+                                    "settings": {
+                                        "fileUris": [
+                                            "[uri(parameters('_artifactsLocation'), concat('scripts/prepare_install.sh', parameters('_artifactsLocationSasToken')))]",
+                                            "[uri(parameters('_artifactsLocation'), concat('scripts/vm-disk-utils-0.1.sh', parameters('_artifactsLocationSasToken')))]",
+                                            "[uri(parameters('_artifactsLocation'), concat('scripts/hydrate_confluence_config.py', parameters('_artifactsLocationSasToken')))]"
+                                        ]
+                                    },
+                                    "protectedSettings": {
+                                        "commandToExecute": "[variables('synchronyInstallCmd')]"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "clusterName": {
+            "type": "string",
+            "value": "[variables('confluence').cluster.name]"
+        },
+        "prepareCmdArgs": {
+            "type": "string",
+            "value": "[variables('confPrepareCmd')]"
+        },
+        "installConfCmdArgs": {
+            "type": "string",
+            "value": "[variables('confInstallCmd')]"
+        },
+        "installSynchronyCmdArgs": {
+            "type": "string",
+            "value": "[variables('synchronyInstallCmd')]"
+        }
+    }
+}

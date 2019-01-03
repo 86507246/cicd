@@ -29,24 +29,6 @@ function error {
   exit 3
 }
 
-function enable_nat {
-  atl_log enable_nat "Enabling NAT"
-  sysctl -w net.ipv4.ip_forward=1 >> /etc/sysctl.conf
-
-  iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-
-  iptables -t nat -A PREROUTING -p tcp -i eth0 --dport 80 -j DNAT --to-destination ${APP_GATEWAY_INTERNAL_IP}
-  iptables -A FORWARD -i eth0 -p tcp -d ${APP_GATEWAY_INTERNAL_IP} --dport 80 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
-
-  iptables -A FORWARD -i eth1 -o eth0 -j ACCEPT
-  iptables -A FORWARD -i eth2 -o eth0 -j ACCEPT
-
-  atl_log enable_nat "Persisting iptables rules"
-
-  iptables-save > /etc/iptables.conf
-  echo "iptables-restore -n < /etc/iptables.conf" >> /etc/rc.local
-}
-
 function enable_rc_local {
   atl_log enable_rc_local "Enabling rc.local execution on system startup"
   systemd enable rc-local.service
@@ -922,7 +904,6 @@ function prepare_datadisks {
 function prepare_install {
   enable_rc_local
   tune_tcp_keepalive_for_azure
-  enable_nat
   prepare_share
   download_installer
   preserve_installer
