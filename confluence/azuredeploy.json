@@ -103,28 +103,6 @@
                 "description": "The size of the virtual machine used for each Confluence node. The virtual machine must have capacity for 8 or more premium LRS data disks."
             }
         },
-        "synchronyClusterVmSize": {
-            "type": "string",
-            "defaultValue": "Standard_DS3_v2",
-            "metadata": {
-                "description": "The size of the virtual machine used for each Synchrony node. Ignored if 'synchronyVmOption' is set to 'auto'."
-            }
-        },
-        "synchronyClusterSize": {
-            "type": "int",
-            "allowedValues": [
-                1,
-                2,
-                3,
-                4,
-                5,
-                6
-            ],
-            "defaultValue": 2,
-            "metadata": {
-                "description": "The number of Synchrony nodes in the cluster. Maximum is 6 nodes. Ignored if 'synchronyVmOption' is set to 'auto'."
-            }
-        },
         "appGtwyClusterSize": {
             "type": "int",
             "allowedValues": [
@@ -173,7 +151,7 @@
             "type": "string",
             "defaultValue": "confluenceadmin",
             "metadata": {
-                "description": "The username used to SSH into each Confluence node from the jumpbox. This name must not be 'confluence', or 'synchrony'."
+                "description": "The username used to SSH into each Confluence node from the jumpbox. This name must not be 'confluence'."
             }
         },
         "nodeSshPassword": {
@@ -305,14 +283,6 @@
                 "description": "The site title for Confluence."
             }
         },
-        "sslBase64EncodedPfxCertificate": {
-            "type": "string",
-            "defaultValue": ""
-        },
-        "sslPfxCertificatePassword": {
-            "type": "securestring",
-            "defaultValue": ""
-        },
         "enableEmailAlerts": {
             "type": "bool",
             "defaultValue": true
@@ -338,19 +308,13 @@
             "metadata": {
                 "description": "URL for obtaining the latest confluence artifact version."
             }
-        },
-        "atlassianMavenRepositoryUrl" : {
-            "type" : "string",
-            "defaultValue": "https://packages.atlassian.com/maven/repository/public/",
-            "metadata" : {
-                "description" : "The url to the Atlassian public Maven repository. Customize this if you wish to download artifacts from your own repository (must be publically accessible)."
-            }
         }
     },
     "variables": {
         "namespace": "conf",
         "vpcTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-vpc.json', parameters('_artifactsLocationSasToken')))]",
         "confTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-confluence.json', parameters('_artifactsLocationSasToken')))]",
+        "domainTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-domain.json', parameters('_artifactsLocationSasToken')))]",
         "dbServerName": "[concat(variables('namespace'), if(equals(parameters('dbType'),'Azure SQL DB'),'sqlserver','postgres'), uniqueString(resourceGroup().id))]",
         "lookup": {
             "dbTierToMaxConnections" : {
@@ -455,12 +419,6 @@
                     "clusterVmSize": {
                         "value": "[parameters('clusterVmSize')]"
                     },
-                    "synchronyClusterSize": {
-                        "value": "[parameters('synchronyClusterSize')]"
-                    },
-                    "synchronyClusterVmSize": {
-                        "value": "[parameters('synchronyClusterVmSize')]"
-                    },
                     "appGtwyClusterSize": {
                         "value": "[parameters('appGtwyClusterSize')]"
                     },
@@ -509,14 +467,20 @@
                     "userCredential": {
                         "value": "[parameters('userCredential')]"
                     },
+                    "userFullname": {
+                        "value": "[parameters('userFullname')]"
+                    },
+                    "userEmail": {
+                        "value": "[parameters('userEmail')]"
+                    },
+                    "applicationTitle": {
+                        "value": "[parameters('applicationTitle')]"
+                    },
                     "vnetName": {
                         "value": "[reference('vpcTemplate').outputs.vnetName.value]"
                     },
                     "appSubnetName": {
                         "value": "[reference('vpcTemplate').outputs.appSubnetName.value]"
-                    },
-                    "sychronySubnetName": {
-                        "value": "[reference('vpcTemplate').outputs.synchronySubnetName.value]"
                     },
                     "gtwySubnetName": {
                         "value": "[reference('vpcTemplate').outputs.gtwySubnetName.value]"
@@ -534,7 +498,7 @@
                         "value": "[parameters('sslPfxCertificatePassword')]"
                     },
                     "cname": {
-                        "value": "[if(greater(length(parameters('cname')), 0), concat('confluence', parameters('cname')), parameters('cname'))]"
+                        "value": "[if(greater(length(parameters('cname')), 0), concat('confluence.', parameters('cname')), parameters('cname'))]"
                     },
                     "enableApplicationInsights": {
                         "value": "[parameters('enableApplicationInsights')]"
@@ -547,6 +511,33 @@
                     },
                     "releaseVersionUrl": {
                         "value": "[parameters('releaseVersionUrl')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2015-01-01",
+            "name": "domainTemplate",
+            "dependsOn": [
+                "confluenceTemplate"
+            ],
+            "condition": "[greater(length(parameters('cname')), 0)]",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('domainTemplateUri')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "cname": {
+                        "value": "[parameters('cname')]"
+                    },
+                    "gtwyIpName": {
+                        "value": "[reference('confluenceTemplate').outputs.gtwyIpName.value]"
+                    },
+                    "prefix": {
+                        "value": "confluence"
                     }
                 }
             }

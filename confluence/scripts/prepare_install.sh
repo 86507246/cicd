@@ -340,9 +340,9 @@ function copy_artefacts {
   done
 
   rsync -av ${exclude_rules} * ${ATL_CONFLUENCE_SHARED_HOME}
-  log "cleaning up old node.id files..."
-  rm -rfv ${ATL_CONFLUENCE_SHARED_HOME}/node.id.*
-  rm -rfv ${ATL_CONFLUENCE_SHARED_HOME}/synchrony.id.*
+  #log "cleaning up old node.id files..."
+  #rm -rfv ${ATL_CONFLUENCE_SHARED_HOME}/node.id.*
+  #rm -rfv ${ATL_CONFLUENCE_SHARED_HOME}/synchrony.id.*
 }
 
 function hydrate_db_dump {
@@ -460,8 +460,6 @@ function prepare_env {
   export SERVER_AZURE_DOMAIN="${2}"
   export DB_SERVER_NAME="${3}"
   export SERVER_PROXY_NAME="${SERVER_CNAME:-${SERVER_AZURE_DOMAIN}}"
-  export SYNCHRONY_CONTEXT_PATH="/synchrony"
-  export SYNCHRONY_SERVICE_URL="${SERVER_APP_SCHEME}://${SERVER_PROXY_NAME}${SYNCHRONY_CONTEXT_PATH}"
 }
 
 function prepare_varfile {
@@ -608,7 +606,7 @@ function get_unique_id {
 }
 
 function configure_cluster {
-  local _all_possible_cluster_ips=`for n in {5..30}  ; do echo "10.0.2.${n}" ; done | tr '\n' ' ' | sed 's/ $//'`
+  local _all_possible_cluster_ips=`for n in {4..30}  ; do echo "10.0.2.${n}" ; done | tr '\n' ' ' | sed 's/ $//'`
   local _all_possible_nodes_ips=`echo "${_all_possible_cluster_ips}"`
   log "Checking all possible ips for existing nodes: ${_all_possible_nodes_ips}"
   declare -a _all_active_ips=($(for ip in ${_all_possible_cluster_ips}; do [[ `curl -o /dev/null -w "%{http_code}" --connect-timeout 1 --silent "http://${ip}:8080/status"` == 200 ]] && echo "${ip}" ; done))
@@ -624,6 +622,7 @@ function configure_cluster {
   local unique_node_id=`get_unique_id`
   echo ${node_ip} > ${ATL_CONFLUENCE_SHARED_HOME}/node.id.${unique_node_id}
   declare -a nodes=(${ATL_CONFLUENCE_SHARED_HOME}/node.id.*)
+  
   ## block until all nodes come up
   while [ ${#nodes[@]} != ${expected_node_count} ];
   do
@@ -638,6 +637,7 @@ function configure_cluster {
   ## found all nodes, export the peers' ip as an env variable for interpolation into the config *.xml files
   export CONFLUENCE_CLUSTER_PEERS=`cat ${ATL_CONFLUENCE_SHARED_HOME}/node.id.* | tr '\n' ',' | sed 's/,$//'`
   log "found all node ips: ${CONFLUENCE_CLUSTER_PEERS}"
+
   ## hydrate cluster configuration xml with the peer ips for hazelcast
   local template_files=(${ATL_CONFLUENCE_SHARED_HOME}/home-confluence.cfg.xml ${ATL_CONFLUENCE_SHARED_HOME}/shared-confluence.cfg.xml)
   local template_destination=(${ATL_CONFLUENCE_HOME}/confluence.cfg.xml       ${ATL_CONFLUENCE_SHARED_HOME}/confluence.cfg.xml)
@@ -658,12 +658,12 @@ function configure_cluster {
   local top_node_ip=$(cat ${top_node})
   while [ "${top_node_ip}" != "${node_ip}" ] ;
   do
-    log "Node ${top_node} (${top_node_ip}) is being started up...waiting until it has finished..."
-    log "Sleeping for ${wait_time} seconds"
-    sleep ${wait_time}
-    nodes=(${ATL_CONFLUENCE_SHARED_HOME}/node.id.*)
-    top_node=`echo ${nodes[@]} | tr ' ' '\n'  | sort | head -n1`
-    top_node_ip=$(cat ${top_node})
+   log "Node ${top_node} (${top_node_ip}) is being started up...waiting until it has finished..."
+   log "Sleeping for ${wait_time} seconds"
+   sleep ${wait_time}
+   nodes=(${ATL_CONFLUENCE_SHARED_HOME}/node.id.*)
+   top_node=`echo ${nodes[@]} | tr ' ' '\n'  | sort | head -n1`
+   top_node_ip=$(cat ${top_node})
   done
   log "Node ${top_node} (${top_node_ip}) ready to be started..."
 }
@@ -678,12 +678,6 @@ function configure_confluence_ram {
   log "Using ${CONFLUENCE_MEMORY_MAX} as java memory opts"
 }
 
-function configure_synchrony_service_url {
-  log "setting up synchrony service URL"
-  export SYNCHRONY_SERVICE_URL_OPTS="-Dsynchrony.service.url=${SYNCHRONY_SERVICE_URL}/v1 "
-  log "setting up synchrony service URL Completed : ${SYNCHRONY_SERVICE_URL_OPTS}"
-}
-
 function configure_confluence {
   local confluence_configs=(${ATL_CONFLUENCE_SHARED_HOME}/setenv.sh          ${ATL_CONFLUENCE_SHARED_HOME}/server.xml)
   local confluence_configs_dest=(${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh ${ATL_CONFLUENCE_INSTALL_DIR}/conf/server.xml)
@@ -691,7 +685,6 @@ function configure_confluence {
   ls -la ${ATL_CONFLUENCE_SHARED_HOME}
   log "Ready to configure CONFLUENCE startup env config files at ${confluence_configs_dest[@]}"
   configure_confluence_ram
-  configure_synchrony_service_url
   for config_file_idx in ${!confluence_configs[@]};
   do
     local template_file=${confluence_configs[$config_file_idx]}
@@ -710,158 +703,6 @@ function configure_confluence {
   log "Done configuring cluster!"
   chown -R confluence:confluence "/datadisks/disk1"
   chown -R confluence:confluence "${ATL_CONFLUENCE_HOME}"
-}
-
-function install_synchrony_service {
-  apt-get -qqy install xmlstarlet
-  local synchrony_package_jar="${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/packages/synchrony-standalone.jar"
-  log "Setting up synchrony from ${synchrony_package_jar}"
-  local confluence_home_dir="${ATL_CONFLUENCE_HOME}"
-  local confluence_install_dir="${ATL_CONFLUENCE_INSTALL_DIR}"
-  local tomcat_webapp_lib_dir="${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/lib"
-
-  log "using confluence home : [$confluence_home_dir]"
-
-  local dbdriver_classpath=""
-  log "using tomcat webapp lib dir: [${tomcat_webapp_lib_dir}]"
-  for bundled_drivers in ${tomcat_webapp_lib_dir}/{postgresql-*.jar,mssql-jdbc-*.jar}
-  do
-     if [[ -f ${bundled_drivers} ]]; then
-         log "found bundled driver [${bundled_drivers}]"
-         dbdriver_classpath="${bundled_drivers}:${dbdriver_classpath}"
-     fi
-  done
-  log "using classpath: [${dbdriver_classpath}]"
-
-  local synchrony_file=${synchrony_package_jar}
-  if [[ ! -f ${synchrony_file} ]]; then
-     error "Failed to find file [${synchrony_file}]. Ensure that installation of confluence has been completed."
-  fi
-  log "using synchrony file: [${synchrony_file}]"
-
-  local java_bin="${ATL_CONFLUENCE_INSTALL_DIR}/jre/bin/java"
-  if [[ ! -f ${java_bin} ]]; then
-     error "Failed to find java at [${java_bin}]. Ensure that installation of confluence has been completed"
-  fi
-  log "using java at [${java_bin}]"
-
-  local confluence_cfg_xml_file="${ATL_CONFLUENCE_SHARED_HOME}/home-confluence.cfg.xml"
-  if [[ ! -f ${confluence_cfg_xml_file} ]]; then
-     error "Failed to find [${confluence_cfg_xml_file}]. Ensure that the NAT node has completed preparation first."
-  fi
-  log "using configuration file: [${confluence_cfg_xml_file}]"
-
-  local jwt_private_key=$(xmlstarlet sel -t -v  '/confluence-configuration/properties/property[@name="jwt.private.key"]/text()' ${confluence_cfg_xml_file})
-  log "using jwt_private_key : [${jwt_private_key}]"
-  local jwt_public_key=$(xmlstarlet sel -t -v '/confluence-configuration/properties/property[@name="jwt.public.key"]/text()' ${confluence_cfg_xml_file})
-  log "using jwt_public_key : [${jwt_public_key}]"
-  local hibernate_connection_password=$(xmlstarlet sel -t -v '/confluence-configuration/properties/property[@name="hibernate.connection.password"]/text()' ${confluence_cfg_xml_file})
-  log "using hibernate_connection_password : [${hibernate_connection_password}]"
-  local hibernate_connection_username=$(xmlstarlet sel -t -v '/confluence-configuration/properties/property[@name="hibernate.connection.username"]/text()' ${confluence_cfg_xml_file})
-  log "using hibernate_connection_username : [${hibernate_connection_username}]"
-  local hibernate_connection_url=$(xmlstarlet sel -t -v '/confluence-configuration/properties/property[@name="hibernate.connection.url"]/text()' ${confluence_cfg_xml_file})
-  log "using hibernate_connection_url : [${hibernate_connection_url}]"
-  log "using SYNCHRONY_SERVICE_URL : [${SYNCHRONY_SERVICE_URL}]"
-  local synchrony_port=${SERVER_SYNCHRONY_INTERNAL_PORT}
-  local cluster_listen_port=5700
-  local cluster_base_port=25500
-  log "using synchrony port : [synchrony_port=${synchrony_port},cluster_listen_port=${cluster_listen_port},cluster_base_port=${cluster_base_port}]"
-  local synchrony_mem="`get_confluence_ram`m"
-  local synchrony_unique_node_id=`get_unique_id`
-  local wait_time=$((${ATL_SYNCHRONY_CLUSTER_SIZE:-0} * 20))
-
-  local _all_possible_cluster_ips=`for n in {5..30}  ; do echo "10.0.4.${n}" ; done | tr '\n' ' ' | sed 's/ $//'`
-  local _all_possible_nodes_ips=`echo "${_all_possible_cluster_ips}"`
-  log "Checking all possible ips for existing nodes: ${_all_possible_nodes_ips}"
-  declare -a _all_active_ips=($(for ip in ${_all_possible_cluster_ips}; do [[ `curl -o /dev/null -w "%{http_code}" --connect-timeout 1 --silent "http://${ip}:${SERVER_SYNCHRONY_INTERNAL_PORT}/synchrony/heartbeat"` == 200 ]] && echo "${ip}" ; done))
-  log "Found the following active nodes: [${_all_active_ips[@]}]"
-  local expected_node_count=$((${ATL_SYNCHRONY_CLUSTER_SIZE:-0} - ${!_all_active_ips[@]:-0}))
-  if [ ${expected_node_count} -le 0 ] ; then
-    error "error more nodes are running than expected! expected_node_count=${expected_node_count} vs ATL_SYNCHRONY_CLUSTER_SIZE=${ATL_SYNCHRONY_CLUSTER_SIZE} : ${_all_active_ips[@]}"
-  else
-    log "Expecting ${expected_node_count} more nodes to startup."
-  fi
-  local node_ip=`get_node_ip`
-  echo ${node_ip} > ${ATL_CONFLUENCE_SHARED_HOME}/synchrony.id.${synchrony_unique_node_id}
-  declare -a nodes=(${ATL_CONFLUENCE_SHARED_HOME}/synchrony.id.*)
-  local wait_time=$((${expected_node_count} * 20))
-  ## block until all nodes come up
-  while [ ${#nodes[@]} != ${expected_node_count} ];
-  do
-    log "found ${#nodes[@]} nodes"
-    for n in ${nodes[@]} ; do
-      log "node $n: `cat $n`"
-    done
-    log "expecting ${expected_node_count} nodes. Waiting ${wait_time} seconds for other nodes to come up..."
-    sleep ${wait_time}
-    nodes=(${ATL_CONFLUENCE_SHARED_HOME}/synchrony.id.*)
-  done
-
-  local cluster_members_ips=`cat ${ATL_CONFLUENCE_SHARED_HOME}/synchrony.id.* | tr '\n' ',' | sed 's/,$//'`
-
-  local log4j_configuration_file=""
-  if [[ -f ${ATL_CONFLUENCE_SHARED_HOME}/synchrony.log4j.properties ]] ; then
-    log4j_configuration_file="-Dlog4j.configurationFile=${ATL_CONFLUENCE_SHARED_HOME}/synchrony.log4j.properties"
-  fi
-
-  local synchrony_cmd="${java_bin} \
-  -classpath "${dbdriver_classpath}:${synchrony_file}" \
-  -Xss2048k \
-  -Xmx${synchrony_mem} \
-  -Dsynchrony.port=${synchrony_port} \
-  -Dsynchrony.cluster.impl=hazelcast-btf \
-  -Dcluster.listen.port=${cluster_listen_port} \
-  -Dcluster.join.type=tcpip \
-  -Dcluster.join.tcpip.members=${cluster_members_ips} \
-  -Dsynchrony.cluster.base.port=${cluster_base_port} \
-  -Dsynchrony.cluster.bind=${node_ip} \
-  -Dsynchrony.bind=0.0.0.0 \
-  -Dcluster.interfaces=${node_ip} \
-  -Dsynchrony.context.path=${SYNCHRONY_CONTEXT_PATH} \
-  -Djwt.public.key=\"${jwt_public_key}\" \
-  -Dsynchrony.database.username=\"${hibernate_connection_username}\" \
-  -Dsynchrony.database.url=\"${hibernate_connection_url}\" \
-  -Dsynchrony.service.url=\"${SYNCHRONY_SERVICE_URL},http://${node_ip}:${synchrony_port}${SYNCHRONY_CONTEXT_PATH}\" \
-  -Dip.whitelist=${node_ip},127.0.0.1,localhost \
-  -Dc3p0.maxPoolSize=${CONFLUENCE_C3P0_MAX_SIZE} \
-  ${log4j_configuration_file} \
-  synchrony.core \
-  sql"
-
-  log "using synchrony_cmd : [${synchrony_cmd}]"
-  cat <<EOT > ${confluence_install_dir}/bin/start-synchrony.sh
-if [ -f ${confluence_home_dir}/synchrony.pid ] ; then
-  kill -9 \$(cat ${confluence_home_dir}/synchrony.pid)
-fi
-rm -rvf ${confluence_home_dir}/synchrony.pid
-mkdir -p ${confluence_home_dir}/logs
-cd ${confluence_home_dir}/logs
-SYNCHRONY_DATABASE_PASSWORD="${hibernate_connection_password}" JWT_PRIVATE_KEY="${jwt_private_key}" ${synchrony_cmd} >>/dev/null 2>&1 &
-synchrony_pid=\$!
-echo "\${synchrony_pid}" > ${confluence_home_dir}/synchrony.pid
-echo "started synchrony with pid \${synchrony_pid}"
-echo "============================================"
-echo "${confluence_home_dir}/logs/atlassian-synchrony.log "
-echo "============================================"
-tail -n 200 ${confluence_home_dir}/logs/atlassian-synchrony.log
-EOT
-  cat <<EOT > ${confluence_install_dir}/bin/stop-synchrony.sh
-if [ -f ${confluence_home_dir}/synchrony.pid ] ; then
-  synchrony_pid=\$(cat ${confluence_home_dir}/synchrony.pid)
-  echo "killing synchrony with pid \${synchrony_pid}"
-  kill -9 \${synchrony_pid}
-else
-  echo "${confluence_home_dir}/synchrony.pid not found"
-fi
-EOT
-  chmod +x ${confluence_install_dir}/bin/start-synchrony.sh
-  chmod +x ${confluence_install_dir}/bin/stop-synchrony.sh
-  cp -v ${ATL_CONFLUENCE_SHARED_HOME}/install_synchrony_service.sh ${confluence_install_dir}/bin/install_synchrony_service.sh
-  chmod +x ${confluence_install_dir}/bin/install_synchrony_service.sh
-  chown -R confluence:confluence "${confluence_install_dir}"
-  ${confluence_install_dir}/bin/install_synchrony_service.sh
-  ${confluence_install_dir}/bin/install_linux_service.sh -u >/dev/null 2>&1
-  log "Synchrony service installed"
 }
 
 function wait_until_startup_complete {
@@ -901,6 +742,13 @@ function prepare_datadisks {
   atl_log prepare_datadisks "Done preparing and configuring data disks"
 }
 
+function set_shared_home_permissions {
+  atl_log set_shared_home_permissions "Setting permissions for SSH user ${SERVER_SSH_USER} to access logs etc on shared home ${ATL_JIRA_HOME}"
+  usermod -a -G confluence ${SERVER_SSH_USER}
+  chmod -R 774 ${ATL_CONFLUENCE_HOME}
+  chmod -R 774 ${ATL_CONFLUENCE_INSTALL_DIR}
+}
+
 function prepare_install {
   enable_rc_local
   tune_tcp_keepalive_for_azure
@@ -932,21 +780,10 @@ function install_confluence {
   log "Done installing CONFLUENCE! Starting..."
   env -i /etc/init.d/confluence start
   wait_until_startup_complete
+  set_shared_home_permissions
+  copy_artefacts
 }
 
-function install_synchrony {
-  tune_tcp_keepalive_for_azure
-  log "Ready to install Synchrony"
-  mount_share
-  prepare_varfile
-  prepare_installer
-  prepare_fontconfig
-  perform_install
-  install_synchrony_service
-  remount_share
-  log "Done installing Synchrony! Starting..."
-  env -i /etc/init.d/synchrony start
-}
 
 install_jq
 #$1 is the storage key, $3 is the fqdn of the ip address, $4 is the fqdn of the database server
@@ -958,10 +795,6 @@ fi
 
 if [ "$2" == "install" ]; then
   install_confluence
-fi
-
-if [ "$2" == "synchrony" ]; then
-  install_synchrony
 fi
 
 if [ "$2" == "uninstall" ]; then

@@ -83,28 +83,6 @@
                 "description": "The size of the virtual machine used for each Confluence node. The virtual machine must have capacity for 8 or more premium LRS data disks."
             }
         },
-        "synchronyClusterSize": {
-            "type": "int",
-            "allowedValues": [
-                1,
-                2,
-                3,
-                4,
-                5,
-                6
-            ],
-            "defaultValue": 2,
-            "metadata": {
-                "description": "The number of Synchrony nodes in the cluster. Maximum is 6 nodes. Ignored if 'synchronyVmOption' is set to 'auto'."
-            }
-        },
-        "synchronyClusterVmSize": {
-            "type": "string",
-            "defaultValue": "Standard_DS3_v2",
-            "metadata": {
-                "description": "The size of the virtual machine used for each Synchrony node. Ignored if 'synchronyVmOption' is set to 'auto'."
-            }
-        },
         "jumpboxSshUser": {
             "type": "string",
             "defaultValue": "confluenceadmin",
@@ -116,7 +94,7 @@
             "type": "string",
             "defaultValue": "confluenceadmin",
             "metadata": {
-                "description": "The username used to SSH into each Confluence node from the jumpbox. This name must not be 'confluence', or 'synchrony'."
+                "description": "The username used to SSH into each Confluence node from the jumpbox. This name must not be 'confluence'"
             }
         },
         "nodeSshPassword": {
@@ -290,9 +268,6 @@
         "appSubnetName": {
             "type": "string"
         },
-        "sychronySubnetName": {
-            "type": "string"
-        },
         "gtwySubnetName": {
             "type": "string"
         },
@@ -351,7 +326,6 @@
         "gtwyIpName": "[concat(variables('namespace'), '-appgtwyip-', uniqueString(resourceGroup().id))]",
         "gtwyName": "[if(empty(parameters('sslBase64EncodedPfxCertificate')), concat(variables('namespace'), 'appgateway'), concat(variables('namespace'), 'appgateway-https'))]",
         "gtwyAddressPoolName": "[concat(variables('namespace'), 'appgwaddrpool')]",
-        "gtwySynchronyAddressPoolName": "[concat(variables('namespace'), 'synchronyappgwaddrpool')]",
         "dbTemplateUri": "[uri(parameters('_artifactsLocation'), concat(if(equals(parameters('dbType'),'sqlserver'),'nestedtemplates/azuredeploy-db-mssql.json','nestedtemplates/azuredeploy-db-postgres.json'), parameters('_artifactsLocationSasToken')))]",
         "appGtwyTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-confluence-gtwy.json', parameters('_artifactsLocationSasToken')))]",
         "vmssTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-confluence-vmss.json', parameters('_artifactsLocationSasToken')))]",
@@ -539,9 +513,6 @@
                     "gtwyAddressPoolName": {
                         "value": "[variables('gtwyAddressPoolName')]"
                     },
-                    "gtwySynchronyAddressPoolName": {
-                        "value": "[variables('gtwySynchronyAddressPoolName')]"
-                    },
                     "appGtwyClusterSize": {
                         "value": "[parameters('appGtwyClusterSize')]"
                     },
@@ -599,12 +570,6 @@
                     "clusterVmSize": {
                         "value": "[parameters('clusterVmSize')]"
                     },
-                    "synchronyClusterSize": {
-                        "value": "[parameters('synchronyClusterSize')]"
-                    },
-                    "synchronyClusterVmSize": {
-                        "value": "[parameters('synchronyClusterVmSize')]"
-                    },
                     "clusterSshUser": {
                         "value": "[parameters('nodeSshUser')]"
                     },
@@ -656,9 +621,6 @@
                     "appSubnetName": {
                         "value": "[parameters('appSubnetName')]"
                     },
-                    "sychronySubnetName": {
-                        "value": "[parameters('sychronySubnetName')]"
-                    },
                     "jumpboxName": {
                         "value": "[parameters('jumpboxName')]"
                     },
@@ -673,9 +635,6 @@
                     },
                     "gtwyAddressPoolName": {
                         "value": "[variables('gtwyAddressPoolName')]"
-                    },
-                    "gtwySynchronyAddressPoolName": {
-                        "value": "[variables('gtwySynchronyAddressPoolName')]"
                     },
                     "confBaseUrl": {
                         "value": "[if(not(empty(parameters('cname'))), parameters('cname'), reference(variables('gtwyIpName')).dnsSettings.fqdn)]"

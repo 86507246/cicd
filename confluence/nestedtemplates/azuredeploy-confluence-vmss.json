@@ -33,20 +33,6 @@
                 "description": "The size of the virtual machine used for each Confluence node."
             }
         },
-        "synchronyClusterSize": {
-            "type": "int",
-            "defaultValue": 2,
-            "metadata": {
-                "description": "The number of Confluence nodes in the cluster"
-            }
-        },
-        "synchronyClusterVmSize": {
-            "type": "string",
-            "defaultValue": "Standard_DS3_v2",
-            "metadata": {
-                "description": "The size of the virtual machine used for each Confluence node."
-            }
-        },
         "clusterSshUser": {
             "type": "string",
             "defaultValue": "confadmin",
@@ -142,9 +128,6 @@
         "appSubnetName": {
             "type": "string"
         },
-        "sychronySubnetName": {
-            "type": "string"
-        },
         "jumpboxName": {
             "type": "string"
         },
@@ -160,9 +143,6 @@
             "type": "string"
         },
         "gtwyAddressPoolName": {
-            "type": "string"
-        },
-        "gtwySynchronyAddressPoolName": {
             "type": "string"
         },
         "confBaseUrl": {
@@ -278,27 +258,6 @@
                     }
                 }
             },
-            "synchronycluster": {
-                "name": "[concat(variables('namespace'), 'synchronycluster')]",
-                "tier": "Standard",
-                "capacity": "[parameters('synchronyClusterSize')]",
-                "vm": {
-                    "size": "[parameters('synchronyClusterVmSize')]",
-                    "user": "[parameters('clusterSshUser')]",
-                    "pass": "[parameters('clusterSshPassword')]",
-                    "image": {
-                        "publisher": "Canonical",
-                        "offer": "UbuntuServer",
-                        "sku": "16.04-LTS",
-                        "version": "latest"
-                    },
-                    "osdisk": {
-                        "name": "[concat(variables('namespace'), 'synchrony', 'disk')]",
-                        "type": "Standard_LRS",
-                        "size": "30"
-                    }
-                }
-            },
             "license": "AAABHg0ODAoPeNplUNtKw0AQfe9XLPickotaKSwYk2ALuRTbeHkc14kuJJswuwmtX2+aLdTq6zkz53aVtYoVwrDAZd5ieXO39K5ZmMQ75rveYiZaVc2jVhkQJslA1hw+GqnucQ9NV+NctI29GXk5IDfUowU2QEYh5dAgt0gMBiJUBunXWSoFKo27Q4fTaVRkWfIUrcPU8gV9gpIajGwVD00NWktQlksGqHvLnAXHkKOFAiUw2XeSDqMt8k0Q3K5mW6QBaR3zh8f0zSmf3Rfn1Q9zZ+WXW/ud9807UlGVGklzxzt16Ul8gcZJ6riL47lO4F40+GdmO6MWJLsp4zkuq+0Pq1pix1mY3YWNVPjdE17sPu0yzX6CCSeVv2l+ADS1nIEwLAIUYrE66+LiEoBSjmLEkXQfICx+OWgCFBGV5jXbxAkFBPrUt2XQVCBu7lybX02ee"
         },
         "lookup": {
@@ -322,8 +281,8 @@
             }
         },
         "c3p0Settings": {
-            "minConnections": "[min(300, div(coalesce(variables('lookup').dbTierToMaxConnections[parameters('dbTierSize')], 300), add(parameters('clusterSize'), parameters('synchronyClusterSize'))))]",
-            "maxConnections": "[min(300, div(coalesce(variables('lookup').dbTierToMaxConnections[parameters('dbTierSize')], 300), add(parameters('clusterSize'), parameters('synchronyClusterSize'))))]"
+            "minConnections": "[min(300, div(coalesce(variables('lookup').dbTierToMaxConnections[parameters('dbTierSize')], 300), parameters('clusterSize')))]",
+            "maxConnections": "[min(300, div(coalesce(variables('lookup').dbTierToMaxConnections[parameters('dbTierSize')], 300), parameters('clusterSize')))]"
         },
         "isSslSpecified": "[not(empty(parameters('sslBase64EncodedPfxCertificate')))]",
         "env": {
@@ -345,10 +304,6 @@
                 {
                     "name": "SERVER_APP_PORT",
                     "value": "8080"
-                },
-                {
-                    "name": "SERVER_SYNCHRONY_INTERNAL_PORT",
-                    "value": "8091"
                 },
                 {
                     "name": "SERVER_CNAME",
@@ -416,11 +371,15 @@
                 },
                 {
                     "name": "EXTRA_CONFLUENCE_JAVA_OPTS",
-                    "value": "-Dconfluence.cluster.index.recovery.num.attempts=0 -Dsynchrony.proxy.enabled=false -Dconfluence.upgrade.recovery.file.enabled=false"
+                    "value": "-Dconfluence.cluster.index.recovery.num.attempts=0 -Dconfluence.upgrade.recovery.file.enabled=false"
                 },
                 {
                     "name": "CONFLUENCE_GC_OPTS",
                     "value": "-XX:G1ReservePercent=20 -XX:+UseG1GC"
+                },
+                {
+                    "name": "SERVER_SSH_USER",
+                    "value": "[parameters('clusterSshUser')]"
                 }
             ],
             "db": [
@@ -527,22 +486,6 @@
                 {
                     "name": "ATL_CLUSTER_SIZE",
                     "value": "[string(parameters('clusterSize'))]"
-                },
-                {
-                    "name": "ATL_SYNCHRONY_CLUSTER_SIZE",
-                    "value": "[string(parameters('synchronyClusterSize'))]"
-                },
-                {
-                    "name": "APP_GATEWAY_INTERNAL_IP",
-                    "value": "10.0.1.99"
-                },
-                {
-                    "name": "NAT_INTERNAL_IP",
-                    "value": "10.0.2.4"
-                },
-                {
-                    "name": "NAT_SYNCHRONY_INTERNAL_IP",
-                    "value": "10.0.4.4"
                 }
             ]
         },
@@ -559,8 +502,7 @@
             }
         },
         "confPrepareCmd": "[concat(variables('scripts').prepare.env, ' FILE_STORE_URL_DOMAIN=\"', parameters('storageFilesEndpoint'), '\" ', './prepare_install.sh ', parameters('storageAccessKey'), ' prepare ', parameters('confBaseUrl'), ' ', parameters('confDbServerName'), ' 2>&1 > ./confluence.prepare.log')]",
-        "confInstallCmd": "[concat(variables('scripts').prepare.env, ' FILE_STORE_URL_DOMAIN=\"', parameters('storageFilesEndpoint'), '\" ', './prepare_install.sh ', parameters('storageAccessKey'), ' install ', parameters('confBaseUrl'), ' 2>&1 > ./confluence.install-$(uname -n).log')]",
-        "synchronyInstallCmd": "[concat(variables('scripts').prepare.env, ' FILE_STORE_URL_DOMAIN=\"', parameters('storageFilesEndpoint'), '\" ', './prepare_install.sh ', parameters('storageAccessKey'), ' synchrony ', parameters('confBaseUrl'), ' 2>&1 > ./synchrony.install-$(uname -n).log')]"
+        "confInstallCmd": "[concat(variables('scripts').prepare.env, ' FILE_STORE_URL_DOMAIN=\"', parameters('storageFilesEndpoint'), '\" ', './prepare_install.sh ', parameters('storageAccessKey'), ' install ', parameters('confBaseUrl'), ' 2>&1 > ./confluence.install-$(uname -n).log')]"
     },
     "resources": [
         {
@@ -592,7 +534,6 @@
                         "[uri(parameters('_artifactsLocation'), concat('templates/data.sql.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/tables.sql.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/index.sql.template', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('templates/install_synchrony_service.sh.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/setenv.sh.template', parameters('_artifactsLocationSasToken')))]"
                     ]
                 },
@@ -665,6 +606,7 @@
                                 "name": "[concat(variables('namespace'), 'scaleset-nic')]",
                                 "properties": {
                                     "primary": true,
+                                    "enableAcceleratedNetworking": "[parameters('enableAcceleratedNetworking')]",
                                     "ipConfigurations": [
                                         {
                                             "name": "[concat(variables('namespace'), 'scalset-ipconfig')]",
@@ -709,97 +651,6 @@
                     }
                 }
             }
-        },
-        {
-            "type": "Microsoft.Compute/virtualMachineScaleSets",
-            "name": "[variables('confluence').synchronycluster.name]",
-            "location": "[parameters('location')]",
-            "apiVersion": "2018-06-01",
-            "sku": {
-                "name": "[variables('confluence').synchronycluster.vm.size]",
-                "tier": "[variables('confluence').synchronycluster.tier]",
-                "capacity": "[variables('confluence').synchronycluster.capacity]"
-            },
-            "properties": {
-                "overprovision": false,
-                "singlePlacementGroup": false,
-                "upgradePolicy": {
-                    "mode": "Manual"
-                },
-                "virtualMachineProfile": {
-                    "osProfile": {
-                        "computerNamePrefix": "synchronynode-",
-                        "adminUsername": "[variables('confluence').synchronycluster.vm.user]",
-                        "adminPassword": "[variables('confluence').synchronycluster.vm.pass]",
-                        "linuxConfiguration": {
-                            "disablePasswordAuthentication": false
-                        }
-                    },
-                    "storageProfile": {
-                        "imageReference": {
-                            "publisher": "[variables('confluence').synchronycluster.vm.image.publisher]",
-                            "offer": "[variables('confluence').synchronycluster.vm.image.offer]",
-                            "sku": "[variables('confluence').synchronycluster.vm.image.sku]",
-                            "version": "[variables('confluence').synchronycluster.vm.image.version]"
-                        },
-                        "osDisk": {
-                            "managedDisk": {
-                                "storageAccountType": "[variables('confluence').synchronycluster.vm.osdisk.type]"
-                            },
-                            "diskSizeGB": "[variables('confluence').synchronycluster.vm.osdisk.size]",
-                            "createOption": "FromImage"
-                        }
-                    },
-                    "networkProfile": {
-                        "networkInterfaceConfigurations": [
-                            {
-                                "name": "[concat(variables('namespace'), 'synch-scaleset-nic')]",
-                                "properties": {
-                                    "primary": true,
-                                    "ipConfigurations": [
-                                        {
-                                            "name": "[concat(variables('namespace'), 'sync-scalset-ipconfig')]",
-                                            "properties": {
-                                                "subnet": {
-                                                    "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('sychronySubnetName'))]"
-                                                },
-                                                "ApplicationGatewayBackendAddressPools": [
-                                                    {
-                                                        "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', parameters('gtwyName'), parameters('gtwySynchronyAddressPoolName'))]"
-                                                    }
-                                                ]
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        ]
-                    },
-                    "extensionProfile": {
-                        "extensions": [
-                            {
-                                "name": "synchrony-install-script",
-                                "properties": {
-                                    "publisher": "Microsoft.Azure.Extensions",
-                                    "type": "CustomScript",
-                                    "typeHandlerVersion": "2.0",
-                                    "autoUpgradeMinorVersion": true,
-                                    "settings": {
-                                        "fileUris": [
-                                            "[uri(parameters('_artifactsLocation'), concat('scripts/prepare_install.sh', parameters('_artifactsLocationSasToken')))]",
-                                            "[uri(parameters('_artifactsLocation'), concat('scripts/vm-disk-utils-0.1.sh', parameters('_artifactsLocationSasToken')))]",
-                                            "[uri(parameters('_artifactsLocation'), concat('scripts/hydrate_confluence_config.py', parameters('_artifactsLocationSasToken')))]"
-                                        ]
-                                    },
-                                    "protectedSettings": {
-                                        "commandToExecute": "[variables('synchronyInstallCmd')]"
-                                    }
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
         }
     ],
     "outputs": {
@@ -814,10 +665,6 @@
         "installConfCmdArgs": {
             "type": "string",
             "value": "[variables('confInstallCmd')]"
-        },
-        "installSynchronyCmdArgs": {
-            "type": "string",
-            "value": "[variables('synchronyInstallCmd')]"
         }
     }
 }

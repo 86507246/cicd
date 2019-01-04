@@ -43,7 +43,7 @@
         },
         "appSubnet": {
             "name": "[concat(variables('namespace'), 'cluster', 'subnet')]",
-            "prefix": "10.0.2.0/24",
+            "prefix": "10.0.2.0/27",
             "nsg": {
                 "name": "[concat(variables('namespace'), 'cluster', 'nsg')]"
             }

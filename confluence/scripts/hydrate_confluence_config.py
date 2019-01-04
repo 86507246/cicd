@@ -59,7 +59,6 @@ def main():
         'SERVER_PROXY_NAME',
         'SERVER_PROXY_PORT',
         'SERVER_SECURE_FLAG',
-        'SYNCHRONY_SERVICE_URL_OPTS',
         'USER_EMAIL',
         'USER_EMAIL_LOWERCASE',
         'USER_FIRSTNAME',

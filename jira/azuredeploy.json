@@ -527,7 +527,7 @@
                         "value": "[parameters('clusterSshPassword')]"
                     },
                     "cname": {
-                        "value": "[if(greater(length(parameters('cname')), 0), concat(if(variables('isJiraProduct'), 'jira', 'servicedesk'), parameters('cname')), parameters('cname'))]"
+                        "value": "[if(greater(length(parameters('cname')), 0), concat(if(variables('isJiraProduct'), 'jira.', 'servicedesk.'), parameters('cname')), parameters('cname'))]"
                     },
                     "jiraProduct": {
                         "value": "[parameters('jiraProduct')]"

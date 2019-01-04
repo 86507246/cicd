@@ -14,9 +14,6 @@
         "gtwyAddressPoolName": {
             "type": "string"
         },
-        "gtwySynchronyAddressPoolName": {
-            "type": "string"
-        },
         "appGtwyClusterSize": {
             "type": "int",
             "allowedValues": [
@@ -117,25 +114,6 @@
                 },
                 "port": "8080"
             },
-            "synchronybackend": {
-                "addressPool": {
-                    "name": "[parameters('gtwySynchronyAddressPoolName')]"
-                },
-                "httpConfiguration": {
-                    "name": "[concat(variables('namespace'), 'synchronyappgwhttpconfig')]",
-                    "probe": {
-                        "name": "[concat(variables('namespace'), 'synchronybackendprobe')]",
-                        "interval": "60",
-                        "timeout": "5",
-                        "path": "/synchrony/heartbeat"
-                    }
-                },
-                "pathrule": {
-                    "path": "/synchrony/*",
-                    "name": "[concat(variables('namespace'), 'synchronypathrule')]"
-                },
-                "port": "8091"
-            },
             "sslCert": {
                 "name": "[concat(variables('namespace'), 'appgwyHttpsListenerCert')]"
             },
@@ -162,7 +140,8 @@
         {
             "type": "Microsoft.Network/applicationGateways",
             "apiVersion": "2018-08-01",
-            "name": "[variables('applicationGateway').name]",
+            "name": "[concat(variables('namespace'), 'appgateway')]",
+            "condition": "[empty(parameters('sslPfxCertificatePassword'))]",
             "location": "[parameters('location')]",
             "properties": {
                 "sku": {
@@ -211,9 +190,6 @@
                 "backendAddressPools": [
                     {
                         "name": "[variables('applicationGateway').backend.addressPool.name]"
-                    },
-                    {
-                        "name": "[variables('applicationGateway').synchronybackend.addressPool.name]"
                     }
                 ],
                 "probes": [
@@ -224,17 +200,6 @@
                             "path": "[variables('applicationGateway').backend.httpConfiguration.probe.path]",
                             "interval": "[variables('applicationGateway').backend.httpConfiguration.probe.interval]",
                             "timeout": "[variables('applicationGateway').backend.httpConfiguration.probe.timeout]",
-                            "pickHostNameFromBackendHttpSettings": true,
-                            "unhealthyThreshold": 3
-                        }
-                    },
-                    {
-                        "name": "[variables('applicationGateway').synchronybackend.httpConfiguration.probe.name]",
-                        "properties": {
-                            "protocol": "Http",
-                            "path": "[variables('applicationGateway').synchronybackend.httpConfiguration.probe.path]",
-                            "interval": "[variables('applicationGateway').synchronybackend.httpConfiguration.probe.interval]",
-                            "timeout": "[variables('applicationGateway').synchronybackend.httpConfiguration.probe.timeout]",
                             "pickHostNameFromBackendHttpSettings": true,
                             "unhealthyThreshold": 3
                         }
@@ -250,18 +215,6 @@
                             "PickHostNameFromBackendAddress": true,
                             "probe": {
                                 "id": "[resourceId('Microsoft.Network/applicationGateways/probes', variables('applicationGateway').name, variables('applicationGateway').backend.httpConfiguration.probe.name)]"
-                            }
-                        }
-                    },
-                    {
-                        "name": "[variables('applicationGateway').synchronybackend.httpConfiguration.name]",
-                        "properties": {
-                            "Port": "[variables('applicationGateway').synchronybackend.port]",
-                            "Protocol": "Http",
-                            "CookieBasedAffinity": "Disabled",
-                            "PickHostNameFromBackendAddress": true,
-                            "probe": {
-                                "id": "[resourceId('Microsoft.Network/applicationGateways/probes', variables('applicationGateway').name, variables('applicationGateway').synchronybackend.httpConfiguration.probe.name)]"
                             }
                         }
                     }
@@ -285,63 +238,307 @@
                     {
                         "Name": "[concat(variables('namespace'), 'appgwroutes')]",
                         "properties": {
-                            "RuleType": "PathBasedRouting",
+                            "RuleType": "Basic",
                             "httpListener": {
-                                "id": "[resourceId('Microsoft.Network/applicationGateways/httpListeners', variables('applicationGateway').name, variables('applicationGateway').frontend.httpListener.name)]"
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/httpListeners/', variables('applicationGateway').frontend.httpListener.name)]"
                             },
-                            "urlPathMap": {
-                                "id": "[resourceId('Microsoft.Network/applicationGateways/urlPathMaps', variables('applicationGateway').name, variables('applicationGateway').urlpathmap)]"
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
+                            },
+                            "backendHttpSettings": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendHttpSettingsCollection/', variables('applicationGateway').backend.httpConfiguration.name)]"
+                            }
+                        }
+                    }
+                ]
+            },
+            "resources": [
+                {
+                    "comments": "DiagnosticSettings have to be within the nested, nested SQL DB - https://david-obrien.net/2018/06/azure-sql-diagnostics/. NB diagnostic hangs around too ie doesn't get deleted on RG deletion.",
+                    "type": "providers/diagnosticSettings",
+                    "name": "Microsoft.Insights/JiraAppGatewayDiagnostics",
+                    "apiVersion": "2017-05-01-preview",
+                    "condition": "[and(parameters('enableAnalytics'), empty(parameters('sslPfxCertificatePassword')))]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/applicationGateways/', concat(variables('namespace'), 'appgateway'))]"
+                    ],
+                    "properties": {
+                        "name": "JiraAppGatewayDiagnostics",
+                        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]",
+                        "logs": [
+                            {
+                                "category": "ApplicationGatewayAccessLog",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "days": "[variables('retentionInDays')]",
+                                    "enabled": false
+                                }
+                            },
+                            {
+                                "category": "ApplicationGatewayPerformanceLog",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "days": "[variables('retentionInDays')]",
+                                    "enabled": false
+                                }
+                            },
+                            {
+                                "category": "ApplicationGatewayFirewallLog",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "days": "[variables('retentionInDays')]",
+                                    "enabled": false
+                                }
+                            }
+                        ],
+                        "metrics": [
+                            {
+                                "category": "AllMetrics",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "enabled": false,
+                                    "days": "[variables('retentionInDays')]"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "[concat(variables('namespace'), 'appgateway-https')]",
+            "type": "Microsoft.Network/applicationGateways",
+            "condition": "[not(empty(parameters('sslPfxCertificatePassword')))]",
+            "apiVersion": "2018-08-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "sku": "[variables('applicationGateway').sku]",
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "[concat(variables('namespace'), 'appgwipconfig')]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), variables('applicationGateway').frontend.subnet.name)]"
+                            }
+                        },
+                        "type": "Microsoft.Network/applicationGateways/gatewayIPConfigurations"
+                    }
+                ],
+                "sslCertificates": [
+                    {
+                        "name": "[variables('applicationGateway').sslCert.name]",
+                        "properties": {
+                            "data": "[parameters('sslBase64EncodedPfxCertificate')]",
+                            "password": "[parameters('sslPfxCertificatePassword')]"
+                        },
+                        "type": "Microsoft.Network/applicationGateways/sslCertificates"
+                    }
+                ],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.ipConfiguration.name]",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses/', variables('applicationGateway').publicIpName)]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "[variables('applicationGateway').frontend.ipConfiguration.private.name]",
+                        "type": "Microsoft.Network/applicationGateways/frontendIPConfigurations",
+                        "properties": {
+                            "privateIPAddress": "[variables('applicationGateway').frontend.ipConfiguration.private.address]",
+                            "privateIPAllocationMethod": "Static",
+                            "subnet": {
+                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '/subnets/', variables('applicationGateway').frontend.subnet.name)]"
                             }
                         }
                     }
                 ],
-                "urlPathMaps": [
+                "frontendPorts": [
                     {
-                        "name": "[variables('applicationGateway').urlpathmap]",
+                        "name": "[variables('applicationGateway').frontend.portConfiguration.name]",
+                        "type": "Microsoft.Network/applicationGateways/frontendPorts",
                         "properties": {
-                            "defaultBackendAddressPool": {
-                                "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('applicationGateway').name, variables('applicationGateway').backend.addressPool.name)]"
-                            },
-                            "defaultBackendHttpSettings": {
-                                "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('applicationGateway').name, variables('applicationGateway').backend.httpConfiguration.name)]"
-                            },
-                            "pathRules": [
-                                {
-                                    "name": "[variables('applicationGateway').synchronybackend.pathrule.name]",
-                                    "properties": {
-                                        "paths": [
-                                            "[variables('applicationGateway').synchronybackend.pathrule.path]"
-                                        ],
-                                        "backendAddressPool": {
-                                            "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('applicationGateway').name, variables('applicationGateway').synchronybackend.addressPool.name)]"
-                                        },
-                                        "backendHttpSettings": {
-                                            "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('applicationGateway').name, variables('applicationGateway').synchronybackend.httpConfiguration.name)]"
-                                        }
-                                    }
-                                },
-                                {
-                                    "name": "[variables('applicationGateway').backend.pathrule.name]",
-                                    "properties": {
-                                        "paths": [
-                                            "[variables('applicationGateway').backend.pathrule.path]"
-                                        ],
-                                        "backendAddressPool": {
-                                            "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('applicationGateway').name, variables('applicationGateway').backend.addressPool.name)]"
-                                        },
-                                        "backendHttpSettings": {
-                                            "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('applicationGateway').name, variables('applicationGateway').backend.httpConfiguration.name)]"
-                                        }
-                                    }
-                                }
-                            ]
+                            "port": "[variables('applicationGateway').frontend.portConfiguration.value]"
+                        }
+                    },
+                    {
+                        "name": "[variables('applicationGateway').frontend.portHttpsConfiguration.name]",
+                        "properties": {
+                            "port": "[variables('applicationGateway').frontend.portHttpsConfiguration.value]"
+                        },
+                        "type": "Microsoft.Network/applicationGateways/frontendPorts"
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "[variables('applicationGateway').backend.addressPool.name]",
+                        "type": "Microsoft.Network/applicationGateways/backendAddressPools"
+                    }
+                ],
+                "backendHttpSettingsCollection": [
+                    {
+                        "name": "[variables('applicationGateway').backend.httpConfiguration.name]",
+                        "properties": {
+                            "Port": "[variables('applicationGateway').backend.port]",
+                            "Protocol": "Http",
+                            "CookieBasedAffinity": "Enabled",
+                            "PickHostNameFromBackendAddress": true,
+                            "probe": {
+                                "id": "[resourceId('Microsoft.Network/applicationGateways/probes', variables('applicationGateway').name, variables('applicationGateway').backend.httpConfiguration.probe.name)]"
+                            }
                         }
                     }
+                ],
+                "httpListeners": [
+                    {
+                        "name": "[variables('applicationGateway').frontend.httpListener.name]",
+                        "properties": {
+                            "FrontendIPConfiguration": {
+                                "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendIPConfigurations/', variables('applicationGateway').frontend.ipConfiguration.name)]"
+                            },
+                            "FrontendPort": {
+                                "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendPorts/', variables('applicationGateway').frontend.portConfiguration.name)]"
+                            },
+                            "Protocol": "Http",
+                            "requireServerNameIndication": false
+                        }
+                    },
+                    {
+                        "type": "Microsoft.Network/applicationGateways/httpListeners",
+                        "name": "[variables('applicationGateway').frontend.httpsListener.name]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendIPConfigurations/', variables('applicationGateway').frontend.ipConfiguration.name)]"
+                            },
+                            "frontendPort": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendPorts/', variables('applicationGateway').frontend.portHttpsConfiguration.name)]"
+                            },
+                            "protocol": "Https",
+                            "sslCertificate": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/sslCertificates/', variables('applicationGateway').sslCert.name)]"
+                            },
+                            "requireServerNameIndication": false
+                        }
+                    }
+                ],
+                "requestRoutingRules": [
+                    {
+                        "name": "[concat(variables('namespace'), 'appgwhttpsroute')]",
+                        "properties": {
+                            "ruleType": "Basic",
+                            "httpListener": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/httpListeners/', variables('applicationGateway').frontend.httpsListener.name)]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
+                            },
+                            "backendHttpSettings": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendHttpSettingsCollection/', variables('applicationGateway').backend.httpConfiguration.name)]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "[variables('applicationGateway').redirect.rule.name]",
+                        "properties": {
+                            "ruleType": "Basic",
+                            "httpListener": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/httpListeners/', variables('applicationGateway').frontend.httpListener.name)]"
+                            },
+                            "redirectConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/redirectConfigurations/', variables('applicationGateway').redirect.config.name)]"
+                            }
+                        },
+                        "type": "Microsoft.Network/applicationGateways/requestRoutingRules"
+                    }
+                ],
+                "probes": [
+                    {
+                        "name": "[variables('applicationGateway').backend.httpConfiguration.probe.name]",
+                        "properties": {
+                            "protocol": "Http",
+                            "path": "[variables('applicationGateway').backend.httpConfiguration.probe.path]",
+                            "interval": "[variables('applicationGateway').backend.httpConfiguration.probe.interval]",
+                            "timeout": "[variables('applicationGateway').backend.httpConfiguration.probe.timeout]",
+                            "pickHostNameFromBackendHttpSettings": true,
+                            "unhealthyThreshold": 3
+                        }
+                    }
+                ],
+                "redirectConfigurations": [
+                    {
+                        "name": "[variables('applicationGateway').redirect.config.name]",
+                        "properties": {
+                            "redirectType": "Permanent",
+                            "targetListener": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/httpListeners/', variables('applicationGateway').frontend.httpsListener.name)]"
+                            },
+                            "includePath": true,
+                            "includeQueryString": true,
+                            "requestRoutingRules": [
+                                {
+                                    "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/requestRoutingRules/', variables('applicationGateway').redirect.rule.name)]"
+                                }
+                            ]
+                        },
+                        "type": "Microsoft.Network/applicationGateways/redirectConfigurations"
+                    }
                 ]
-            }
+            },
+            "resources": [
+                {
+                    "type": "providers/diagnosticSettings",
+                    "name": "Microsoft.Insights/JiraAppGatewayDiagnostics",
+                    "condition": "[and(parameters('enableAnalytics'), not(empty(parameters('sslPfxCertificatePassword'))))]",
+                    "apiVersion": "2017-05-01-preview",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/applicationGateways/', concat(variables('namespace'), 'appgateway-https'))]"
+                    ],
+                    "properties": {
+                        "name": "JiraAppGatewayDiagnostics",
+                        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]",
+                        "logs": [
+                            {
+                                "category": "ApplicationGatewayAccessLog",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "days": "[variables('retentionInDays')]",
+                                    "enabled": false
+                                }
+                            },
+                            {
+                                "category": "ApplicationGatewayPerformanceLog",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "days": "[variables('retentionInDays')]",
+                                    "enabled": false
+                                }
+                            },
+                            {
+                                "category": "ApplicationGatewayFirewallLog",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "days": "[variables('retentionInDays')]",
+                                    "enabled": false
+                                }
+                            }
+                        ],
+                        "metrics": [
+                            {
+                                "category": "AllMetrics",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "enabled": false,
+                                    "days": "[variables('retentionInDays')]"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
         }
     ],
-    "outputs": {
-
-    }
+    "outputs": {}
 }
