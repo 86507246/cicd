@@ -256,14 +256,14 @@
                 {
                     "comments": "DiagnosticSettings have to be within the nested, nested SQL DB - https://david-obrien.net/2018/06/azure-sql-diagnostics/. NB diagnostic hangs around too ie doesn't get deleted on RG deletion.",
                     "type": "providers/diagnosticSettings",
-                    "name": "Microsoft.Insights/JiraAppGatewayDiagnostics",
+                    "name": "Microsoft.Insights/ConfAppGatewayDiagnostics",
                     "apiVersion": "2017-05-01-preview",
                     "condition": "[and(parameters('enableAnalytics'), empty(parameters('sslPfxCertificatePassword')))]",
                     "dependsOn": [
                         "[resourceId('Microsoft.Network/applicationGateways/', concat(variables('namespace'), 'appgateway'))]"
                     ],
                     "properties": {
-                        "name": "JiraAppGatewayDiagnostics",
+                        "name": "ConfAppGatewayDiagnostics",
                         "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]",
                         "logs": [
                             {
@@ -490,14 +490,14 @@
             "resources": [
                 {
                     "type": "providers/diagnosticSettings",
-                    "name": "Microsoft.Insights/JiraAppGatewayDiagnostics",
+                    "name": "Microsoft.Insights/ConfAppGatewayDiagnostics",
                     "condition": "[and(parameters('enableAnalytics'), not(empty(parameters('sslPfxCertificatePassword'))))]",
                     "apiVersion": "2017-05-01-preview",
                     "dependsOn": [
                         "[resourceId('Microsoft.Network/applicationGateways/', concat(variables('namespace'), 'appgateway-https'))]"
                     ],
                     "properties": {
-                        "name": "JiraAppGatewayDiagnostics",
+                        "name": "ConfAppGatewayDiagnostics",
                         "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]",
                         "logs": [
                             {

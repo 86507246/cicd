@@ -83,13 +83,6 @@
                 "description": "The size of the virtual machine used for each Confluence node. The virtual machine must have capacity for 8 or more premium LRS data disks."
             }
         },
-        "jumpboxSshUser": {
-            "type": "string",
-            "defaultValue": "confluenceadmin",
-            "metadata": {
-                "description": "The username used to SSH into the jumpbox."
-            }
-        },
         "nodeSshUser": {
             "type": "string",
             "defaultValue": "confluenceadmin",
@@ -300,6 +293,22 @@
                 "description": "Enable accelerated networking? Needs to be a supported instance type."
             }
         },
+        "workspaceSku": {
+            "type": "string",
+            "defaultValue": "Free",
+            "allowedValues": [
+                "Free",
+                "Standard",
+                "Premium",
+                "Unlimited",
+                "PerNode",
+                "PerGB2018",
+                "Standalone"
+            ],
+            "metadata": {
+                "description": "Workspace SKU"
+            }
+        },
         "releaseVersionUrl": {
             "type": "string",
             "defaultValue": "https://confluencedcversion.blob.core.windows.net/version/latest",
@@ -319,8 +328,8 @@
             "name": "[concat(variables('namespace'), 'storage', uniqueString(resourceGroup().id))]"
         },
         "workspace": {
-            "name": "[concat(variables('namespace'), '-Workspace-', uniqueString(resourceGroup().id))]",
-            "sku": "free",
+            "name": "[concat(variables('namespace'), '-omsworkspace-', uniqueString(resourceGroup().id))]",
+            "sku": "[parameters('workspaceSku')]",
             "retentionInDays": 7
         },
         "gtwyIpName": "[concat(variables('namespace'), '-appgtwyip-', uniqueString(resourceGroup().id))]",

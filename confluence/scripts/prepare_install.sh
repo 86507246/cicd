@@ -743,7 +743,7 @@ function prepare_datadisks {
 }
 
 function set_shared_home_permissions {
-  atl_log set_shared_home_permissions "Setting permissions for SSH user ${SERVER_SSH_USER} to access logs etc on shared home ${ATL_JIRA_HOME}"
+  atl_log set_shared_home_permissions "Setting permissions for SSH user ${SERVER_SSH_USER} to access logs etc on shared home ${ATL_CONFLUENCE_HOME}"
   usermod -a -G confluence ${SERVER_SSH_USER}
   chmod -R 774 ${ATL_CONFLUENCE_HOME}
   chmod -R 774 ${ATL_CONFLUENCE_INSTALL_DIR}

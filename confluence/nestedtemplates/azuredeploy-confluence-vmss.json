@@ -665,6 +665,14 @@
         "installConfCmdArgs": {
             "type": "string",
             "value": "[variables('confInstallCmd')]"
-        }
+        },
+        "minConnections": {
+           "type": "string",
+           "value": "[string(variables('c3p0Settings').minConnections)]"
+        },
+        "maxConnections": {
+            "type": "string",
+            "value": "[string(variables('c3p0Settings').maxConnections)]"
+         }
     }
 }

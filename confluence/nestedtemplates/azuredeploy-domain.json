@@ -18,7 +18,7 @@
         },
         "prefix": {
             "type": "string",
-            "defaultValue": "jira",
+            "defaultValue": "confluence",
             "metadata": {
                 "description": "The Domain Prefix to use eg <prefix>.<cname>"
             },

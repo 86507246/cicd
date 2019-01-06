@@ -48,13 +48,6 @@
                 "name": "[concat(variables('namespace'), 'cluster', 'nsg')]"
             }
         },
-        "synchronySubnet": {
-            "name": "[concat(variables('namespace'), 'synchrony', 'subnet')]",
-            "prefix": "10.0.4.0/27",
-            "nsg": {
-                "name": "[concat(variables('namespace'), 'synchrony', 'nsg')]"
-            }
-        },
         "jumpbox": {
             "name": "[concat(variables('namespace'), 'jumpbox')]",
             "nsg": {
@@ -133,48 +126,6 @@
         {
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2018-08-01",
-            "name": "[variables('synchronySubnet').nsg.name]",
-            "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
-            "dependsOn": [
-                "[concat('Microsoft.Network/publicIPAddresses', '/', variables('jumpbox').ip.name)]"
-            ],
-            "properties": {
-                "securityRules": [
-                    {
-                        "name": "allow_synchrony_http",
-                        "properties": {
-                            "description": "Allow http traffic.",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "8091",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 101,
-                            "direction": "Inbound"
-                        }
-                    },
-                    {
-                        "name": "allow_ssh_from_jumpbox",
-                        "properties": {
-                            "description": "Allow ssh trafic from single node in internal subnet",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "sourceAddressPrefix": "[reference(variables('jumpbox').ip.name).ipAddress]",
-                            "destinationPortRange": "22",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 102,
-                            "direction": "Inbound"
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "2018-08-01",
             "name": "[variables('jumpbox').nsg.name]",
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
@@ -220,8 +171,7 @@
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "dependsOn": [
-                "[concat('Microsoft.Network/networkSecurityGroups/', variables('appSubnet').nsg.name)]",
-                "[concat('Microsoft.Network/networkSecurityGroups/', variables('synchronySubnet').nsg.name)]"
+                "[concat('Microsoft.Network/networkSecurityGroups/', variables('appSubnet').nsg.name)]"
             ],
             "properties": {
                 "addressSpace": {
@@ -242,23 +192,6 @@
                             "addressPrefix": "[variables('appSubnet').prefix]",
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('appSubnet').nsg.name)]"
-                            },
-                            "serviceEndpoints": [
-                                {
-                                    "service": "Microsoft.Sql",
-                                    "locations": [
-                                        "[parameters('location')]"
-                                    ]
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "name": "[variables('synchronySubnet').name]",
-                        "properties": {
-                            "addressPrefix": "[variables('synchronySubnet').prefix]",
-                            "networkSecurityGroup": {
-                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('synchronySubnet').nsg.name)]"
                             },
                             "serviceEndpoints": [
                                 {
@@ -377,10 +310,6 @@
         "gtwySubnetName": {
             "type": "string",
             "value": "[variables('gtwySubnet').name]"
-        },
-        "synchronySubnetName": {
-            "type": "string",
-            "value": "[variables('synchronySubnet').name]"
         },
         "jumpboxName": {
             "type": "string",
