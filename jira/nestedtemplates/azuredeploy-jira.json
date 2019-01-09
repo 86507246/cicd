@@ -2,61 +2,83 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "location": {
+            "type": "string",
+            "metadata": {
+                "description": "The region where Azure will house the deployment."
+            },
+            "minLength": 5
+        },
         "_artifactsLocation": {
             "type": "string",
             "metadata": {
-                "description": "Base URL for Marketplace"
+                "description": "The URL specifying the location of the installation files."
             }
         },
         "_artifactsLocationSasToken": {
             "type": "string",
             "defaultValue": "",
             "metadata": {
-                "description": "Scripts storage access token"
+                "description": "The Shared Access Signature (SAS) token that provides access to resources in the storage account."
             }
-        },
-        "location": {
-            "type": "string"
         },
         "clusterSize": {
             "type": "int",
             "defaultValue": 2,
             "metadata": {
-                "description": "The number of JIRA nodes in the cluster"
-            }
+                "description": "The number of nodes in the Jira cluster."
+            },
+            "minValue": 1
         },
         "clusterVmSize": {
             "type": "string",
             "defaultValue": "Standard_DS3_v2",
+            "allowedValues": [
+                "Standard_DS2_v2",
+                "Standard_DS3_v2",
+                "Standard_DS4_v2",
+                "Standard_DS5_v2",
+                "Standard_F4s_v2",
+                "Standard_F8s_v2",
+                "Standard_F16s_v2",
+                "Standard_F32s_v2",
+                "Standard_F64s_v2",
+                "Standard_F72s_v2",
+                "Standard_E8s_v3",
+                "Standard_E16s_v3",
+                "Standard_E20s_v3",
+                "Standard_E32s_v3"
+            ],
             "metadata": {
-                "description": "The size of the virtual machine used for each JIRA node."
+                "description": "The size of the virtual machine to use for each Jira node in the cluster."
             }
         },
         "clusterSshUser": {
             "type": "string",
             "defaultValue": "jiraadmin",
             "metadata": {
-                "description": "The username used to SSH into each JIRA node from the jumpbox."
+                "description": "The SSH username to use to access the Jira nodes from the Jumpbox. Note that access to the Jira nodes can only be made in this way."
             }
         },
         "clusterSshPassword": {
             "type": "securestring",
             "metadata": {
-                "description": "The password used to SSH into each JIRA node from the jumpbox."
-            }
+                "description": "The SSH password of the SSH user needed to access the Jira nodes from the Jumpbox."
+            },
+            "minLength": 5
         },
         "cname": {
             "type": "string",
             "defaultValue": "",
             "metadata": {
-                "description": "An existing CNAME that will be used to access the JIRA instance."
+                "description": "An existing Canonical Name record (CNAME) to use to access the JIRA instance."
             }
         },
         "dbCreateNew": {
             "type": "bool",
             "defaultValue": true,
             "metadata": {
-                "description": "Creates new database or attempts to use existing specified database"
+                "description": "Create a new database or attempt to use an existing specified database. Note that this has to be in same resource group and location as the target deployment."
             }
         },
         "dbType": {
@@ -68,47 +90,47 @@
             ],
             "defaultValue": "sqlserver",
             "metadata": {
-                "description": "Database type"
+                "description": "The database type."
             }
         },
         "dbHost": {
             "type": "string",
             "defaultValue": "",
             "metadata": {
-                "description": "Host name of DB server"
+                "description": "The hostname of database server."
             }
         },
         "dbPort": {
             "type": "string",
             "defaultValue": "[if(equals(parameters('dbType'), 'sqlserver'), '1433', if(equals(parameters('dbType'), 'postgres'), '5432', '3306'))]",
             "metadata": {
-                "description": "Database port to use"
+                "description": "The database port to use."
             }
         },
         "dbDatabase": {
             "type": "string",
             "defaultValue": "jira",
             "metadata": {
-                "description": "Database name"
+                "description": "The name of the Jira database."
             }
         },
         "dbSchema": {
             "type": "string",
             "defaultValue": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'sqlserver'), 'jiraschema', 'public'), 'jiraschema')]",
             "metadata": {
-                "description": "Database schema to use"
+                "description": "The Jira database schema to use."
             }
         },
         "dbUsername": {
             "type": "string",
             "metadata": {
-                "description": "Database username"
+                "description": "The username of the Jira database user."
             }
         },
         "dbPassword": {
             "type": "securestring",
             "metadata": {
-                "description": "Database password"
+                "description": "The password of the Jira database user."
             }
         },
         "dbTier": {
@@ -120,7 +142,7 @@
             ],
             "defaultValue": "Standard",
             "metadata": {
-                "description": "The database service tier"
+                "description": "The database service tier."
             }
         },
         "dbTierSize": {
@@ -144,7 +166,7 @@
             ],
             "defaultValue": "S2",
             "metadata": {
-                "description": "The database service tier size"
+                "description": "The size of the database service tier. Basic, Standard (S1..S12) and Premium (P1..P15) tier sizes are available."
             }
         },
         "postgresDbSku": {
@@ -163,7 +185,7 @@
                 "MO_Gen5_32"
             ],
             "metadata": {
-                "description": "The name of the sku (stock keeping unit) of the PostgresSQL Managed Database Service. Follows the convention {pricing tier}{compute generation}{vCores} in shorthand. For example General Purpose, Generation 5, 4 cores is GP_Gen5_4"
+                "description": "The SKU (stock keeping unit) name of the PostgresSQL instance. Follows the convention {pricing tier}{compute generation}{vCores} eg General Purpose, Generation 5, 4 cores is GP_Gen5_4."
             }
         },
         "postgresDbStorage": {
@@ -172,7 +194,7 @@
             "minValue": 102400,
             "maxValue": 4194304,
             "metadata": {
-                "description": "The storage size of the PostgresSQL Managed Database Service"
+                "description": "The storage size of the PostgresSQL instance."
             }
         },
         "jiraProduct": {
@@ -183,25 +205,44 @@
             ],
             "defaultValue": "jira-software",
             "metadata": {
-                "description": "JIRA software product to install"
+                "description": "The Jira software product to install."
             }
         },
         "jiraAdminUserName": {
             "type": "string",
-            "defaultValue": "admin"
+            "defaultValue": "admin",
+            "minLength": 5,
+            "metadata": {
+                "description": "The username for the Jira administrator's account."
+            }
         },
         "jiraAdminUserPassword": {
-            "type": "securestring"
+            "type": "securestring",
+            "minLength": 5,
+            "metadata": {
+                "description": "The password for the Jira administrator's account."
+            }
         },
         "jiraAdminUserFullname": {
-            "type": "string"
+            "type": "string",
+            "minLength": 5,
+            "metadata": {
+                "description": "The fullname for the Jira administrator's account."
+            }
         },
         "jiraAdminUserEmail": {
-            "type": "string"
+            "type": "string",
+            "minLength": 5,
+            "metadata": {
+                "description": "The email address of the Jira administrator user."
+            }
         },
         "jiraAppTitle": {
             "type": "string",
-            "defaultValue": "Atlassian Jira"
+            "defaultValue": "Atlassian Jira",
+            "metadata": {
+                "description": "The name of the Jira site."
+            }
         },
         "appGtwyClusterSize": {
             "type": "int",
@@ -216,7 +257,7 @@
             "defaultValue": 2,
             "minValue": 1,
             "metadata": {
-                "description": "The number of nodes for the App Gateway cluster"
+                "description": "The number of nodes in the Application Gateway cluster."
             }
         },
         "appGtwyTier": {
@@ -228,45 +269,72 @@
             ],
             "defaultValue": "Standard_Medium",
             "metadata": {
-                "description": "The application gateway size"
+                "description": "The Application Gateway size."
             }
         },
         "vnetName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Jira virtual network."
+            }
         },
         "appSubnetName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the subnet within the Jira virtual network where the Jira cluster is located."
+            }
         },
         "gtwySubnetName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Jira virtual network subnet where the Application Gateway is located."
+            }
         },
         "jumpboxName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Jumpbox."
+            }
         },
         "jumpboxPublicIpAddress": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The public IP address of the Jumpbox."
+            }
         },
         "sslBase64EncodedPfxCertificate": {
             "type": "string",
-            "defaultValue": ""
+            "defaultValue": "",
+            "metadata": {
+                "description": "The certificate to be used for SSL termination on the Azure Application Gateway."
+            }
         },
         "sslPfxCertificatePassword": {
             "type": "string",
-            "defaultValue": ""
+            "defaultValue": "",
+            "metadata": {
+                "description": "The password of the certificate for SSL termination."
+            }
         },
         "enableApplicationInsights": {
             "type": "bool",
-            "defaultValue": true
+            "defaultValue": true,
+            "metadata": {
+                "description": "Enable Azure Application Insights."
+            }
         },
         "enableAnalytics": {
             "type": "bool",
-            "defaultValue": true
+            "defaultValue": true,
+            "metadata": {
+                "description": "Enable Azure Operational Insights."
+            }
         },
         "enableAcceleratedNetworking": {
             "type": "bool",
             "defaultValue": true,
             "metadata": {
-                "description": "Enable accelerated networking? Needs to be a supported instance type."
+                "description": "Enable accelerated networking. Note that this needs to be on a supported instance type."
             }
         }
     },

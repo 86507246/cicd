@@ -321,7 +321,7 @@ function hydrate_shared_config {
 }
 
 function copy_artefacts {
-  local excluded_files=(std* version installer *.jar prepare_install.sh *.py *.sh *.template *.sql *.js)
+  local excluded_files=(std* version installer *.jar prepare_install.sh *.py *.sh *.template *.sql *.js *.xsl)
 
   local exclude_rules=""
   for file in ${excluded_files[@]};
@@ -540,7 +540,7 @@ function install_jdbc_drivers {
   do
      atl_log install_jdbc_drivers "Downloading JDBC driver from ${jarURL}"
      curl -O "${jarURL}"
-  
+
      atl_log install_jdbc_drivers "Copying JDBC driver to ${install_location}"
      cp -fp $(basename $(echo ${jarURL})) "${install_location}"
   done
@@ -551,8 +551,8 @@ function install_jdbc_drivers {
 function install_appinsights {
   atl_log install_appinsights "Installation MS App Insights"
   atl_log install_appinsights "Have AppInsights Key? |${APPINSIGHTS_INSTRUMENTATION_KEY}|"
-  if [ -n "${APPINSIGHTS_INSTRUMENTATION_KEY}" ] 
-  then 
+  if [ -n "${APPINSIGHTS_INSTRUMENTATION_KEY}" ]
+  then
      atl_log install_appinsights "Installing App Insights"
      apt-get -qqy install xsltproc
      download_appinsights_jars ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/lib
@@ -585,7 +585,7 @@ function install_appinsights_collectd {
     atl_log install_appinsights_collectd "Starting collectd..."
     /etc/init.d/collectd start
     /etc/init.d/collectd status
-    
+
     # Bouncing collectd - cgroups issue with Azure wagent
     sleep 5
     /etc/init.d/collectd restart
@@ -595,7 +595,7 @@ function install_appinsights_collectd {
 
 function download_appinsights_jars {
   atl_log download_appinsights_jars "Downloading MS AppInsight Jars"
-  JARS="applicationinsights-core-${APPINSIGHTS_VER}.jar applicationinsights-web-${APPINSIGHTS_VER}.jar applicationinsights-collectd-${APPINSIGHTS_VER}.jar" 
+  JARS="applicationinsights-core-${APPINSIGHTS_VER}.jar applicationinsights-web-${APPINSIGHTS_VER}.jar applicationinsights-collectd-${APPINSIGHTS_VER}.jar"
   for aJar in $(echo $JARS)
   do
      curl -LO https://github.com/Microsoft/ApplicationInsights-Java/releases/download/${APPINSIGHTS_VER}/${aJar}
@@ -642,7 +642,7 @@ function configure_jira_ram {
 
 function configure_jira {
   atl_log configure_jira "Ready to configure JIRA"
-  
+
   local jira_configs=(dbconfig.xml)
   local ram=`get_jira_ram`
 
@@ -650,10 +650,10 @@ function configure_jira {
     atl_log configure_jira "Copying ${cfg} from ${ATL_JRIA_SHARED_HOME} into ${ATL_JIRA_HOME}"
     ensure_readable "${ATL_JIRA_SHARED_HOME}/${cfg}"
     if [ ! -f "${ATL_JIRA_SHARED_HOME}/${cfg}" ]; then
-      error "Unable to find ${cfg} in ${ATL_JIRA_SHARED_HOME}, abort" 
+      error "Unable to find ${cfg} in ${ATL_JIRA_SHARED_HOME}, abort"
     else
       cp "${ATL_JIRA_SHARED_HOME}/${cfg}" "${ATL_JIRA_HOME}/${cfg}"
-    fi  
+    fi
   done
 
   local tomcat_configs=(server.xml)
@@ -707,7 +707,7 @@ function set_shared_home_permissions {
   chmod -R 774 ${ATL_JIRA_INSTALL_DIR}
 }
 
-function install_oms_linx_agent {
+function install_oms_linux_agent {
   atl_log install_oms_linx_agent  "Installing OMS Linux Agent with workspace id: ${OMS_WORKSPACE_ID} and primary key: ${OMS_PRIMARY_KEY}"
   wget https://raw.githubusercontent.com/Microsoft/OMS-Agent-for-Linux/master/installer/scripts/onboard_agent.sh && sh onboard_agent.sh -w "${OMS_WORKSPACE_ID}" -s "${OMS_PRIMARY_KEY}" -d opinsights.azure.com
   atl_log install_oms_linx_agent  "Finished installing OMS Linux Agent!"
@@ -751,11 +751,12 @@ function install_jira {
   perform_install
   configure_jira
   remount_share
-  install_oms_linx_agent
+  install_oms_linux_agent
   atl_log install_jira "Done installing JIRA! Starting..."
   /etc/init.d/jira start
   install_appinsights_collectd
   set_shared_home_permissions
+  copy_artefacts
 }
 
 atl_log main "Got args: $@"

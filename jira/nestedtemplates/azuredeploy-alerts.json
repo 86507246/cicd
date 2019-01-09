@@ -3,25 +3,47 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "location": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The region where Azure will house the deployment."
+            },
+            "minLength": 5
         },
         "jiraAdminUserEmail": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The email address of the Jira administrator user."
+            }
         },
         "gtwyName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Application Gateway."
+            }
         },
         "storageAccountName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the storage account."
+            }
         },
         "clusterName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Jira cluster."
+            }
         },
         "appInsightsName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Application Insights resource."
+            }
         },
         "statusCheckUrl": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The Jira status check URL."
+            }
         },
         "dbType": {
             "type": "string",
@@ -30,13 +52,22 @@
                 "postgres",
                 "mysql"
             ],
-            "defaultValue": "sqlserver"
+            "defaultValue": "sqlserver",
+            "metadata": {
+                "description": "The database type."
+            }
         },
         "dbDatabaseServerName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The database server name."
+            }
         },
         "dbDatabaseName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The Jira database name."
+            }
         }
     },
     "variables": {

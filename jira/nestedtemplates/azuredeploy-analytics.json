@@ -4,10 +4,17 @@
     "parameters": {
         "location": {
             "type": "string",
-            "defaultValue": "westeurope"
+            "defaultValue": "westeurope",
+            "metadata": {
+                "description": "The region where Azure will house the deployment."
+            },
+            "minLength": 5
         },
         "workspaceName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Azure Operations Management Suite (OMS) workspace."
+            }
         },
         "dbType": {
             "type": "string",
@@ -18,7 +25,7 @@
             ],
             "defaultValue": "sqlserver",
             "metadata": {
-                "description": "Database type"
+                "description": "The database type."
             }
         }
     },

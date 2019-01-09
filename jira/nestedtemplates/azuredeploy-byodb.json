@@ -3,7 +3,11 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "location": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The region where Azure will house the deployment."
+            },
+            "minLength": 5
         },
         "dbType": {
             "type": "string",
@@ -14,48 +18,58 @@
             ],
             "defaultValue": "sqlserver",
             "metadata": {
-                "description": "Database type"
+                "description": "The database type."
             }
         },
         "dbServerName": {
             "type": "string",
             "metadata": {
-                "description": "DB Server Name"
+                "description": "The database server name."
             }
         },
         "dbDatabaseName": {
             "type": "string",
             "metadata": {
-                "description": "DB Database Name"
+                "description": "The name of the Jira database."
             }
         },
         "dbPort": {
             "type": "string",
             "metadata": {
-                "description": "Database port to use"
+                "description": "The database port to use. 1433 for MS SQL, 5432 for PostgreSQL, 3306 for MySQL."
             }
         },
         "dbUsername": {
             "type": "string",
             "metadata": {
-                "description": "Database username"
+                "description": "The username for the dedicated database user."
             }
         },
         "dbPassword": {
             "type": "securestring",
+            "minLength": 8,
             "metadata": {
-                "description": "Database password"
+                "description": "The password for the dedicated database user."
             }
         },
         "vnetName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Jira virtual network."
+            }
         },
         "appSubnetName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the subnet within the Jira virtual network where the Jira cluster is located."
+            }
         },
         "clusterDbAccessNetworkRule": {
             "type": "string",
-            "defaultValue": "allowClusterDbAccess"
+            "defaultValue": "allowClusterDbAccess",
+            "metadata": {
+                "description": "The name of the network rule that enables the Jira cluster to access the database."
+            }
         }
     },
     "variables": {
