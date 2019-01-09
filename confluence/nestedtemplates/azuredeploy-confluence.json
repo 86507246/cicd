@@ -338,6 +338,8 @@
         "dbTemplateUri": "[uri(parameters('_artifactsLocation'), concat(if(equals(parameters('dbType'),'sqlserver'),'nestedtemplates/azuredeploy-db-mssql.json','nestedtemplates/azuredeploy-db-postgres.json'), parameters('_artifactsLocationSasToken')))]",
         "appGtwyTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-confluence-gtwy.json', parameters('_artifactsLocationSasToken')))]",
         "vmssTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-confluence-vmss.json', parameters('_artifactsLocationSasToken')))]",
+        "appInsightsTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-app-insights.json', parameters('_artifactsLocationSasToken')))]",
+        "analyticsTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-analytics.json', parameters('_artifactsLocationSasToken')))]",
         "dbTemplate": "[if(equals(parameters('dbType'),'sqlserver'), 'sqlDbTemplate', 'postgresDbTemplate')]"
     },
     "resources": [
@@ -671,6 +673,56 @@
                     },
                     "releaseVersionUrl": {
                         "value": "[parameters('releaseVersionUrl')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-01-01",
+            "name": "appInsightsTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[parameters('enableApplicationInsights')]",
+            "dependsOn": [
+                "[variables('workspace').name]",
+                "[variables('dbTemplate')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('appInsightsTemplateUri')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-01-01",
+            "name": "analyticsTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[parameters('enableAnalytics')]",
+            "dependsOn": [
+                "[variables('workspace').name]",
+                "[variables('dbTemplate')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('analyticsTemplateUri')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "workspaceName": {
+                        "value": "[variables('workspace').name]"
+                    },
+                    "dbType": {
+                        "value": "[parameters('dbType')]"
                     }
                 }
             }

@@ -67,7 +67,9 @@ def main():
         'USER_LASTNAME_LOWERCASE',
         'USER_NAME',
         'USER_NAME_LOWERCASE',
-        'USER_PASSWORD'
+        'USER_PASSWORD',
+        'APPINSIGHTS_VER',
+        'APPINSIGHTS_INSTRUMENTATION_KEY'
   ]
   ##
   ## cat templates/*.template | sed "s#{{#~{{#g" |sed "s#}}#}}~#g" | tr '~' '\n' | grep "{{" | sed "s#{{##" | sed "s#}}.*##" | sort | uniq | sed "s/^/'/" | sed "s/$/',/"

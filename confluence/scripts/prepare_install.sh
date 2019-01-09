@@ -319,7 +319,7 @@ function hydrate_shared_config {
   atl_log hydrate_shared_config "Generated JWT public key  :${CONFLUENCE_JWT_PUBLIC_KEY}"
   atl_log hydrate_shared_config "Generated JWT private key :${CONFLUENCE_JWT_PRIVATE_KEY}"
 
-  local template_files=(home-confluence.cfg.xml.template shared-confluence.cfg.xml.template server.xml.template setenv.sh.template install_synchrony_service.sh.template)
+  local template_files=(home-confluence.cfg.xml.template shared-confluence.cfg.xml.template server.xml.template ApplicationInsights.xml.template confluence-collectd.conf.template setenv.sh.template)
   local output_file=""
   for template_file in ${template_files[@]};
   do
@@ -605,6 +605,62 @@ function get_unique_id {
   echo $(curl --silent -H Metadata:true "http://169.254.169.254/metadata/instance?api-version=2017-04-02" | jq -r ".compute.vmId")
 }
 
+function install_appinsights {
+  atl_log install_appinsights "Installation MS App Insights"
+  atl_log install_appinsights "Have AppInsights Key? |${APPINSIGHTS_INSTRUMENTATION_KEY}|"
+  if [ -n "${APPINSIGHTS_INSTRUMENTATION_KEY}" ] 
+  then 
+     atl_log install_appinsights "Installing App Insights"
+     apt-get -qqy install xsltproc
+     download_appinsights_jars ${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/lib
+
+     cp -fp ${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/web.xml ${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/web.xml.orig
+     xsltproc -o ${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/web.xml ./appinsights_transform_web_xml.xsl ${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/web.xml
+
+     cp -fp ${ATL_CONFLUENCE_SHARED_HOME}/ApplicationInsights.xml ${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/classes
+
+     cp -fp ${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh ${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh.orig
+     sed 's/export CATALINA_OPTS/CATALINA_OPTS="${CATALINA_OPTS} -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dconfluence.hazelcast.jmx.enable=true -Dconfluence.hibernate.jmx.enable=true"\nexport CATALINA_OPTS/' ${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh.orig > ${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh
+  fi
+}
+
+function install_appinsights_collectd {
+  # Have moved collectd to run after Confluence startup - doesn't start up well with all the mounting/remounting/Confluence not being up.
+  if [ -n "${APPINSIGHTS_INSTRUMENTATION_KEY}" ]
+  then
+    atl_log install_appinsights_collectd "Configuring collectd to publish Confluence JMX"
+    apt-get -qqy install collectd
+    cp -fp ${ATL_CONFLUENCE_SHARED_HOME}/confluence-collectd.conf /etc/collectd/collectd.conf
+    chmod +r /etc/collectd/collectd.conf
+
+    atl_log download_appinsights_jars "Copying collectd appinsights jar to /usr/share/collectd/java"
+    cp -fp applicationinsights-collectd*.jar /usr/share/collectd/java/
+
+    atl_log install_appinsights_collectd "Starting collectd..."
+    /etc/init.d/collectd start
+    /etc/init.d/collectd status
+    
+    # Bouncing collectd - cgroups issue with Azure wagent
+    sleep 5
+    /etc/init.d/collectd restart
+    /etc/init.d/collectd status
+  fi
+}
+
+function download_appinsights_jars {
+  atl_log download_appinsights_jars "Downloading MS AppInsight Jars"
+  JARS="applicationinsights-core-${APPINSIGHTS_VER}.jar applicationinsights-web-${APPINSIGHTS_VER}.jar applicationinsights-collectd-${APPINSIGHTS_VER}.jar" 
+  for aJar in $(echo $JARS)
+  do
+     curl -LO https://github.com/Microsoft/ApplicationInsights-Java/releases/download/${APPINSIGHTS_VER}/${aJar}
+     if [ $aJar != "applicationinsights-collectd-${APPINSIGHTS_VER}.jar" ]
+     then
+          atl_log download_appinsights_jars "Copying appinsights jar: ${aJar} to ${1}"
+          cp -fp ${aJar} ${1}
+     fi
+  done
+}
+
 function configure_cluster {
   local _all_possible_cluster_ips=`for n in {4..30}  ; do echo "10.0.2.${n}" ; done | tr '\n' ' ' | sed 's/ $//'`
   local _all_possible_nodes_ips=`echo "${_all_possible_cluster_ips}"`
@@ -701,8 +757,14 @@ function configure_confluence {
   log "Configuring cluster..."
   configure_cluster
   log "Done configuring cluster!"
+
+  atl_log configure_jira "Configuring app insights..."
+  install_appinsights
+  atl_log configure_jira "Done app insights!"
+  
   chown -R confluence:confluence "/datadisks/disk1"
   chown -R confluence:confluence "${ATL_CONFLUENCE_HOME}"
+  chown -R confluence:confluence "${ATL_CONFLUENCE_INSTALL_DIR}"
 }
 
 function wait_until_startup_complete {
@@ -749,6 +811,12 @@ function set_shared_home_permissions {
   chmod -R 774 ${ATL_CONFLUENCE_INSTALL_DIR}
 }
 
+function install_oms_linx_agent {
+  atl_log install_oms_linx_agent  "Installing OMS Linux Agent with workspace id: ${OMS_WORKSPACE_ID} and primary key: ${OMS_PRIMARY_KEY}"
+  wget https://raw.githubusercontent.com/Microsoft/OMS-Agent-for-Linux/master/installer/scripts/onboard_agent.sh && sh onboard_agent.sh -w "${OMS_WORKSPACE_ID}" -s "${OMS_PRIMARY_KEY}" -d opinsights.azure.com
+  atl_log install_oms_linx_agent  "Finished installing OMS Linux Agent!"
+}
+
 function prepare_install {
   enable_rc_local
   tune_tcp_keepalive_for_azure
@@ -777,9 +845,11 @@ function install_confluence {
   perform_install
   configure_confluence
   remount_share
+  install_oms_linx_agent
   log "Done installing CONFLUENCE! Starting..."
   env -i /etc/init.d/confluence start
   wait_until_startup_complete
+  install_appinsights_collectd
   set_shared_home_permissions
   copy_artefacts
 }

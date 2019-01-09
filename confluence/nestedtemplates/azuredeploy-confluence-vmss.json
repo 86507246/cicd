@@ -380,6 +380,26 @@
                 {
                     "name": "SERVER_SSH_USER",
                     "value": "[parameters('clusterSshUser')]"
+                },
+                {
+                    "name": "APPINSIGHTS_VER",
+                    "value": "2.3.0"
+                },
+                {
+                    "name": "APPINSIGHTS_INSTRUMENTATION_KEY",
+                    "value": "[parameters('appInsightsInstrumentKey')]"
+                },
+                {
+                    "name": "OMS_WORKSPACE_ID",
+                    "value": "[parameters('workspaceId')]"
+                },
+                {
+                    "name": "OMS_PRIMARY_KEY",
+                    "value": "[parameters('workspacePrimaryKey')]"
+                },
+                {
+                    "name": "OMS_SECONDARY_KEY",
+                    "value": "[parameters('workspaceSecondaryKey')]"
                 }
             ],
             "db": [
@@ -534,6 +554,8 @@
                         "[uri(parameters('_artifactsLocation'), concat('templates/data.sql.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/tables.sql.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/index.sql.template', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('templates/ApplicationInsights.xml.template', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('templates/confluence-collectd.conf.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/setenv.sh.template', parameters('_artifactsLocationSasToken')))]"
                     ]
                 },
@@ -639,6 +661,7 @@
                                         "fileUris": [
                                             "[uri(parameters('_artifactsLocation'), concat('scripts/prepare_install.sh', parameters('_artifactsLocationSasToken')))]",
                                             "[uri(parameters('_artifactsLocation'), concat('scripts/vm-disk-utils-0.1.sh', parameters('_artifactsLocationSasToken')))]",
+                                            "[uri(parameters('_artifactsLocation'), concat('scripts/appinsights_transform_web_xml.xsl', parameters('_artifactsLocationSasToken')))]",
                                             "[uri(parameters('_artifactsLocation'), concat('scripts/hydrate_confluence_config.py', parameters('_artifactsLocationSasToken')))]"
                                         ]
                                     },
