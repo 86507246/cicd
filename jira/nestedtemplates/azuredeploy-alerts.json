@@ -242,6 +242,7 @@
             "name": "[variables('webTestName')]",
             "apiVersion": "2015-05-01",
             "location": "[parameters('location')]",
+            "condition": "[not(empty(parameters('appInsightsName')))]",
             "tags": {
                 "[concat('hidden-link:', resourceId('microsoft.insights/components/', parameters('appInsightsName')))]": "Resource"
             },
@@ -281,6 +282,7 @@
             "name": "[variables('webTestAlertName')]",
             "apiVersion": "2016-03-01",
             "location": "[parameters('location')]",
+            "condition": "[not(empty(parameters('appInsightsName')))]",
             "properties": {
                 "name": "[variables('webTestAlertName')]",
                 "description": "",
@@ -310,7 +312,7 @@
             "name": "[variables('alerts').dbCpuPercentage.name]",
             "apiVersion": "2016-03-01",
             "location": "[parameters('location')]",
-            "condition": "[equals(parameters('dbType'), 'sqlserver')]",
+            "condition": "[and(not(empty(parameters('appInsightsName'))), equals(parameters('dbType'), 'sqlserver'))]",
             "properties": {
                 "name": "[variables('alerts').dbCpuPercentage.name]",
                 "description": "[variables('alerts').dbCpuPercentage.description]",
@@ -342,7 +344,7 @@
             "name": "[variables('alerts').dbDtuPercentage.name]",
             "apiVersion": "2016-03-01",
             "location": "[parameters('location')]",
-            "condition": "[equals(parameters('dbType'), 'sqlserver')]",
+            "condition": "[and(not(empty(parameters('appInsightsName'))), equals(parameters('dbType'), 'sqlserver'))]",
             "properties": {
                 "name": "[variables('alerts').dbDtuPercentage.name]",
                 "description": "[variables('alerts').dbDtuPercentage.description]",
@@ -374,7 +376,7 @@
             "name": "[variables('alerts').dbSizePercentage.name]",
             "apiVersion": "2016-03-01",
             "location": "[parameters('location')]",
-            "condition": "[equals(parameters('dbType'), 'sqlserver')]",
+            "condition": "[and(not(empty(parameters('appInsightsName'))), equals(parameters('dbType'), 'sqlserver'))]",
             "properties": {
                 "name": "[variables('alerts').dbSizePercentage.name]",
                 "description": "[variables('alerts').dbSizePercentage.description]",
@@ -406,7 +408,7 @@
             "name": "[variables('alerts').dbCpuPercentage.name]",
             "apiVersion": "2018-03-01",
             "location": "global",
-            "condition": "[equals(parameters('dbType'), 'postgres')]",
+            "condition": "[and(not(empty(parameters('appInsightsName'))), equals(parameters('dbType'), 'postgres'))]",
             "properties": {
                 "name": "[variables('alerts').dbCpuPercentage.name]",
                 "description": "[variables('alerts').dbCpuPercentage.description]",
@@ -445,7 +447,7 @@
             "name": "[variables('alerts').dbIoConsumptionPercentage.name]",
             "apiVersion": "2018-03-01",
             "location": "global",
-            "condition": "[equals(parameters('dbType'), 'postgres')]",
+            "condition": "[and(not(empty(parameters('appInsightsName'))), equals(parameters('dbType'), 'postgres'))]",
             "properties": {
                 "name": "[variables('alerts').dbIoConsumptionPercentage.name]",
                 "description": "[variables('alerts').dbIoConsumptionPercentage.description]",
@@ -484,7 +486,7 @@
             "name": "[variables('alerts').dbSizePercentage.name]",
             "apiVersion": "2018-03-01",
             "location": "global",
-            "condition": "[equals(parameters('dbType'), 'postgres')]",
+            "condition": "[and(not(empty(parameters('appInsightsName'))), equals(parameters('dbType'), 'postgres'))]",
             "properties": {
                 "name": "[variables('alerts').dbSizePercentage.name]",
                 "description": "[variables('alerts').dbSizePercentage.description]",
