@@ -3,16 +3,29 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "location": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The region where Azure will house the deployment."
+            },
+            "minLength": 5
         },
         "gtwyIpName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Application Gateway's public IP."
+            }
         },
         "gtwyName": {
-           "type": "string"
+           "type": "string",
+            "metadata": {
+                "description": "The name of the Application Gateway."
+            }
         },
         "gtwyAddressPoolName": {
-           "type": "string"
+           "type": "string",
+            "metadata": {
+                "description": "The name of the Application Gateway's address pool."
+            }
         },
         "appGtwyClusterSize": {
             "type": "int",
@@ -25,8 +38,9 @@
                 6
             ],
             "defaultValue": 2,
+            "minValue": 1,
             "metadata": {
-                "description": "The number of nodes for the App Gateway cluster"
+                "description": "The number of nodes in the Application Gateway cluster."
             }
         },
         "appGtwyTier": {
@@ -38,29 +52,47 @@
             ],
             "defaultValue": "Standard_Medium",
             "metadata": {
-                "description": "The application gateway size"
+                "description": "The Application Gateway size."
             }
         },
         "vnetName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Jira virtual network."
+            }
         },
         "gtwySubnetName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Jira virtual network subnet where the Application Gateway is located."
+            }
         },
         "sslBase64EncodedPfxCertificate": {
             "type": "string",
-            "defaultValue": ""
+            "defaultValue": "",
+            "metadata": {
+                "description": "The certificate to be used for SSL termination on the Azure Application Gateway."
+            }
         },
         "sslPfxCertificatePassword": {
             "type": "string",
-            "defaultValue": ""
+            "defaultValue": "",
+            "metadata": {
+                "description": "The password of the certificate for SSL termination."
+            }
         },
         "workspaceName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Azure Operations Management Suite (OMS) workspace."
+            }
         },
         "enableAnalytics": {
             "type": "bool",
-            "defaultValue": true
+            "defaultValue": true,
+            "metadata": {
+                "description": "Enable Azure Operational Insights. Note that an Azure Operations Management Suite (OMS) workspace must first exist."
+            }
         }
     },
     "variables": {

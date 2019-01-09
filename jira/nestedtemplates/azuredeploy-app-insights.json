@@ -4,7 +4,11 @@
     "parameters": {
         "location": {
             "type": "string",
-            "defaultValue": "westeurope"
+            "defaultValue": "westeurope",
+            "metadata": {
+                "description": "The region where Azure will house the deployment."
+            },
+            "minLength": 5
         }
     },
     "variables": {

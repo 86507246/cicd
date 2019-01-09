@@ -3,26 +3,31 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "location": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The region where Azure will house the deployment."
+            },
+            "minLength": 5
         },
         "jumpboxVmSize": {
             "type": "string",
             "defaultValue": "Standard_B1s",
             "metadata": {
-                "description": "The size of the virtual machine used for the jumpbox/bastion host."
+                "description": "The size of the virtual machine to use for the Jumpbox."
             }
         },
         "jumpboxSshKey": {
             "type": "string",
             "metadata": {
-                "description": "The public key for the jumpbox SSH user"
-            }
+                "description": "The SSH public key to use to access the Jumpbox."
+            },
+            "minLength": 300
         },
         "jumpboxSshUser": {
             "type": "string",
             "defaultValue": "jiraadmin",
             "metadata": {
-                "description": "The username used to SSH into the jumpbox."
+                "description": "The SSH username to use to access the Jira nodes from the Jumpbox. Note that access to the Jira nodes can only be made in this way."
             }
         }
     },

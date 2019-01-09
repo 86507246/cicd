@@ -8,25 +8,26 @@
     "dbServerName": {
       "type": "string",
       "metadata": {
-        "description": "DB Server Name"
+        "description": "The database server name."
       }
     },
     "dbDatabaseName": {
       "type": "string",
       "metadata": {
-        "description": "DB Database Name"
+        "description": "The name of the Jira database."
       }
     },
     "dbUsername": {
       "type": "string",
       "metadata": {
-        "description": "Database username"
+        "description": "The username for the dedicated database user."
       }
     },
     "dbPassword": {
       "type": "securestring",
+      "minLength": 8,
       "metadata": {
-        "description": "Database password"
+        "description": "The password for the dedicated database user."
       }
     },
     "postgresDbSku": {
@@ -45,7 +46,7 @@
         "MO_Gen5_32"
       ],
       "metadata": {
-        "description": "The name of the sku (stock keeping unit) of the PostgresSQL Managed Database Service. Follows the convention {pricing tier}{compute generation}{vCores} in shorthand. For example General Purpose, Generation 5, 4 cores is GP_Gen5_4"
+        "description": "The SKU (stock keeping unit) name of the PostgresSQL instance. Follows the convention {pricing tier}{compute generation}{vCores} eg General Purpose, Generation 5, 4 cores is GP_Gen5_4."
       }
     },
     "postgresDbStorage": {
@@ -54,21 +55,33 @@
       "minValue": 102400,
       "maxValue": 4194304,
       "metadata": {
-        "description": "The storage size of the PostgresSQL Managed Database Service"
+        "description": "The storage size of the PostgresSQL instance in MB."
       }
     },
     "vnetName": {
-      "type": "string"
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Jira virtual network."
+      }
     },
     "appSubnetName": {
-      "type": "string"
+      "type": "string",
+      "metadata": {
+        "description": "The name of the subnet within the Jira virtual network where the Jira cluster is located."
+      }
     },
     "clusterDbAccessNetworkRule": {
       "type": "string",
-      "defaultValue": "allowClusterDbAccess"
+      "defaultValue": "allowClusterDbAccess",
+      "metadata": {
+        "description": "The name of the network rule that enables the Jira cluster to access the database."
+      }
     },
     "jumpboxPublicIpAddress": {
-      "type": "string"
+      "type": "string",
+      "metadata": {
+        "description": "The public IP address of the Jumpbox."
+      }
     }
   },
   "variables": {

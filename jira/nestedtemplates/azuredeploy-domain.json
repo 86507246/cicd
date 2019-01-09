@@ -5,14 +5,14 @@
         "cname": {
             "type": "string",
             "metadata": {
-                "description": "CNAME to use"
+                "description": "This is the  Canonical Name record (CNAME) for your organization. If you don't provide one, Azure will generate a random sub domain for your instance."
             },
             "minLength": 1
         },
         "gtwyIpName": {
             "type": "string",
             "metadata": {
-                "description": "Name of the application gateway's public IP to use"
+                "description": "The name of the Application Gateway's public IP to use."
             },
             "minLength": 1
         },
