@@ -35,9 +35,6 @@
     <property name="jwt.private.key">{{CONFLUENCE_JWT_PRIVATE_KEY}}</property>
     <property name="jwt.public.key">{{CONFLUENCE_JWT_PUBLIC_KEY}}</property>
     <property name="lucene.index.dir">${localHome}/index</property>
-    <property name="synchrony.btf">false</property>
-    <property name="synchrony.encryption.disabled">true</property>
-    <property name="synchrony.proxy.enabled">false</property>
     <property name="webwork.multipart.saveDir">${localHome}/temp</property>
   </properties>
 </confluence-configuration>

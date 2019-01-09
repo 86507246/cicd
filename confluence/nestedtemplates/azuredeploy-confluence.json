@@ -4,81 +4,110 @@
     "parameters": {
         "location": {
             "type": "string",
-            "metadata": {
-                "description": "The region where Azure will house the deployment."
-            },
-            "minLength": 5
+            "defaultValue": "[resourceGroup().location]"
         },
         "_artifactsLocation": {
             "type": "string",
+            "defaultValue": "https://confluencedcresources.blob.core.windows.net/installfiles",
             "metadata": {
-                "description": "The URL specifying the location of the installation files."
+                "description": "Base URL for Marketplace",
+                "artifactsBaseUrl": ""
             }
         },
         "_artifactsLocationSasToken": {
-            "type": "string",
+            "type": "securestring",
             "defaultValue": "",
             "metadata": {
-                "description": "The Shared Access Signature (SAS) token that provides access to resources in the storage account."
+                "description": "Scripts storage access token"
             }
         },
         "clusterSize": {
             "type": "int",
-            "defaultValue": 2,
+            "allowedValues": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+            ],
+            "defaultValue": 3,
             "metadata": {
-                "description": "The number of nodes in the Jira cluster."
-            },
-            "minValue": 1
+                "description": "The number of Confluence nodes in the cluster. Maximum is 6 nodes."
+            }
         },
         "clusterVmSize": {
             "type": "string",
             "defaultValue": "Standard_DS3_v2",
-            "allowedValues": [
+            "allowedValues" : [
+                "Standard_D4s_v3",
+                "Standard_D8s_v3",
+                "Standard_D16s_v3",
+                "Standard_D32s_v3",
+                "Standard_D64s_v3",
                 "Standard_DS2_v2",
                 "Standard_DS3_v2",
                 "Standard_DS4_v2",
                 "Standard_DS5_v2",
-                "Standard_F4s_v2",
-                "Standard_F8s_v2",
-                "Standard_F16s_v2",
-                "Standard_F32s_v2",
-                "Standard_F64s_v2",
-                "Standard_F72s_v2",
+                "Standard_DS2",
+                "Standard_DS3",
+                "Standard_DS4",
+                "Standard_B4ms",
+                "Standard_B8ms",
+                "Standard_F2s",
+                "Standard_F4s",
+                "Standard_F8s",
+                "Standard_F16s",
+                "Standard_E4s_v3",
                 "Standard_E8s_v3",
                 "Standard_E16s_v3",
-                "Standard_E20s_v3",
-                "Standard_E32s_v3"
+                "Standard_E32s_v3",
+                "Standard_E64s_v3",
+                "Standard_GS2",
+                "Standard_GS3",
+                "Standard_GS4",
+                "Standard_GS5",
+                "Standard_DS12_v2",
+                "Standard_DS13_v2",
+                "Standard_DS14_v2",
+                "Standard_DS15_v2",
+                "Standard_DS12",
+                "Standard_DS13",
+                "Standard_DS14",
+                "Standard_L4s",
+                "Standard_L8s",
+                "Standard_L16s",
+                "Standard_L32s"
             ],
             "metadata": {
-                "description": "The size of the virtual machine to use for each Jira node in the cluster."
+                "description": "The size of the virtual machine used for each Confluence node. The virtual machine must have capacity for 8 or more premium LRS data disks."
             }
         },
-        "clusterSshUser": {
+        "nodeSshUser": {
             "type": "string",
-            "defaultValue": "jiraadmin",
+            "defaultValue": "confluenceadmin",
             "metadata": {
-                "description": "The SSH username to use to access the Jira nodes from the Jumpbox. Note that access to the Jira nodes can only be made in this way."
+                "description": "The username used to SSH into each Confluence node from the jumpbox. This name must not be 'confluence'"
             }
         },
-        "clusterSshPassword": {
+        "nodeSshPassword": {
             "type": "securestring",
             "metadata": {
-                "description": "The SSH password of the SSH user needed to access the Jira nodes from the Jumpbox."
-            },
-            "minLength": 5
+                "description": "The password used to SSH into each Confluence node from the jumpbox."
+            }
         },
         "cname": {
             "type": "string",
             "defaultValue": "",
             "metadata": {
-                "description": "An existing Canonical Name record (CNAME) to use to access the JIRA instance."
+                "description": "An existing CNAME that will be used to access the Confluence instance."
             }
         },
         "dbCreateNew": {
             "type": "bool",
             "defaultValue": true,
             "metadata": {
-                "description": "Create a new database or attempt to use an existing specified database. Note that this has to be in same resource group and location as the target deployment."
+                "description": "Creates new database or attempts to use existing specified database (has to be in same resource group and location as the target deployment)"
             }
         },
         "dbType": {
@@ -90,47 +119,48 @@
             ],
             "defaultValue": "sqlserver",
             "metadata": {
-                "description": "The database type."
+                "description": "Database type"
             }
         },
         "dbHost": {
             "type": "string",
-            "defaultValue": "",
+            "defaultValue": "AUTO-GENERATED",
             "metadata": {
-                "description": "The hostname of database server."
+                "description": "Host name of DB server. Will be autogenerated if a new DB is to be created"
             }
         },
         "dbPort": {
             "type": "string",
-            "defaultValue": "[if(equals(parameters('dbType'), 'sqlserver'), '1433', if(equals(parameters('dbType'), 'postgres'), '5432', '3306'))]",
+            "defaultValue": "1433",
             "metadata": {
-                "description": "The database port to use."
+                "description": "Database port to use. 1433 for MS SQL, 5432 for Postgres, 3306 for MySQL"
             }
         },
         "dbDatabase": {
             "type": "string",
-            "defaultValue": "jira",
+            "defaultValue": "confdatabase",
             "metadata": {
-                "description": "The name of the Jira database."
+                "description": "Database name"
             }
         },
         "dbSchema": {
             "type": "string",
-            "defaultValue": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'sqlserver'), 'jiraschema', 'public'), 'jiraschema')]",
+            "defaultValue": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'Azure SQL DB'), 'confschema', 'public'), 'confschema')]",
             "metadata": {
-                "description": "The Jira database schema to use."
+                "description": "Database schema to use"
             }
         },
         "dbUsername": {
             "type": "string",
+            "defaultValue": "confluencedbuser",
             "metadata": {
-                "description": "The username of the Jira database user."
+                "description": "Database username"
             }
         },
         "dbPassword": {
             "type": "securestring",
             "metadata": {
-                "description": "The password of the Jira database user."
+                "description": "Database password"
             }
         },
         "dbTier": {
@@ -142,7 +172,7 @@
             ],
             "defaultValue": "Standard",
             "metadata": {
-                "description": "The database service tier."
+                "description": "The database service tier"
             }
         },
         "dbTierSize": {
@@ -166,82 +196,35 @@
             ],
             "defaultValue": "S2",
             "metadata": {
-                "description": "The size of the database service tier. Basic, Standard (S1..S12) and Premium (P1..P15) tier sizes are available."
+                "description": "The database service tier size"
             }
         },
-        "postgresDbSku": {
-            "type": "string",
-            "defaultValue": "GP_Gen5_4",
-            "allowedValues": [
-                "GP_Gen5_2",
-                "GP_Gen5_4",
-                "GP_Gen5_8",
-                "GP_Gen5_16",
-                "GP_Gen5_32",
-                "MO_Gen5_2",
-                "MO_Gen5_4",
-                "MO_Gen5_8",
-                "MO_Gen5_16",
-                "MO_Gen5_32"
-            ],
-            "metadata": {
-                "description": "The SKU (stock keeping unit) name of the PostgresSQL instance. Follows the convention {pricing tier}{compute generation}{vCores} eg General Purpose, Generation 5, 4 cores is GP_Gen5_4."
-            }
-        },
-        "postgresDbStorage": {
-            "type": "int",
-            "defaultValue": 102400,
-            "minValue": 102400,
-            "maxValue": 4194304,
-            "metadata": {
-                "description": "The storage size of the PostgresSQL instance."
-            }
-        },
-        "jiraProduct": {
-            "type": "string",
-            "allowedValues": [
-                "jira-software",
-                "servicedesk"
-            ],
-            "defaultValue": "jira-software",
-            "metadata": {
-                "description": "The Jira software product to install."
-            }
-        },
-        "jiraAdminUserName": {
+        "userName": {
             "type": "string",
             "defaultValue": "admin",
-            "minLength": 5,
             "metadata": {
-                "description": "The username for the Jira administrator's account."
+                "description": "Username of the Confluence administrator."
             }
         },
-        "jiraAdminUserPassword": {
+        "userCredential": {
             "type": "securestring",
-            "minLength": 5,
             "metadata": {
-                "description": "The password for the Jira administrator's account."
+                "description": "Password for the Confluence administrator."
             }
         },
-        "jiraAdminUserFullname": {
+        "userFullname": {
             "type": "string",
-            "minLength": 5,
-            "metadata": {
-                "description": "The fullname for the Jira administrator's account."
-            }
+            "defaultValue": "Admin Admin"
         },
-        "jiraAdminUserEmail": {
+        "userEmail": {
             "type": "string",
-            "minLength": 5,
-            "metadata": {
-                "description": "The email address of the Jira administrator user."
-            }
+            "defaultValue": "admin@example.com"
         },
-        "jiraAppTitle": {
+        "applicationTitle": {
             "type": "string",
-            "defaultValue": "Atlassian Jira",
+            "defaultValue": "Atlassian Confluence",
             "metadata": {
-                "description": "The name of the Jira site."
+                "description": "The site title for Confluence."
             }
         },
         "appGtwyClusterSize": {
@@ -257,7 +240,7 @@
             "defaultValue": 2,
             "minValue": 1,
             "metadata": {
-                "description": "The number of nodes in the Application Gateway cluster."
+                "description": "The number of nodes for the App Gateway cluster"
             }
         },
         "appGtwyTier": {
@@ -269,104 +252,109 @@
             ],
             "defaultValue": "Standard_Medium",
             "metadata": {
-                "description": "The Application Gateway size."
+                "description": "The application gateway size"
             }
         },
         "vnetName": {
-            "type": "string",
-            "metadata": {
-                "description": "The name of the Jira virtual network."
-            }
+            "type": "string"
         },
         "appSubnetName": {
-            "type": "string",
-            "metadata": {
-                "description": "The name of the subnet within the Jira virtual network where the Jira cluster is located."
-            }
+            "type": "string"
         },
         "gtwySubnetName": {
-            "type": "string",
-            "metadata": {
-                "description": "The name of the Jira virtual network subnet where the Application Gateway is located."
-            }
+            "type": "string"
         },
         "jumpboxName": {
-            "type": "string",
-            "metadata": {
-                "description": "The name of the Jumpbox."
-            }
+            "type": "string"
         },
         "jumpboxPublicIpAddress": {
-            "type": "string",
-            "metadata": {
-                "description": "The public IP address of the Jumpbox."
-            }
+            "type": "string"
         },
         "sslBase64EncodedPfxCertificate": {
             "type": "string",
-            "defaultValue": "",
-            "metadata": {
-                "description": "The certificate to be used for SSL termination on the Azure Application Gateway."
-            }
+            "defaultValue": ""
         },
         "sslPfxCertificatePassword": {
             "type": "string",
-            "defaultValue": "",
-            "metadata": {
-                "description": "The password of the certificate for SSL termination."
-            }
+            "defaultValue": ""
         },
         "enableApplicationInsights": {
             "type": "bool",
-            "defaultValue": true,
-            "metadata": {
-                "description": "Enable Azure Application Insights."
-            }
+            "defaultValue": true
         },
         "enableAnalytics": {
             "type": "bool",
-            "defaultValue": true,
-            "metadata": {
-                "description": "Enable Azure Operational Insights."
-            }
+            "defaultValue": true
         },
         "enableAcceleratedNetworking": {
             "type": "bool",
             "defaultValue": true,
             "metadata": {
-                "description": "Enable accelerated networking. Note that this needs to be on a supported instance type."
+                "description": "Enable accelerated networking? Needs to be a supported instance type."
+            }
+        },
+        "workspaceSku": {
+            "type": "string",
+            "defaultValue": "Free",
+            "allowedValues": [
+                "Free",
+                "Standard",
+                "Premium",
+                "Unlimited",
+                "PerNode",
+                "PerGB2018",
+                "Standalone"
+            ],
+            "metadata": {
+                "description": "Workspace SKU"
+            }
+        },
+        "releaseVersionUrl": {
+            "type": "string",
+            "defaultValue": "https://confluencedcversion.blob.core.windows.net/version/latest",
+            "metadata": {
+                "description": "URL for obtaining the latest confluence artifact version."
             }
         }
     },
     "variables": {
-        "namespace": "jira",
-        "dbTemplateUri": "[uri(parameters('_artifactsLocation'), concat(if(equals(parameters('dbType'),'sqlserver'),'nestedtemplates/azuredeploy-db-mssql.json','nestedtemplates/azuredeploy-db-postgres.json'), parameters('_artifactsLocationSasToken')))]",
-        "vmssTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-jira-vmss.json', parameters('_artifactsLocationSasToken')))]",
-        "byodbTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-byodb.json', parameters('_artifactsLocationSasToken')))]",
-        "appGtwyTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-jira-gtwy.json', parameters('_artifactsLocationSasToken')))]",
-        "appInsightsTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-app-insights.json', parameters('_artifactsLocationSasToken')))]",
-        "analyticsTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-analytics.json', parameters('_artifactsLocationSasToken')))]",
+        "namespace": "conf",
         "tags": {
             "vendor": "Atlassian",
-            "product": "JIRA",
+            "product": "Confluence",
             "provider": "2F0AF47A-92C7-413A-9009-C3815BFF7AF6"
         },
-        "jira": {
-            "storage": {
-                "name": "[concat(variables('namespace'), 'storage', uniqueString(resourceGroup().id))]"
-            }
+        "storage": {
+            "name": "[concat(variables('namespace'), 'storage', uniqueString(resourceGroup().id))]"
         },
         "workspace": {
             "name": "[concat(variables('namespace'), '-omsworkspace-', uniqueString(resourceGroup().id))]",
-            "sku": "free",
+            "sku": "[parameters('workspaceSku')]",
             "retentionInDays": 7
         },
         "gtwyIpName": "[concat(variables('namespace'), '-appgtwyip-', uniqueString(resourceGroup().id))]",
         "gtwyName": "[if(empty(parameters('sslBase64EncodedPfxCertificate')), concat(variables('namespace'), 'appgateway'), concat(variables('namespace'), 'appgateway-https'))]",
         "gtwyAddressPoolName": "[concat(variables('namespace'), 'appgwaddrpool')]",
+        "dbTemplateUri": "[uri(parameters('_artifactsLocation'), concat(if(equals(parameters('dbType'),'sqlserver'),'nestedtemplates/azuredeploy-db-mssql.json','nestedtemplates/azuredeploy-db-postgres.json'), parameters('_artifactsLocationSasToken')))]",
+        "appGtwyTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-confluence-gtwy.json', parameters('_artifactsLocationSasToken')))]",
+        "vmssTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-confluence-vmss.json', parameters('_artifactsLocationSasToken')))]",
+        "appInsightsTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-app-insights.json', parameters('_artifactsLocationSasToken')))]",
+        "analyticsTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-analytics.json', parameters('_artifactsLocationSasToken')))]",
         "dbTemplate": "[if(equals(parameters('dbType'),'sqlserver'), 'sqlDbTemplate', 'postgresDbTemplate')]"
     },
     "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2018-02-01",
+            "name": "[variables('storage').name]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "Storage",
+            "properties": {}
+        },
         {
             "type": "Microsoft.OperationalInsights/workspaces",
             "name": "[variables('workspace').name]",
@@ -384,20 +372,20 @@
                 {
                     "apiVersion": "2015-11-01-preview",
                     "type": "dataSources",
-                    "name": "JiraLogs",
+                    "name": "ConfluenceLogs",
                     "dependsOn": [
                         "[concat('Microsoft.OperationalInsights/workspaces/', variables('workspace').name)]"
                     ],
                     "kind": "CustomLog",
                     "properties": {
-                        "customLogName": "JiraLogs",
-                        "description": "Captures all Atlassian logs found at /var/atlassian/application-data/jira/log",
+                        "customLogName": "ConfluenceLogs",
+                        "description": "Captures all Atlassian logs found at /var/atlassian/application-data/confluence/logs",
                         "inputs": [
                             {
                                 "location": {
                                     "fileSystemLocations": {
                                         "linuxFileTypeLogPaths": [
-                                            "/var/atlassian/application-data/jira/log/atlassian*.log"
+                                            "/var/atlassian/application-data/confluence/logs/atlassian*.log"
                                         ]
                                     }
                                 },
@@ -428,7 +416,7 @@
                 {
                     "apiVersion": "2015-11-01-preview",
                     "type": "dataSources",
-                    "name": "jiraLogCollection",
+                    "name": "confLogCollection",
                     "dependsOn": [
                         "[concat('Microsoft.OperationalInsights/workspaces/', variables('workspace').name)]"
                     ],
@@ -443,7 +431,6 @@
             "apiVersion": "2015-01-01",
             "name": "sqlDbTemplate",
             "type": "Microsoft.Resources/deployments",
-            "condition": "[and(parameters('dbCreateNew'), equals(parameters('dbType'), 'sqlserver'))]",
             "dependsOn": [
                 "[variables('workspace').name]"
             ],
@@ -489,147 +476,6 @@
                     },
                     "jumpboxPublicIpAddress": {
                         "value": "[parameters('jumpboxPublicIpAddress')]"
-                    }
-                }
-            }
-        },
-        {
-            "apiVersion": "2015-01-01",
-            "name": "postgresDbTemplate",
-            "type": "Microsoft.Resources/deployments",
-            "condition": "[and(parameters('dbCreateNew'), equals(parameters('dbType'), 'postgres'))]",
-            "dependsOn": [],
-            "properties": {
-                "mode": "Incremental",
-                "templateLink": {
-                    "uri": "[variables('dbTemplateUri')]",
-                    "contentVersion": "1.0.0.0"
-                },
-                "parameters": {
-                    "location": {
-                        "value": "[parameters('location')]"
-                    },
-                    "dbServerName": {
-                        "value": "[parameters('dbHost')]"
-                    },
-                    "dbDatabaseName": {
-                        "value": "[parameters('dbDatabase')]"
-                    },
-                    "dbUsername": {
-                        "value": "[parameters('dbUsername')]"
-                    },
-                    "dbPassword": {
-                        "value": "[parameters('dbPassword')]"
-                    },
-                    "postgresDbSku": {
-                        "value": "[parameters('postgresDbSku')]"
-                    },
-                    "postgresDbStorage": {
-                        "value": "[parameters('postgresDbStorage')]"
-                    },
-                    "vnetName": {
-                        "value": "[parameters('vnetName')]"
-                    },
-                    "appSubnetName": {
-                        "value": "[parameters('appSubnetName')]"
-                    },
-                    "jumpboxPublicIpAddress": {
-                        "value": "[parameters('jumpboxPublicIpAddress')]"
-                    }
-                }
-            }
-        },
-        {
-            "apiVersion": "2015-01-01",
-            "name": "byodbTemplate",
-            "type": "Microsoft.Resources/deployments",
-            "condition": "[not(parameters('dbCreateNew'))]",
-            "dependsOn": [
-                "[variables('workspace').name]"
-            ],
-            "properties": {
-                "mode": "Incremental",
-                "templateLink": {
-                    "uri": "[variables('byodbTemplateUri')]",
-                    "contentVersion": "1.0.0.0"
-                },
-                "parameters": {
-                    "location": {
-                        "value": "[parameters('location')]"
-                    },
-                    "dbType": {
-                        "value": "[parameters('dbType')]"
-                    },
-                    "dbServerName": {
-                        "value": "[parameters('dbHost')]"
-                    },
-                    "dbDatabaseName": {
-                        "value": "[parameters('dbDatabase')]"
-                    },
-                    "dbPort": {
-                        "value": "[parameters('dbPort')]"
-                    },
-                    "dbPassword": {
-                        "value": "[parameters('dbPassword')]"
-                    },
-                    "dbUsername": {
-                        "value": "[parameters('dbUsername')]"
-                    },
-                    "vnetName": {
-                        "value": "[parameters('vnetName')]"
-                    },
-                    "appSubnetName": {
-                        "value": "[parameters('appSubnetName')]"
-                    }
-                }
-            }
-        },
-        {
-            "apiVersion": "2015-01-01",
-            "name": "appInsightsTemplate",
-            "type": "Microsoft.Resources/deployments",
-            "condition": "[parameters('enableApplicationInsights')]",
-            "dependsOn": [
-                "[variables('workspace').name]",
-                "[variables('dbTemplate')]"
-            ],
-            "properties": {
-                "mode": "Incremental",
-                "templateLink": {
-                    "uri": "[variables('appInsightsTemplateUri')]",
-                    "contentVersion": "1.0.0.0"
-                },
-                "parameters": {
-                    "location": {
-                        "value": "[parameters('location')]"
-                    }
-                }
-            }
-        },
-        {
-            "apiVersion": "2015-01-01",
-            "name": "analyticsTemplate",
-            "type": "Microsoft.Resources/deployments",
-            "condition": "[parameters('enableAnalytics')]",
-            "dependsOn": [
-                "[variables('workspace').name]",
-                "[variables('dbTemplate')]"
-            ],
-            "properties": {
-                "mode": "Incremental",
-                "templateLink": {
-                    "uri": "[variables('analyticsTemplateUri')]",
-                    "contentVersion": "1.0.0.0"
-                },
-                "parameters": {
-                    "location": {
-                        "value": "[parameters('location')]"
-                    },
-                    "workspaceName": {
-                        "value": "[variables('workspace').name]"
-                    },
-                    "dbType": {
-                        "value": "[parameters('dbType')]"
                     }
                 }
             }
@@ -710,7 +556,7 @@
             "name": "vmssTemplate",
             "type": "Microsoft.Resources/deployments",
             "dependsOn": [
-                "[concat('Microsoft.Storage/storageAccounts/', variables('jira').storage.name)]",
+                "[concat('Microsoft.Storage/storageAccounts/', variables('storage').name)]",
                 "[variables('dbTemplate')]"
             ],
             "properties": {
@@ -736,10 +582,10 @@
                         "value": "[parameters('clusterVmSize')]"
                     },
                     "clusterSshUser": {
-                        "value": "[parameters('clusterSshUser')]"
+                        "value": "[parameters('nodeSshUser')]"
                     },
                     "clusterSshPassword": {
-                        "value": "[parameters('clusterSshPassword')]"
+                        "value": "[parameters('nodeSshPassword')]"
                     },
                     "cname": {
                         "value": "[parameters('cname')]"
@@ -765,23 +611,20 @@
                     "dbPassword": {
                         "value": "[parameters('dbPassword')]"
                     },
-                    "jiraProduct": {
-                        "value": "[parameters('jiraProduct')]"
+                    "confAdminUserName": {
+                        "value": "[parameters('userName')]"
                     },
-                    "jiraAdminUserName": {
-                        "value": "[parameters('jiraAdminUserName')]"
+                    "confAdminUserPassword": {
+                        "value": "[parameters('userCredential')]"
                     },
-                    "jiraAdminUserPassword": {
-                        "value": "[parameters('jiraAdminUserPassword')]"
+                    "confAdminUserFullname": {
+                        "value": "[parameters('userFullname')]"
                     },
-                    "jiraAdminUserFullname": {
-                        "value": "[parameters('jiraAdminUserFullname')]"
+                    "confAdminUserEmail": {
+                        "value": "[parameters('userEmail')]"
                     },
-                    "jiraAdminUserEmail": {
-                        "value": "[parameters('jiraAdminUserEmail')]"
-                    },
-                    "jiraAppTitle": {
-                        "value": "[parameters('jiraAppTitle')]"
+                    "confAppTitle": {
+                        "value": "[parameters('applicationTitle')]"
                     },
                     "vnetName": {
                         "value": "[parameters('vnetName')]"
@@ -804,14 +647,17 @@
                     "gtwyAddressPoolName": {
                         "value": "[variables('gtwyAddressPoolName')]"
                     },
-                    "jiraBaseUrl": {
+                    "confBaseUrl": {
                         "value": "[if(not(empty(parameters('cname'))), parameters('cname'), reference(variables('gtwyIpName')).dnsSettings.fqdn)]"
                     },
-                    "jiraDbServerName": {
+                    "confDbServerName": {
                         "value": "[if(parameters('dbCreateNew'), reference(variables('dbTemplate')).outputs.serverName.value, parameters('dbHost'))]"
                     },
                     "storageAccessKey": {
-                        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('jira').storage.name), '2017-06-01').keys[0].value]"
+                        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts/', variables('storage').name), '2017-06-01').keys[0].value]"
+                    },
+                    "storageFilesEndpoint": {
+                        "value": "[reference(resourceId('Microsoft.Storage/storageAccounts/', variables('storage').name), '2017-06-01').primaryEndpoints.file]"
                     },
                     "enableAcceleratedNetworking": {
                         "value": "[parameters('enableAcceleratedNetworking')]"
@@ -824,22 +670,62 @@
                     },
                     "workspaceSecondaryKey": {
                         "value": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name), '2015-11-01-preview').secondarySharedKey]"
+                    },
+                    "releaseVersionUrl": {
+                        "value": "[parameters('releaseVersionUrl')]"
                     }
                 }
             }
         },
         {
-            "type": "Microsoft.Storage/storageAccounts",
-            "apiVersion": "2018-07-01",
-            "name": "[variables('jira').storage.name]",
-            "location": "[parameters('location')]",
-            "sku": {
-                "name": "Standard_GRS",
-                "tier": "Standard"
-            },
-            "kind": "StorageV2",
-            "properties": {},
-            "tags": "[variables('tags')]"
+            "apiVersion": "2015-01-01",
+            "name": "appInsightsTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[parameters('enableApplicationInsights')]",
+            "dependsOn": [
+                "[variables('workspace').name]",
+                "[variables('dbTemplate')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('appInsightsTemplateUri')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-01-01",
+            "name": "analyticsTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[parameters('enableAnalytics')]",
+            "dependsOn": [
+                "[variables('workspace').name]",
+                "[variables('dbTemplate')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('analyticsTemplateUri')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "workspaceName": {
+                        "value": "[variables('workspace').name]"
+                    },
+                    "dbType": {
+                        "value": "[parameters('dbType')]"
+                    }
+                }
+            }
         }
     ],
     "outputs": {
@@ -847,7 +733,7 @@
             "type": "string",
             "value": "[if(parameters('dbCreateNew'), reference(variables('dbTemplate')).outputs.jdbcUrl.value, reference('byodbTemplate').outputs.jdbcUrl.value)]"
         },
-        "jiraAppEndpoint": {
+        "confAppEndpoint": {
             "type": "string",
             "value": "[reference(variables('gtwyIpName')).dnsSettings.fqdn]"
         },
@@ -861,7 +747,7 @@
         },
         "storageAccountName": {
             "type": "string",
-            "value": "[variables('jira').storage.name]"
+            "value": "[variables('storage').name]"
         },
         "clusterName": {
             "type": "string",

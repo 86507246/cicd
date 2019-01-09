@@ -595,7 +595,6 @@ function install_appinsights_collectd {
 
 function download_appinsights_jars {
   atl_log download_appinsights_jars "Downloading MS AppInsight Jars"
-  APPINSIGHTS_VER='2.2.1'
   JARS="applicationinsights-core-${APPINSIGHTS_VER}.jar applicationinsights-web-${APPINSIGHTS_VER}.jar applicationinsights-collectd-${APPINSIGHTS_VER}.jar"
   for aJar in $(echo $JARS)
   do

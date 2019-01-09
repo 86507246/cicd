@@ -3,47 +3,25 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "location": {
-            "type": "string",
-            "metadata": {
-                "description": "The region where Azure will house the deployment."
-            },
-            "minLength": 5
+            "type": "string"
         },
-        "jiraAdminUserEmail": {
-            "type": "string",
-            "metadata": {
-                "description": "The email address of the Jira administrator user."
-            }
+        "adminUserEmail": {
+            "type": "string"
         },
         "gtwyName": {
-            "type": "string",
-            "metadata": {
-                "description": "The name of the Application Gateway."
-            }
+            "type": "string"
         },
         "storageAccountName": {
-            "type": "string",
-            "metadata": {
-                "description": "The name of the storage account."
-            }
+            "type": "string"
         },
         "clusterName": {
-            "type": "string",
-            "metadata": {
-                "description": "The name of the Jira cluster."
-            }
+            "type": "string"
         },
         "appInsightsName": {
-            "type": "string",
-            "metadata": {
-                "description": "The name of the Application Insights resource."
-            }
+            "type": "string"
         },
         "statusCheckUrl": {
-            "type": "string",
-            "metadata": {
-                "description": "The Jira status check URL."
-            }
+            "type": "string"
         },
         "dbType": {
             "type": "string",
@@ -52,38 +30,29 @@
                 "postgres",
                 "mysql"
             ],
-            "defaultValue": "sqlserver",
-            "metadata": {
-                "description": "The database type."
-            }
+            "defaultValue": "sqlserver"
         },
         "dbDatabaseServerName": {
-            "type": "string",
-            "metadata": {
-                "description": "The database server name."
-            }
+            "type": "string"
         },
         "dbDatabaseName": {
-            "type": "string",
-            "metadata": {
-                "description": "The Jira database name."
-            }
+            "type": "string"
         }
     },
     "variables": {
-        "namespace": "jira",
+        "namespace": "conf",
         "supportTeam": {
             "name": "[concat(variables('namespace'), '-SupportTeam-', uniqueString(resourceGroup().id))]",
             "shortName": "[toUpper(concat(variables('namespace'), 'SupTeam'))]"
         },
         "alerts": {
-            "jiraNodeOffline": {
+            "confNodeOffline": {
                 "name": "[concat(variables('namespace'), '-AlertClusterNodeOffline-', uniqueString(resourceGroup().id))]"
             },
-            "jiraSanSize": {
+            "confSanSize": {
                 "name": "[concat(variables('namespace'), '-AlertSharedStorageSize-', uniqueString(resourceGroup().id))]"
             },
-            "jiraClusterNodeCPU": {
+            "confClusterNodeCPU": {
                 "name": "[concat(variables('namespace'), '-AlertClusterNodeHighCpuUsage-', uniqueString(resourceGroup().id))]"
             },
             "dbCpuPercentage": {
@@ -118,8 +87,8 @@
                 "enabled": true,
                 "emailReceivers": [
                     {
-                        "name": "JiraEmailAction_-EmailAction-",
-                        "emailAddress": "[parameters('jiraAdminUserEmail')]"
+                        "name": "ConfEmailAction_-EmailAction-",
+                        "emailAddress": "[parameters('adminUserEmail')]"
                     }
                 ],
                 "smsReceivers": [],
@@ -134,13 +103,13 @@
         },
         {
             "type": "Microsoft.Insights/metricAlerts",
-            "name": "[variables('alerts').jiraNodeOffline.name]",
+            "name": "[variables('alerts').confNodeOffline.name]",
             "apiVersion": "2018-03-01",
             "location": "global",
             "tags": {},
             "scale": null,
             "properties": {
-                "description": "A Jira node has just became unhealthly/gone offline. ",
+                "description": "A Confluence node has just became unhealthly/gone offline. ",
                 "enabled": true,
                 "severity": 1,
                 "windowSize": "PT5M",
@@ -178,7 +147,7 @@
         },
         {
             "type": "Microsoft.Insights/metricAlerts",
-            "name": "[variables('alerts').jiraSanSize.name]",
+            "name": "[variables('alerts').confSanSize.name]",
             "apiVersion": "2018-03-01",
             "location": "Global",
             "properties": {
@@ -220,11 +189,11 @@
         },
         {
             "type": "Microsoft.Insights/metricAlerts",
-            "name": "[variables('alerts').jiraClusterNodeCPU.name]",
+            "name": "[variables('alerts').confClusterNodeCPU.name]",
             "apiVersion": "2018-03-01",
             "location": "Global",
             "properties": {
-                "description": "A Jira node is running hot.",
+                "description": "A Confluence node is running hot.",
                 "enabled": true,
                 "severity": 3,
                 "windowSize": "PT5M",
@@ -364,7 +333,7 @@
                         "odata.type": "Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
                         "sendToServiceOwners": false,
                         "customEmails": [
-                            "[parameters('jiraAdminUserEmail')]"
+                            "[parameters('adminUserEmail')]"
                         ]
                     }
                 ]
@@ -396,7 +365,7 @@
                         "odata.type": "Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
                         "sendToServiceOwners": false,
                         "customEmails": [
-                            "[parameters('jiraAdminUserEmail')]"
+                            "[parameters('adminUserEmail')]"
                         ]
                     }
                 ]
@@ -428,7 +397,7 @@
                         "odata.type": "Microsoft.Azure.Management.Insights.Models.RuleEmailAction",
                         "sendToServiceOwners": false,
                         "customEmails": [
-                            "[parameters('jiraAdminUserEmail')]"
+                            "[parameters('adminUserEmail')]"
                         ]
                     }
                 ]
