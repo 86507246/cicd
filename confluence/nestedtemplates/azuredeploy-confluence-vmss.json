@@ -262,27 +262,31 @@
         },
         "lookup": {
             "dbTierToMaxConnections": {
-                "Basic": 300,
-                "S0": 600,
-                "S1": 900,
-                "S2": 1200,
-                "S3": 2400,
-                "S4": 4800,
-                "S6": 9600,
-                "S7": 19200,
-                "S9": 30000,
-                "S12": 30000,
-                "P1": 30000,
-                "P2": 30000,
-                "P4": 30000,
-                "P6": 30000,
-                "P11": 30000,
-                "P15": 30000
+                "Basic": 30,
+                "S0": 60,
+                "S1": 90,
+                "S2": 120,
+                "S3": 200,
+                "S4": 400,
+                "S6": 800,
+                "S7": 1600,
+                "S9": 3200,
+                "S12": 6000,
+                "P1": 200,
+                "P2": 400,
+                "P4": 800,
+                "P6": 1600,
+                "P11": 2400,
+                "P15": 6400
             }
         },
         "c3p0Settings": {
-            "minConnections": "[min(300, div(coalesce(variables('lookup').dbTierToMaxConnections[parameters('dbTierSize')], 300), parameters('clusterSize')))]",
-            "maxConnections": "[min(300, div(coalesce(variables('lookup').dbTierToMaxConnections[parameters('dbTierSize')], 300), parameters('clusterSize')))]"
+            "maxConnections": "[div(variables('lookup').dbTierToMaxConnections[parameters('dbTierSize')], parameters('clusterSize'))]",
+            "minConnections": "[div(div(variables('lookup').dbTierToMaxConnections[parameters('dbTierSize')], parameters('clusterSize')), 2)]"
+        },
+        "httpSettings": {
+            "dbConnectionsMinus25Percent": "[div(mul(variables('c3p0Settings').maxConnections, 75),100)]",
+            "dbConnectionsMinus10": "[sub(variables('c3p0Settings').maxConnections, 10)]"
         },
         "isSslSpecified": "[not(empty(parameters('sslBase64EncodedPfxCertificate')))]",
         "env": {
@@ -347,11 +351,11 @@
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_THREADS",
-                    "value": "[string(sub(variables('c3p0Settings').maxConnections, 50))]"
+                    "value": "[string(if(less(variables('httpSettings').dbConnectionsMinus25Percent, variables('httpSettings').dbConnectionsMinus10), variables('httpSettings').dbConnectionsMinus25Percent, variables('httpSettings').dbConnectionsMinus10))]"
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MIN_THREADS",
-                    "value": "[string(sub(variables('c3p0Settings').maxConnections, 50))]"
+                    "value": "[string(div(if(less(variables('httpSettings').dbConnectionsMinus25Percent, variables('httpSettings').dbConnectionsMinus10), variables('httpSettings').dbConnectionsMinus25Percent, variables('httpSettings').dbConnectionsMinus10),2))]"
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_ACCEPT_COUNT",
@@ -689,13 +693,13 @@
             "type": "string",
             "value": "[variables('confInstallCmd')]"
         },
-        "minConnections": {
-           "type": "string",
-           "value": "[string(variables('c3p0Settings').minConnections)]"
-        },
-        "maxConnections": {
+        "maxDbConnections": {
             "type": "string",
             "value": "[string(variables('c3p0Settings').maxConnections)]"
+        },
+        "maxHttpThreads": {
+            "type": "int",
+            "value": "[if(less(variables('httpSettings').dbConnectionsMinus25Percent, variables('httpSettings').dbConnectionsMinus10), variables('httpSettings').dbConnectionsMinus25Percent, variables('httpSettings').dbConnectionsMinus10)]"
          }
     }
 }
