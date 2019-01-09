@@ -6,6 +6,7 @@ ATL_GENERATE_SERVER_ID_SCRIPT="print((new com.atlassian.license.DefaultSIDManage
 ATL_TEMP_DIR="/tmp"
 ATL_JIRA_VARFILE="${ATL_TEMP_DIR}/jira.varfile"
 ATL_MSSQL_DRIVER_URL="https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/6.1.0.jre8/mssql-jdbc-6.1.0.jre8.jar"
+ATL_POSTGRES_DRIVER_URL="http://central.maven.org/maven2/org/postgresql/postgresql/9.4.1211/postgresql-9.4.1211.jar"
 
 function atl_log {
   local scope=$1
@@ -24,24 +25,6 @@ function log {
 function error {
   atl_error "${FUNCNAME[1]}" "$1"
   exit 3
-}
-
-
-function enable_nat {
-  atl_log enable_nat "Enabling NAT"
-  sysctl -w net.ipv4.ip_forward=1 >> /etc/sysctl.conf
-
-  iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-
-  iptables -t nat -A PREROUTING -p tcp -i eth0 --dport 80 -j DNAT --to-destination 10.0.1.99
-  iptables -A FORWARD -i eth0 -p tcp -d 10.0.1.99 --dport 80 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
-
-  iptables -A FORWARD -i eth1 -o eth0 -j ACCEPT
-
-  atl_log enable_nat "Persisting iptables rules"
-
-  iptables-save > /etc/iptables.conf
-  echo "iptables-restore -n < /etc/iptables.conf" >> /etc/rc.local
 }
 
 function enable_rc_local {
@@ -302,19 +285,43 @@ function prepare_share {
 function hydrate_shared_config {
   export SERVER_PROXY_NAME="${SERVER_CNAME:-${SERVER_AZURE_DOMAIN}}"
   export DB_TRUSTED_HOST=$(get_trusted_dbhost)
+  export DB_SCRIPT_NAME_LOC=$(ls -C1 *db.sql.template | sed 's/\.template$//')
 
-  local template_files=(dbconfig.xml.template server.xml.template)
+  case $DB_TYPE in
+     sqlserver)
+         export DB_CONFIG_TYPE="mssql"
+         export DB_DRIVER_JAR="mssql-jdbc-6.1.0.jre8.jar"
+         export DB_DRIVER_CLASS="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+         export DB_JDBCURL="jdbc:sqlserver://${DB_SERVER_NAME}:${DB_PORT};database=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=${DB_TRUSTED_HOST}"
+         export DB_USER_LIQUIBASE="${DB_USER}@${DB_SERVER_NAME}"
+         ;;
+     postgres)
+         export DB_CONFIG_TYPE="postgres72"
+         export DB_DRIVER_JAR="postgresql-9.4.1211.jar"
+         export DB_DRIVER_CLASS="org.postgresql.Driver"
+         export DB_USER="$DB_USER@$(echo ${DB_SERVER_NAME} | cut -d '.' -f1)"
+         export DB_JDBCURL="jdbc:postgresql://${DB_SERVER_NAME}:${DB_PORT}/${DB_NAME}?ssl=true"
+         export DB_USER_LIQUIBASE="${DB_USER}"
+         ;;
+     *)
+         error "Unsupported DB Type: ${DB_TYPE}"
+         ;;
+  esac
+
+  atl_log hdyrate_shared_config "Created DB_JDBCURL=${DB_JDBCURL}"
+
+  local template_files=(dbconfig.xml.template server.xml.template ApplicationInsights.xml.template jira-collectd.conf.template databaseChangeLog.xml.template)
   local output_file=""
   for template_file in ${template_files[@]};
   do
     output_file=`echo "${template_file}" | sed 's/\.template$//'`
     cat ${template_file} | python3 hydrate_jira_config.py > ${output_file}
-    atl_log dyrate_shared_config "Hydrated '${template_file}' into '${output_file}'"
+    atl_log hdyrate_shared_config "Hydrated '${template_file}' into '${output_file}'"
   done
 }
 
 function copy_artefacts {
-  local excluded_files=(std* version installer *.jar prepare_install.sh *.py *.sh *.template *.sql *.js)
+  local excluded_files=(std* version installer *.jar prepare_install.sh *.py *.sh *.template *.sql *.js *.xsl)
 
   local exclude_rules=""
   for file in ${excluded_files[@]};
@@ -327,21 +334,19 @@ function copy_artefacts {
 
 function hydrate_db_dump {
   export USER_ENCRYPTION_METHOD="atlassian-security"
-
   export USER_PASSWORD=`run_password_generator ${USER_CREDENTIAL}`
-
   export USER_FIRSTNAME=`echo ${USER_FULLNAME} | cut -d ' ' -f 1`
   export USER_LASTNAME=`echo ${USER_FULLNAME} | cut -d ' ' -f 2-`
-
   export USER_FIRSTNAME_LOWERCASE=`echo ${USER_FULLNAME_LOWERCASE} | cut -d ' ' -f 1`
   export USER_LASTNAME_LOWERCASE=`echo ${USER_FULLNAME_LOWERCASE} | cut -d ' ' -f 2-`
   export SERVER_ID=`generate_server_id`
+  export DB_USER=`echo ${DB_USER} | cut -d '@' -f 1`
 
   log "Generated server id [${SERVER_ID}]"
 
   log "Prepare database dump [user=${USER_NAME}, password=${USER_PASSWORD}, credential=${USER_CREDENTIAL}]"
 
-  local template_file="jira_db.sql.template"
+  local template_file=$(ls -C1 *db.sql.template)
   local output_file=`echo "${template_file}" | sed 's/\.template$//'`
 
   cat ${template_file} | python3 hydrate_jira_config.py > ${output_file}
@@ -352,26 +357,6 @@ function install_liquibase {
   atl_log install_liquibase "Downloading liquibase"
   mvn dependency:get -Dartifact=org.liquibase:liquibase-core:3.5.3 -Dtransitive=false -Ddest=.
   atl_log install_liquibase "Liquibase has been downloaded"
-  atl_log install_liquibase "Preparing liquibase migration file"
-
-  cat <<EOT >> "databaseChangeLog.xml"
-<databaseChangeLog
-    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd
-    http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
-    <changeSet id="1" author="jira">
-      <sqlFile dbms="mssql"
-               encoding="utf8"
-               endDelimiter="\nGO"
-               path="jira_db.sql"
-               relativeToChangelogFile="true" />
-    </changeSet>
-</databaseChangeLog>
-EOT
-
-  atl_log install_liquibase "Prepared liquibase migration file"
 }
 
 function prepare_database {
@@ -379,7 +364,7 @@ function prepare_database {
   install_liquibase
   atl_log prepare_database "liquibase has been installed"
   atl_log prepare_database "ready to hydrate db dump"
-  hydrate_db_dump  
+  hydrate_db_dump
 }
 
 function get_trusted_dbhost {
@@ -389,13 +374,21 @@ function get_trusted_dbhost {
 
 function apply_database_dump {
   java -jar liquibase-core-3.5.3.jar \
-    --classpath="mssql-jdbc-6.1.0.jre8.jar" \
-    --driver=com.microsoft.sqlserver.jdbc.SQLServerDriver \
-    --url="jdbc:sqlserver://${DB_SERVER_NAME}:1433;database=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=$(get_trusted_dbhost);loginTimeout=30;" \
-    --username="${DB_USER}@${DB_SERVER_NAME}" \
+    --classpath="${DB_DRIVER_JAR}" \
+    --driver=${DB_DRIVER_CLASS} \
+    --url="${DB_JDBCURL}" \
+    --username="${DB_USER_LIQUIBASE}" \
     --password="${DB_PASSWORD}" \
+    --logLevel=info \
     --changeLogFile=databaseChangeLog.xml \
     update
+  
+  if [ "$?" -ne "0" ]; then
+    copy_artefacts
+    error "Liquibase dump failed with and error. Check logs and rectify!!"
+  else
+    atl_log apply_database_dump "Liquibase has been sucessfully executed"
+  fi
 }
 
 function prepare_env {
@@ -407,7 +400,9 @@ function prepare_env {
            >> setenv.sh; \
     done
 
+  atl_log prepare_env "Using BaseURL of ${3}://${2}"
   echo "export STORAGE_KEY='${1}'" >> setenv.sh
+  echo "export BASEURL='${3}://${2}'" >> setenv.sh
 }
 
 function prepare_varfile {
@@ -451,7 +446,7 @@ function restore_installer {
     cp ${installer_path} "${installer_target}"
     chmod 0700 "${installer_target}"
   else
-    local msg="${ATL_JIRA_PRODUCT} installer ${jira_installer} ca been requested but unable to locate it in ${ATL_JIRA_SHARED_HOME}"
+    local msg="${ATL_JIRA_PRODUCT} installer ${jira_installer} has been requested but unable to locate it in ${ATL_JIRA_SHARED_HOME}"
     atl_log restore_installer "${msg}"
     error "${msg}"
   fi
@@ -489,7 +484,7 @@ function ensure_readable {
 # otherwise just downloads the installer and puts it into shared home
 function prepare_installer {
   atl_log prepare_install "Checking if installer has been downloaded aready"
-  ensure_readable "${ATL_JIRA_SHARED_HOME}/$ATL_JIRA_PRODUCT.version"
+  ensure_readable "${ATL_JIRA_SHARED_HOME}/server.xml"
   if [[ -f ${ATL_JIRA_SHARED_HOME}/$ATL_JIRA_PRODUCT.version ]]; then
     atl_log prepare_installer "Detected installer, restoring it"
     restore_installer
@@ -497,9 +492,20 @@ function prepare_installer {
     atl_log prepare_installer "No installer has been found, downloading..."
     download_installer
     preserve_installer
+    restore_installer
   fi
 
   atl_log prepare_installer "Installer is ready!"
+}
+
+# Check if fontconfig has been installed.
+# Adoptopenjdk8 has a known bug with fontconfig missing, which will cause installer to fail
+# Details see https://github.com/AdoptOpenJDK/openjdk-build/issues/693
+function prepare_fontconfig {
+  log "Installing fontconfig package..."
+  apt update && apt install -y fontconfig
+
+  log "Font config is ready!"
 }
 
 function perform_install {
@@ -527,18 +533,78 @@ function perform_install {
   atl_log perform_install "${ATL_JIRA_PDORUCT} installation completed"
 }
 
-function install_mssql_driver {
+function install_jdbc_drivers {
   local install_location="${1:-${ATL_JIRA_INSTALL_DIR}/lib}"
 
-  atl_log install_mssql_driver 'Downloading Microsoft database driver'
+  for jarURL in $(echo $ATL_MSSQL_DRIVER_URL $ATL_POSTGRES_DRIVER_URL)
+  do
+     atl_log install_jdbc_drivers "Downloading JDBC driver from ${jarURL}"
+     curl -O "${jarURL}"
 
-  curl -O "${ATL_MSSQL_DRIVER_URL}"
-  
-  atl_log install_mssql_driver "Copying JDBC driver to ${install_location}"
+     atl_log install_jdbc_drivers "Copying JDBC driver to ${install_location}"
+     cp -fp $(basename $(echo ${jarURL})) "${install_location}"
+  done
 
-  cp mssql-jdbc-6.1.0.jre8.jar "${install_location}"
+  atl_log install_jdbc_drivers 'JDBC drivers has been copied.'
+}
 
-  atl_log install_mssql_driver 'MS JDBC driver has been copied.'
+function install_appinsights {
+  atl_log install_appinsights "Installation MS App Insights"
+  atl_log install_appinsights "Have AppInsights Key? |${APPINSIGHTS_INSTRUMENTATION_KEY}|"
+  if [ -n "${APPINSIGHTS_INSTRUMENTATION_KEY}" ]
+  then
+     atl_log install_appinsights "Installing App Insights"
+     apt-get -qqy install xsltproc
+     download_appinsights_jars ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/lib
+
+     cp -fp ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/web.xml ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/web.xml.orig
+     xsltproc -o ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/web.xml ./appinsights_transform_web_xml.xsl ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/web.xml
+
+     cp -fp ${ATL_JIRA_SHARED_HOME}/ApplicationInsights.xml ${ATL_JIRA_INSTALL_DIR}/atlassian-jira/WEB-INF/classes
+
+     atl_log install_appinsights "Switching on Jira JMX"
+     echo "jira.monitoring.jmx.enabled=true" >> ${ATL_JIRA_HOME}/jira-config.properties
+
+     cp -fp ${ATL_JIRA_INSTALL_DIR}/bin/setenv.sh ${ATL_JIRA_INSTALL_DIR}/bin/setenv.sh.orig
+     sed 's/export CATALINA_OPTS/CATALINA_OPTS="${CATALINA_OPTS} -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"\nexport CATALINA_OPTS/' ${ATL_JIRA_INSTALL_DIR}/bin/setenv.sh.orig > ${ATL_JIRA_INSTALL_DIR}/bin/setenv.sh
+  fi
+}
+
+function install_appinsights_collectd {
+  # Have moved collectd to run after Jira startup - doesn't start up well with all the mounting/remounting/Jira not being up.
+  if [ -n "${APPINSIGHTS_INSTRUMENTATION_KEY}" ]
+  then
+    atl_log install_appinsights_collectd "Configuring collectd to publish Jira JMX"
+    apt-get -qqy install collectd
+    cp -fp ${ATL_JIRA_SHARED_HOME}/jira-collectd.conf /etc/collectd/collectd.conf
+    chmod +r /etc/collectd/collectd.conf
+
+    atl_log download_appinsights_jars "Copying collectd appinsights jar to /usr/share/collectd/java"
+    cp -fp applicationinsights-collectd*.jar /usr/share/collectd/java/
+
+    atl_log install_appinsights_collectd "Starting collectd..."
+    /etc/init.d/collectd start
+    /etc/init.d/collectd status
+
+    # Bouncing collectd - cgroups issue with Azure wagent
+    sleep 5
+    /etc/init.d/collectd restart
+    /etc/init.d/collectd status
+  fi
+}
+
+function download_appinsights_jars {
+  atl_log download_appinsights_jars "Downloading MS AppInsight Jars"
+  JARS="applicationinsights-core-${APPINSIGHTS_VER}.jar applicationinsights-web-${APPINSIGHTS_VER}.jar applicationinsights-collectd-${APPINSIGHTS_VER}.jar"
+  for aJar in $(echo $JARS)
+  do
+     curl -LO https://github.com/Microsoft/ApplicationInsights-Java/releases/download/${APPINSIGHTS_VER}/${aJar}
+     if [ $aJar != "applicationinsights-collectd-${APPINSIGHTS_VER}.jar" ]
+     then
+          atl_log download_appinsights_jars "Copying appinsights jar: ${aJar} to ${1}"
+          cp -fp ${aJar} ${1}
+     fi
+  done
 }
 
 function configure_cluster {
@@ -576,7 +642,7 @@ function configure_jira_ram {
 
 function configure_jira {
   atl_log configure_jira "Ready to configure JIRA"
-  
+
   local jira_configs=(dbconfig.xml)
   local ram=`get_jira_ram`
 
@@ -584,13 +650,12 @@ function configure_jira {
     atl_log configure_jira "Copying ${cfg} from ${ATL_JRIA_SHARED_HOME} into ${ATL_JIRA_HOME}"
     ensure_readable "${ATL_JIRA_SHARED_HOME}/${cfg}"
     if [ ! -f "${ATL_JIRA_SHARED_HOME}/${cfg}" ]; then
-      error "Unable to find ${cfg} in ${ATL_JIRA_SHARED_HOME}, abort" 
+      error "Unable to find ${cfg} in ${ATL_JIRA_SHARED_HOME}, abort"
     else
       cp "${ATL_JIRA_SHARED_HOME}/${cfg}" "${ATL_JIRA_HOME}/${cfg}"
-    fi  
+    fi
   done
 
-  atl_log configure_jira "Ready to configure Tomcat"
   local tomcat_configs=(server.xml)
   for cfg in ${tomcat_configs}; do
     cp "${ATL_JIRA_SHARED_HOME}/${cfg}" "${ATL_JIRA_INSTALL_DIR}/conf/${cfg}"
@@ -602,13 +667,18 @@ function configure_jira {
   atl_log configure_jira "Done configuring cluster!"
 
   atl_log configure_jira "Configuring database driver..."
-  install_mssql_driver
+  install_jdbc_drivers
   atl_log configure_jira "Done configuring database driver!"
+
+  atl_log configure_jira "Configuring app insights..."
+  install_appinsights
+  atl_log configure_jira "Done app insights!"
 
   configure_jira_ram
 
   chown -R jira:jira "/datadisks/disk1"
   chown -R jira:jira "${ATL_JIRA_HOME}"
+  chown -R jira:jira "${ATL_JIRA_INSTALL_DIR}"
 }
 
 function remount_share {
@@ -630,53 +700,86 @@ function prepare_datadisks {
   atl_log prepare_datadisks "Done preparing and configuring data disks"
 }
 
+function set_shared_home_permissions {
+  atl_log set_shared_home_permissions "Setting permissions for SSH user ${SERVER_SSH_USER} to access logs etc on shared home ${ATL_JIRA_HOME}"
+  usermod -a -G jira ${SERVER_SSH_USER}
+  chmod -R 774 ${ATL_JIRA_HOME}
+  chmod -R 774 ${ATL_JIRA_INSTALL_DIR}
+}
+
+function install_oms_linux_agent {
+  atl_log install_oms_linx_agent  "Installing OMS Linux Agent with workspace id: ${OMS_WORKSPACE_ID} and primary key: ${OMS_PRIMARY_KEY}"
+  wget https://raw.githubusercontent.com/Microsoft/OMS-Agent-for-Linux/master/installer/scripts/onboard_agent.sh && sh onboard_agent.sh -w "${OMS_WORKSPACE_ID}" -s "${OMS_PRIMARY_KEY}" -d opinsights.azure.com
+  atl_log install_oms_linx_agent  "Finished installing OMS Linux Agent!"
+}
+
+function preloadDatabase {
+  atl_log preloadDatabase  "Preloading new database"
+  prepare_password_generator
+  install_password_generator
+  prepare_server_id_generator
+  prepare_database
+  atl_log preloadDatabase "ready to hydrate db dump"
+  apply_database_dump
+}
+
 function prepare_install {
+  env | sort
   enable_rc_local
   tune_tcp_keepalive_for_azure
-  enable_nat
   prepare_share
   download_installer
   preserve_installer
   hydrate_shared_config
+  install_jdbc_drivers "`pwd`"
+  if [ $DB_CREATE = 'true' ]
+  then
+     preloadDatabase
+  fi
   copy_artefacts
-  prepare_password_generator
-  install_password_generator
-  prepare_server_id_generator
-  install_mssql_driver "`pwd`"
-  prepare_database
-  apply_database_dump
 }
 
 function install_jira {
+  env | sort
   tune_tcp_keepalive_for_azure
   atl_log install_jira "Ready to install JIRA"
   mount_share
   prepare_datadisks
   prepare_varfile
   prepare_installer
+  prepare_fontconfig
   perform_install
   configure_jira
   remount_share
+  install_oms_linux_agent
   atl_log install_jira "Done installing JIRA! Starting..."
   /etc/init.d/jira start
+  install_appinsights_collectd
+  set_shared_home_permissions
+  copy_artefacts
 }
 
+atl_log main "Got args: $@"
+
 install_jq
-prepare_env $1
+prepare_env $1 $3 $5
 source setenv.sh
 
 if [ "$2" == "prepare" ]; then
   export SERVER_AZURE_DOMAIN="${3}"
   export DB_SERVER_NAME="${4}"
+  export APPINSIGHTS_INSTRUMENTATION_KEY="${6}"
   prepare_install
 fi
 
 if [ "$2" == "install" ]; then
+  export APPINSIGHTS_INSTRUMENTATION_KEY="${3}"
   install_jira
 fi
 
 if [ "$2" == "uninstall" ]; then
   if [ "$3" == "--yes-i-want-to-lose-everything" ]; then
+    atl_log main "Uninstalling fully..."
     rm -rf "${ATL_JIRA_INSTALL_DIR}"
     rm -rf "${ATL_JIRA_HOME}"
     rm /etc/init.d/jira

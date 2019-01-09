@@ -59,7 +59,6 @@ def main():
         'SERVER_PROXY_NAME',
         'SERVER_PROXY_PORT',
         'SERVER_SECURE_FLAG',
-        'SYNCHRONY_SERVICE_URL_OPTS',
         'USER_EMAIL',
         'USER_EMAIL_LOWERCASE',
         'USER_FIRSTNAME',
@@ -68,7 +67,9 @@ def main():
         'USER_LASTNAME_LOWERCASE',
         'USER_NAME',
         'USER_NAME_LOWERCASE',
-        'USER_PASSWORD'
+        'USER_PASSWORD',
+        'APPINSIGHTS_VER',
+        'APPINSIGHTS_INSTRUMENTATION_KEY'
   ]
   ##
   ## cat templates/*.template | sed "s#{{#~{{#g" |sed "s#}}#}}~#g" | tr '~' '\n' | grep "{{" | sed "s#{{##" | sed "s#}}.*##" | sort | uniq | sed "s/^/'/" | sed "s/$/',/"

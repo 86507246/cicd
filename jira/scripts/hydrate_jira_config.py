@@ -31,7 +31,13 @@ def main():
       'DB_TRUSTED_HOST',
       'DB_NAME',
       'DB_USER',
-      'DB_PASSWORD'
+      'DB_PASSWORD',
+      'DB_SCHEMA',
+      'DB_PORT',
+      'DB_TYPE',
+      'DB_JDBCURL',
+      'DB_DRIVER_CLASS',
+      'DB_CONFIG_TYPE'
   ]
 
   server_xml_env_variables = [
@@ -47,6 +53,8 @@ def main():
   db_sql_env_variables = [
       'DB_NAME',
       'USER_ENCRYPTION_METHOD',
+      'USER_FULLNAME',
+      'USER_FULLNAME_LOWERCASE',
       'USER_NAME',
       'USER_NAME_LOWERCASE',
       'USER_FIRSTNAME',
@@ -59,13 +67,20 @@ def main():
       'JIRA_LICENSE',
       'APPLICATION_TITLE',
       'BASEURL',
-      'SERVER_ID'
+      'SERVER_ID',
+      'DB_SCRIPT_NAME_LOC'
+  ]
+
+  misc_env_variables = [
+  	'APPINSIGHTS_VER',
+    'APPINSIGHTS_INSTRUMENTATION_KEY'
   ]
 
   env_variables = ( \
     dbconfig_xml_env_variables + \
     server_xml_env_variables + \
-    db_sql_env_variables
+    db_sql_env_variables + \
+    misc_env_variables
   )
 
   parameters = get_parameters(env_variables)

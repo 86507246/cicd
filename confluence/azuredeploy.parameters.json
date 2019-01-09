@@ -5,19 +5,10 @@
         "confluenceVmSize": {
             "value": "Standard_DS2_v2"
         },
-        "synchronyVmSize": {
-            "value": "Standard_F2"
-        },
-        "synchronyVmOption": {
-            "value": "manual"
-        },
         "natVmSize": {
             "value": "Standard_DS3_v2"
         },
         "clusterSize": {
-            "value": 2
-        },
-        "synchronyClusterSize": {
             "value": 2
         },
         "nodeSshPassword": {
