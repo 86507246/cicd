@@ -289,7 +289,7 @@
             }
         },
         "workspace": {
-            "name": "[concat(variables('namespace'), '-Workspace-', uniqueString(resourceGroup().id))]",
+            "name": "[concat(variables('namespace'), '-omsworkspace-', uniqueString(resourceGroup().id))]",
             "sku": "free",
             "retentionInDays": 7
         },

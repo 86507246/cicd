@@ -17,6 +17,9 @@
     <Add type="com.microsoft.applicationinsights.web.extensibility.initializers.WebSessionTelemetryInitializer"/>
     <Add type="com.microsoft.applicationinsights.web.extensibility.initializers.WebUserTelemetryInitializer"/>
     <Add type="com.microsoft.applicationinsights.web.extensibility.initializers.WebUserAgentTelemetryInitializer"/>
-
   </TelemetryInitializers>
+  
+  <SDKLogger>
+        <Level>INFO</Level>
+  </SDKLogger>
 </ApplicationInsights>

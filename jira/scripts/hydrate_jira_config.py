@@ -72,6 +72,7 @@ def main():
   ]
 
   misc_env_variables = [
+  	'APPINSIGHTS_VER',
     'APPINSIGHTS_INSTRUMENTATION_KEY'
   ]
 

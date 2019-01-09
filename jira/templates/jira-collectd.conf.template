@@ -65,7 +65,7 @@ LoadPlugin users
 
 <Plugin java>
    JVMArg "-verbose:jni"
-   JVMArg "-Djava.class.path=/usr/share/collectd/java/applicationinsights-collectd-2.2.1.jar:/usr/share/collectd/java/collectd-api.jar:/usr/share/collectd/java/generic-jmx.jar"
+   JVMArg "-Djava.class.path=/usr/share/collectd/java/applicationinsights-collectd-${appinsights.ver}.jar:/usr/share/collectd/java/collectd-api.jar:/usr/share/collectd/java/generic-jmx.jar"
    
    # Enabling Application Insights plugin
    LoadPlugin "com.microsoft.applicationinsights.collectd.ApplicationInsightsWriter"

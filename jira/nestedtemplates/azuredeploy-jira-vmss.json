@@ -234,6 +234,10 @@
                     "value": "[parameters('clusterSshUser')]"
                 },
                 {
+                    "name": "APPINSIGHTS_VER",
+                    "value": "2.3.0"
+                },
+                {
                     "name": "OMS_WORKSPACE_ID",
                     "value": "[parameters('workspaceId')]"
                 },
