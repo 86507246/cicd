@@ -8,7 +8,7 @@
         },
         "_artifactsLocation": {
             "type": "string",
-            "defaultValue": "https://confluencedcresources.blob.core.windows.net/installfiles",
+            "defaultValue": "https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/master/confluence/",
             "metadata": {
                 "description": "Base URL for Marketplace",
                 "artifactsBaseUrl": ""

@@ -6,10 +6,10 @@
             "value": "canadacentral"
         },
         "_artifactsLocation": {
-            "value": "https://smontgomerysa.blob.core.windows.net/jiradeploy/"
+            "value": "https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/master/jira/"
         },
         "_artifactsLocationSasToken": {
-            "value": "?sv=2017-11-09&ss=bfqt&srt=sco&sp=rwdlacup&se=2028-10-24T23:00:00Z&st=2018-10-24T23:00:00Z&spr=https,http&sig=vGvcjMRxHZFlD69KxUytEkuWwG8ojUehkgdRupyLVME%3D"
+            "value": ""
         },
         "jiraClusterSize": {
             "value": "small"
