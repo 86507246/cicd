@@ -12,7 +12,7 @@
         },
         "_artifactsLocation": {
             "type": "string",
-            "defaultValue": "[deployment().properties.templateLink.uri]",
+            "defaultValue": "https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/master/jira/",
             "metadata": {
                 "description": "The URL specifying the location of the installation files."
             }
@@ -24,6 +24,50 @@
                 "description": "The Shared Access Signature (SAS) token that provides access to resources in the storage account."
             }
         },
+        "jiraProduct": {
+            "type": "string",
+            "allowedValues": [
+                "jira-software",
+                "servicedesk"
+            ],
+            "defaultValue": "jira-software",
+            "metadata": {
+                 "description": "The Jira software product to install."
+             }
+         },
+         "dbCreateNew": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "Create a new database or attempt to use an existing specified database. Note that this has to be in same resource group and location as the target deployment."
+            }
+        },
+        "dbType": {
+            "type": "string",
+            "allowedValues": [
+                "Azure SQL DB",
+                "Azure DB for PostgreSQL"
+            ],
+            "defaultValue": "Azure SQL DB",
+            "metadata": {
+                "description": "The database type."
+            }
+        },
+        "jiraClusterSize": {
+            "type": "string",
+            "allowedValues": [
+                "",
+                "trial",
+                "small",
+                "medium",
+                "large",
+                "enterprise"
+            ],
+            "defaultValue": "",
+            "metadata": {
+                "description": "To use recommended hardware options for the Jira installation choose a size. NB if selected all further Gateway, VM, DB size parameters will be IGNORED."
+            }
+        },
         "cname": {
             "type": "string",
             "defaultValue": "",
@@ -31,34 +75,18 @@
                 "description": "This is the  Canonical Name record (CNAME) for your organization. If you don't provide one, Azure will generate a random sub domain for your instance."
             }
         },
-        "clusterVmSize": {
+        "sslBase64EncodedPfxCertificate": {
             "type": "string",
-            "defaultValue": "Standard_DS3_v2",
-            "allowedValues": [
-                "Standard_DS2_v2",
-                "Standard_DS3_v2",
-                "Standard_DS4_v2",
-                "Standard_DS5_v2",
-                "Standard_F4s_v2",
-                "Standard_F8s_v2",
-                "Standard_F16s_v2",
-                "Standard_F32s_v2",
-                "Standard_F64s_v2",
-                "Standard_F72s_v2",
-                "Standard_E8s_v3",
-                "Standard_E16s_v3",
-                "Standard_E20s_v3",
-                "Standard_E32s_v3"
-            ],
+            "defaultValue": "",
             "metadata": {
-                "description": "The size of the virtual machine to use for each Jira node in the cluster."
+                "description": "The certificate to be used for SSL termination on the Azure Application Gateway."
             }
         },
-        "jumpboxVmSize": {
-            "type": "string",
-            "defaultValue": "Standard_B1s",
+        "sslPfxCertificatePassword": {
+            "type": "securestring",
+            "defaultValue": "",
             "metadata": {
-                "description": "The size of the virtual machine to use for the Jumpbox."
+                "description": "The password of the certificate for SSL termination."
             }
         },
         "jumpboxSshKey": {
@@ -68,6 +96,44 @@
                 "description": "The SSH public key to use to access the Jumpbox."
             },
             "minLength": 300
+        },
+        "jiraAdminUserName": {
+            "type": "string",
+            "defaultValue": "admin",
+            "minLength": 5,
+            "metadata": {
+                "description": "The username for the Jira administrator's account."
+            }
+        },
+        "jiraAdminUserPassword": {
+            "type": "securestring",
+            "minLength": 5,
+            "metadata": {
+                "description": "The password for the Jira administrator's account."
+            }
+        },
+        "jiraAdminUserFullname": {
+            "type": "string",
+            "defaultValue": "Admin Admin",
+            "minLength": 5,
+            "metadata": {
+                "description": "The fullname for the Jira administrator's account."
+            }
+        },
+        "jiraAdminUserEmail": {
+            "type": "string",
+            "defaultValue": "admin@example.com",
+            "minLength": 5,
+            "metadata": {
+                "description": "The email address of the Jira administrator user."
+            }
+        },
+        "jiraAppTitle": {
+            "type": "string",
+            "defaultValue": "Atlassian Jira",
+            "metadata": {
+                "description": "The name of the Jira site."
+            }
         },
         "jumpboxSshUser": {
             "type": "string",
@@ -90,24 +156,6 @@
             },
             "minLength": 5
         },
-        "dbCreateNew": {
-            "type": "bool",
-            "defaultValue": true,
-            "metadata": {
-                "description": "Create a new database or attempt to use an existing specified database. Note that this has to be in same resource group and location as the target deployment."
-            }
-        },
-        "dbType": {
-            "type": "string",
-            "allowedValues": [
-                "Azure SQL DB",
-                "Azure DB for PostgreSQL"
-            ],
-            "defaultValue": "Azure SQL DB",
-            "metadata": {
-                "description": "The database type."
-            }
-        },
         "dbHost": {
             "type": "string",
             "defaultValue": "AUTO-GENERATED",
@@ -119,21 +167,21 @@
             "type": "string",
             "defaultValue": "1433",
             "metadata": {
-                "description": "The database port to use if an external database is being used. 1433 for MS SQL, 5432 for PostgreSQL, 3306 for MySQL."
+                "description": "The database port to use if an external database is being used. This will be autogenerated if a new database is to be created."
             }
         },
         "dbDatabase": {
             "type": "string",
             "defaultValue": "jiradatabase",
             "metadata": {
-                "description": "The name of the Jira database."
+                "description": "The database name to use if an external database is being used. This will be autogenerated if a new database is to be created."
             }
         },
         "dbSchema": {
             "type": "string",
-            "defaultValue": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'Azure SQL DB'), 'jiraschema', 'public'), 'jiraschema')]",
+            "defaultValue": "AUTO-GENERATED",
             "metadata": {
-                "description": "The Jira database schema to use."
+                "description": "The database schema to use if an external database is being used. This will be autogenerated if a new database is to be created."
             }
         },
         "dbUsername": {
@@ -186,83 +234,6 @@
                 "description": "The size of the database service tier. Basic, Standard (S1..S12) and Premium (P1..P15) tier sizes are available. Note that if the 'jiraClusterSize' parameter is used this value will be ignored."
             }
         },
-        "postgresDbSku": {
-            "type": "string",
-            "defaultValue": "GP_Gen5_4",
-            "allowedValues": [
-                "GP_Gen5_2",
-                "GP_Gen5_4",
-                "GP_Gen5_8",
-                "GP_Gen5_16",
-                "GP_Gen5_32",
-                "MO_Gen5_2",
-                "MO_Gen5_4",
-                "MO_Gen5_8",
-                "MO_Gen5_16",
-                "MO_Gen5_32"
-            ],
-            "metadata": {
-                "description": "The SKU (stock keeping unit) name of the PostgresSQL instance. Follows the convention {pricing tier}{compute generation}{vCores} eg General Purpose, Generation 5, 4 cores is GP_Gen5_4. Note that if the 'jiraClusterSize' parameter is used this value will be ignored."
-            }
-        },
-        "postgresDbStorage": {
-            "type": "int",
-            "defaultValue": 102400,
-            "minValue": 102400,
-            "maxValue": 4194304,
-            "metadata": {
-                "description": "The storage size of the PostgresSQL instance in MB. Note that if the 'jiraClusterSize' parameter is used this value will be ignored."
-            }
-        },
-        "jiraProduct": {
-            "type": "string",
-            "allowedValues": [
-                "jira-software",
-                "servicedesk"
-            ],
-            "defaultValue": "jira-software",
-            "metadata": {
-                 "description": "The Jira software product to install."
-             }
-         },
-        "jiraAdminUserName": {
-            "type": "string",
-            "defaultValue": "admin",
-            "minLength": 5,
-            "metadata": {
-                "description": "The username for the Jira administrator's account."
-            }
-        },
-        "jiraAdminUserPassword": {
-            "type": "securestring",
-            "minLength": 5,
-            "metadata": {
-                "description": "The password for the Jira administrator's account."
-            }
-        },
-        "jiraAdminUserFullname": {
-            "type": "string",
-            "defaultValue": "Admin Admin",
-            "minLength": 5,
-            "metadata": {
-                "description": "The fullname for the Jira administrator's account."
-            }
-        },
-        "jiraAdminUserEmail": {
-            "type": "string",
-            "defaultValue": "admin@example.com",
-            "minLength": 5,
-            "metadata": {
-                "description": "The email address of the Jira administrator user."
-            }
-        },
-        "jiraAppTitle": {
-            "type": "string",
-            "defaultValue": "Atlassian Jira",
-            "metadata": {
-                "description": "The name of the Jira site."
-            }
-        },
         "clusterSize": {
             "type": "int",
             "defaultValue": 2,
@@ -271,18 +242,27 @@
             },
             "minValue": 1
         },
-        "sslBase64EncodedPfxCertificate": {
+        "clusterVmSize": {
             "type": "string",
-            "defaultValue": "",
+            "defaultValue": "Standard_DS3_v2",
+            "allowedValues": [
+                "Standard_DS2_v2",
+                "Standard_DS3_v2",
+                "Standard_DS4_v2",
+                "Standard_DS5_v2",
+                "Standard_F4s_v2",
+                "Standard_F8s_v2",
+                "Standard_F16s_v2",
+                "Standard_F32s_v2",
+                "Standard_F64s_v2",
+                "Standard_F72s_v2",
+                "Standard_E8s_v3",
+                "Standard_E16s_v3",
+                "Standard_E20s_v3",
+                "Standard_E32s_v3"
+            ],
             "metadata": {
-                "description": "The certificate to be used for SSL termination on the Azure Application Gateway."
-            }
-        },
-        "sslPfxCertificatePassword": {
-            "type": "securestring",
-            "defaultValue": "",
-            "metadata": {
-                "description": "The password of the certificate for SSL termination."
+                "description": "The size of the virtual machine to use for each Jira node in the cluster."
             }
         },
         "appGtwyClusterSize": {
@@ -313,6 +293,41 @@
                 "description": "The Application Gateway size."
             }
         },
+        "postgresDbSku": {
+            "type": "string",
+            "defaultValue": "GP_Gen5_4",
+            "allowedValues": [
+                "GP_Gen5_2",
+                "GP_Gen5_4",
+                "GP_Gen5_8",
+                "GP_Gen5_16",
+                "GP_Gen5_32",
+                "MO_Gen5_2",
+                "MO_Gen5_4",
+                "MO_Gen5_8",
+                "MO_Gen5_16",
+                "MO_Gen5_32"
+            ],
+            "metadata": {
+                "description": "The SKU (stock keeping unit) name of the PostgresSQL instance. Follows the convention {pricing tier}{compute generation}{vCores} eg General Purpose, Generation 5, 4 cores is GP_Gen5_4. Note that if the 'jiraClusterSize' parameter is used this value will be ignored."
+            }
+        },
+        "postgresDbStorage": {
+            "type": "int",
+            "defaultValue": 102400,
+            "minValue": 102400,
+            "maxValue": 4194304,
+            "metadata": {
+                "description": "The storage size of the PostgresSQL instance in MB. Note that if the 'jiraClusterSize' parameter is used this value will be ignored."
+            }
+        },
+        "jumpboxVmSize": {
+            "type": "string",
+            "defaultValue": "Standard_B1s",
+            "metadata": {
+                "description": "The size of the virtual machine to use for the Jumpbox."
+            }
+        },
         "enableEmailAlerts": {
             "type": "bool",
             "defaultValue": true,
@@ -332,21 +347,6 @@
             "defaultValue": true,
             "metadata": {
                 "description": "Enable Azure Operational Insights."
-            }
-        },
-        "jiraClusterSize": {
-            "type": "string",
-            "allowedValues": [
-                "",
-                "trial",
-                "small",
-                "medium",
-                "large",
-                "enterprise"
-            ],
-            "defaultValue": "",
-            "metadata": {
-                "description": "To use recommended hardware options for the Jira installation choose a size."
             }
         },
         "enableAcceleratedNetworking": {
@@ -519,7 +519,7 @@
                         "value": "[parameters('dbDatabase')]"
                     },
                     "dbSchema": {
-                        "value": "[if(and(parameters('dbCreateNew'), equals(parameters('dbType'), 'Azure DB for PostgreSQL')), 'public', parameters('dbSchema'))]"
+                        "value": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'Azure DB for PostgreSQL'), 'public', 'jiraschema'), parameters('dbSchema'))]"
                     },
                     "dbUsername": {
                         "value": "[parameters('dbUsername')]"

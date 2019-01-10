@@ -1,0 +1,27 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "canadacentral"
+        },
+        "_artifactsLocation": {
+            "value": "https://smontgomerysa.blob.core.windows.net/jiradeploy/"
+        },
+        "_artifactsLocationSasToken": {
+            "value": "?sv=2017-11-09&ss=bfqt&srt=sco&sp=rwdlacup&se=2028-10-24T23:00:00Z&st=2018-10-24T23:00:00Z&spr=https,http&sig=vGvcjMRxHZFlD69KxUytEkuWwG8ojUehkgdRupyLVME%3D"
+        },
+        "jiraClusterSize": {
+            "value": "small"
+        },
+        "clusterSshPassword": {
+            "value": "JIRA@dmin"
+        },
+        "dbPassword": {
+            "value": "P@55w0rd"
+        },
+        "jiraAdminUserPassword": {
+            "value": "admin"
+        }
+    }
+}
