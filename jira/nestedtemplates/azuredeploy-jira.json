@@ -57,7 +57,7 @@
             "type": "string",
             "defaultValue": "jiraadmin",
             "metadata": {
-                "description": "The SSH username to use to access the Jira nodes from the Jumpbox. Note that access to the Jira nodes can only be made in this way."
+                "description": "The SSH username to use to access the Jira nodes from the Jumpbox. Note that this is the only way to access the Jira nodes."
             }
         },
         "clusterSshPassword": {
@@ -97,7 +97,7 @@
             "type": "string",
             "defaultValue": "",
             "metadata": {
-                "description": "The hostname of database server."
+                "description": "The hostname of the database server."
             }
         },
         "dbPort": {
