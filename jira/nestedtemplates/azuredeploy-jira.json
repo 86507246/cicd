@@ -357,7 +357,7 @@
             }
         },
         "workspace": {
-            "name": "[concat(variables('namespace'), '-omsworkspace-', uniqueString(resourceGroup().id))]",
+            "name": "[concat(variables('namespace'), '-monitorworkspace-', uniqueString(resourceGroup().id))]",
             "sku": "free",
             "retentionInDays": 7
         },
