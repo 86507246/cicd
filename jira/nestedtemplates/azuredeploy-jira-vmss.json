@@ -58,7 +58,7 @@
             "type": "string",
             "defaultValue": "jiraadmin",
             "metadata": {
-                "description": "The SSH username to use to access the Jira nodes from the Jumpbox. Note that access to the Jira nodes can only be made in this way."
+                "description": "The SSH username to use to access the Jira nodes from the Jumpbox. Note that this is the only way to access the Jira nodes."
             }
         },
         "clusterSshPassword": {
@@ -98,7 +98,7 @@
             "type": "string",
             "defaultValue": "[if(equals(parameters('dbType'), 'sqlserver'), '1433', if(equals(parameters('dbType'), 'postgres'), '5432', '3306'))]",
             "metadata": {
-                "description": "The database port to use if an external database is being used. 1433 for MS SQL, 5432 for PostgreSQL, 3306 for MySQL."
+                "description": "The database port to use if an existing Azure database is being used. 1433 for MS SQL, 5432 for PostgreSQL, 3306 for MySQL."
             }
         },
         "dbDatabase": {
