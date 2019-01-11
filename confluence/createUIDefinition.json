@@ -47,6 +47,18 @@
         },
         "elements": [
           {
+            "name": "confluenceVersion",
+            "label": "Confluence Version",
+            "type": "Microsoft.Common.TextBox",
+            "toolTip": "Specify version of Confluence (>6.12) you want to install. By default it will download the latest available.",
+            "constraints": {
+              "required": true,
+              "regex": "latest|6\\.1[2-9]{1}\\.[0-9]{1,2}|[7,8,9]\\.[0-9]{1,2}\\.[0-9]{1,2}",
+              "validationMessage": "You must specify a version >= 6.12.0"
+            },
+            "defaultValue": "latest"
+          },
+          {
             "name": "account",
             "type": "Microsoft.Common.Section",
             "label": "Make a Confluence Administrator Account",
@@ -384,7 +396,7 @@
             "toolTip": "Manually pick the Database Tier.",
             "defaultValue": "",
             "constraints": {
-              "required" : "[equals('manual', steps('database').dbTierOption)]",
+              "required": "[equals('manual', steps('database').dbTierOption)]",
               "allowedValues": [
                 {
                   "label": "P1",
@@ -421,7 +433,7 @@
             "toolTip": "Manually pick the Database Edition.",
             "defaultValue": "",
             "constraints": {
-              "required" : "[equals('manual', steps('database').dbTierOption)]",
+              "required": "[equals('manual', steps('database').dbTierOption)]",
               "allowedValues": [
                 {
                   "label": "Premium",
@@ -518,7 +530,7 @@
       }
     ],
     "outputs": {
-      "location" : "[location()]",
+      "location": "[location()]",
       "cname": "[basics('cname')]",
       "confluenceVmSize": "[steps('infrastructure').confluence.confluencenodesize]",
       "synchronyVmSize": "[coalesce(steps('infrastructure').synchrony.synchronynodesize, steps('infrastructure').confluence.confluencenodesize)]",

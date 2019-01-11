@@ -180,13 +180,6 @@
                 "description": "Base URL for downloading the confluence artifact."
             }
         },
-        "releaseVersionUrl": {
-            "type": "string",
-            "defaultValue": "https://confluencedcversion.blob.core.windows.net/version/latest",
-            "metadata": {
-                "description": "URL for obtaining the latest confluence artifact version."
-            }
-        },
         "atlassianMavenRepositoryUrl": {
             "type": "string",
             "defaultValue": "https://packages.atlassian.com/maven/repository/public/",
@@ -198,7 +191,7 @@
             "type": "string",
             "defaultValue": "latest",
             "metadata": {
-                "description": "The Confluence version to use. Must be 6.4.0 or later. Use 'latest' to obtain the latest released version of Confluence automatically."
+                "description": "The Confluence software product version to install. By default the deployment will download and use the latest version published."
             }
         },
         "dbTierSize": {
@@ -490,10 +483,6 @@
                 {
                     "name": "ATL_CONFLUENCE_RELEASES_BASE_URL",
                     "value": "[parameters('releaseDownloadBaseUrl')]"
-                },
-                {
-                    "name": "LATEST_CONFLUENCE_PRODUCT_VERSION_URL",
-                    "value": "[parameters('releaseVersionUrl')]"
                 },
                 {
                     "name": "ATLASSIAN_MAVEN_REPOSITORY_URL",

@@ -15,6 +15,18 @@
         },
         "elements": [
           {
+            "name": "jiraVersion",
+            "label": "Jira Version",
+            "type": "Microsoft.Common.TextBox",
+            "toolTip": "Specify version of Jira (>7) you want to install. By default it will download the latest available.",
+            "constraints": {
+              "required": true,
+              "regex": "latest|[7,8,9]\\.[0-9]{1,2}\\.[0-9]{1,2}",
+              "validationMessage": "You must specify a version."
+            },
+            "defaultValue": "latest"
+          },
+          {
             "name": "adminEmail",
             "label": "Admin Email",
             "type": "Microsoft.Common.TextBox",
@@ -518,6 +530,7 @@
     "outputs": {
       "location": "[location()]",
       "jiraProduct": "jira-software",
+      "jiraVersion": "[steps('administrator').jiraVersion]",
       "jiraAdminUserName": "[steps('administrator').adminUsername]",
       "jiraAdminUserPassword": "[steps('administrator').adminPassword]",
       "jiraAdminUserEmail": "[steps('administrator').username]",

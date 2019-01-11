@@ -21,6 +21,13 @@
                 "description": "Scripts storage access token"
             }
         },
+        "confluenceVersion": {
+            "type": "string",
+            "defaultValue": "latest",
+            "metadata": {
+                "description": "The Confluence software product version to install. By default the deployment will download and use the latest version published."
+            }
+        },
         "clusterSize": {
             "type": "int",
             "allowedValues": [
@@ -308,13 +315,6 @@
             "metadata": {
                 "description": "Workspace SKU"
             }
-        },
-        "releaseVersionUrl": {
-            "type": "string",
-            "defaultValue": "https://confluencedcversion.blob.core.windows.net/version/latest",
-            "metadata": {
-                "description": "URL for obtaining the latest confluence artifact version."
-            }
         }
     },
     "variables": {
@@ -572,6 +572,9 @@
                     "_artifactsLocationSasToken": {
                         "value": "[parameters('_artifactsLocationSasToken')]"
                     },
+                    "confluenceVersion": {
+                        "value": "[parameters('confluenceVersion')]"
+                    },
                     "location": {
                         "value": "[parameters('location')]"
                     },
@@ -670,9 +673,6 @@
                     },
                     "workspaceSecondaryKey": {
                         "value": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name), '2015-11-01-preview').secondarySharedKey]"
-                    },
-                    "releaseVersionUrl": {
-                        "value": "[parameters('releaseVersionUrl')]"
                     }
                 }
             }
