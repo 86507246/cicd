@@ -532,13 +532,6 @@
                     "fileUris": [
                         "[uri(parameters('_artifactsLocation'), concat('scripts/prepare_install.sh', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('scripts/hydrate_confluence_config.py', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('libs/atlassian-extras-3.2.jar', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('libs/atlassian-password-encoder-3.2.3.jar', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('libs/bcprov-jdk15on-1.50.jar', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('libs/commons-codec-1.9.jar', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('libs/commons-lang-2.6.jar', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('libs/liquibase-core-3.5.3.jar', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('libs/mssql-jdbc-6.3.0.jre8-preview.jar', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/home-confluence.cfg.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/shared-confluence.cfg.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/server.xml.template', parameters('_artifactsLocationSasToken')))]",
