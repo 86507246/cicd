@@ -21,6 +21,13 @@
                 "description": "Scripts storage access token"
             }
         },
+        "confluenceVersion": {
+            "type": "string",
+            "defaultValue": "latest",
+            "metadata": {
+                "description": "The Confluence software product version to install. By default the deployment will download and use the latest version published."
+            }
+        },
         "jumpboxVmSize": {
             "type": "string",
             "defaultValue": "Standard_B1s",
@@ -301,14 +308,7 @@
             "metadata": {
                  "description": "Enable accelerated networking? Needs to be a supported instance type."
              }
-         },
-        "releaseVersionUrl": {
-            "type": "string",
-            "defaultValue": "https://confluencedcversion.blob.core.windows.net/version/latest",
-            "metadata": {
-                "description": "URL for obtaining the latest confluence artifact version."
-            }
-        }
+         }
     },
     "variables": {
         "namespace": "conf",
@@ -428,6 +428,9 @@
                     "_artifactsLocationSasToken": {
                         "value": "[parameters('_artifactsLocationSasToken')]"
                     },
+                    "confluenceVersion": {
+                        "value": "[parameters('confluenceVersion')]"
+                    },
                     "clusterSize": {
                         "value": "[parameters('clusterSize')]"
                     },
@@ -523,9 +526,6 @@
                     },
                     "enableAcceleratedNetworking": {
                         "value": "[parameters('enableAcceleratedNetworking')]"
-                    },
-                    "releaseVersionUrl": {
-                        "value": "[parameters('releaseVersionUrl')]"
                     }
                 }
             }

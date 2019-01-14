@@ -6,7 +6,7 @@ Jira Service Desk Data Center gives you uninterrupted access to JIRA Service Des
 
 [![Deploy Jira Service Desk Data Center to Azure Portal](https://azuredeploy.net/deploybutton.png)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fbitbucket.org%2Fatlassian%2Fatlassian-azure-deployment%2Fraw%2Fmaster%2Fjira%2Fazuredeploy.json)
 
-NB. Jira Service Desk uses the same ARM templates as Jira Software. Ensure you select the "servicedesk" option from the Jira-Product parameter droplist.
+**_NB. Jira Service Desk uses the same ARM templates as Jira Software. Ensure you select the "servicedesk" option from the Jira-Product parameter droplist._**
 
 ![alt text](https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/master/jira/images/ServiceDeskJiraOption.png "Jira Service Desk Option")
 

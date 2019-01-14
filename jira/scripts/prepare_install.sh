@@ -60,17 +60,26 @@ function preserve_installer {
 }
 
 function download_installer {
-  local jira_version_file_url="${ATL_JIRA_RELEASES_BASE_URL}/${ATL_JIRA_PRODUCT}/latest"
-  atl_log download_installer "Downloading installer description from ${jira_version_file_url}"
 
-  if ! curl -L -f --silent "${jira_version_file_url}" \
-       -o "version" 2>&1
+  local jira_version=${ATL_JIRA_PRODUCT_VERSION}
+  atl_log download_installer "Going to use ${ATL_JIRA_PRODUCT} with version: ${ATL_JIRA_PRODUCT_VERSION}"
+
+  if [[ ${ATL_JIRA_PRODUCT_VERSION} == 'latest' ]]
   then
-    atl_log download_installer "Could not download installer description from ${jira_version_file_url}"
-    exit 1
-  fi
 
-  local jira_version=$(cat version)
+    local jira_version_file_url="${ATL_JIRA_RELEASES_BASE_URL}/${ATL_JIRA_PRODUCT}/latest"
+    atl_log download_installer "Downloading installer description from ${jira_version_file_url}"
+
+    if ! curl -L -f --silent "${jira_version_file_url}" \
+       -o "version" 2>&1
+    then
+      atl_log download_installer "Could not download installer description from ${jira_version_file_url}"
+      exit 1
+    fi
+
+    local jira_version=$(cat version)
+  fi
+  
   local jira_installer="atlassian-${ATL_JIRA_PRODUCT}-${jira_version}-x64.bin"
   local jira_installer_url="${ATL_JIRA_RELEASES_BASE_URL}/${ATL_JIRA_PRODUCT}/${jira_installer}"
 

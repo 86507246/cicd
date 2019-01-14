@@ -208,6 +208,13 @@
                 "description": "The Jira software product to install."
             }
         },
+        "jiraVersion": {
+            "type": "string",
+            "defaultValue": "latest",
+            "metadata": {
+                 "description": "The Jira software product version to install. By default the deployment will download and use the latest version published."
+             }
+         },
         "jiraAdminUserName": {
             "type": "string",
             "defaultValue": "admin",
@@ -767,6 +774,9 @@
                     },
                     "jiraProduct": {
                         "value": "[parameters('jiraProduct')]"
+                    },
+                    "jiraVersion": {
+                        "value": "[parameters('jiraVersion')]"
                     },
                     "jiraAdminUserName": {
                         "value": "[parameters('jiraAdminUserName')]"

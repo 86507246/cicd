@@ -180,13 +180,6 @@
                 "description": "Base URL for downloading the confluence artifact."
             }
         },
-        "releaseVersionUrl": {
-            "type": "string",
-            "defaultValue": "https://confluencedcversion.blob.core.windows.net/version/latest",
-            "metadata": {
-                "description": "URL for obtaining the latest confluence artifact version."
-            }
-        },
         "atlassianMavenRepositoryUrl": {
             "type": "string",
             "defaultValue": "https://packages.atlassian.com/maven/repository/public/",
@@ -198,7 +191,7 @@
             "type": "string",
             "defaultValue": "latest",
             "metadata": {
-                "description": "The Confluence version to use. Must be 6.4.0 or later. Use 'latest' to obtain the latest released version of Confluence automatically."
+                "description": "The Confluence software product version to install. By default the deployment will download and use the latest version published."
             }
         },
         "dbTierSize": {
@@ -492,10 +485,6 @@
                     "value": "[parameters('releaseDownloadBaseUrl')]"
                 },
                 {
-                    "name": "LATEST_CONFLUENCE_PRODUCT_VERSION_URL",
-                    "value": "[parameters('releaseVersionUrl')]"
-                },
-                {
                     "name": "ATLASSIAN_MAVEN_REPOSITORY_URL",
                     "value": "[parameters('atlassianMavenRepositoryUrl')]"
                 },
@@ -543,13 +532,6 @@
                     "fileUris": [
                         "[uri(parameters('_artifactsLocation'), concat('scripts/prepare_install.sh', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('scripts/hydrate_confluence_config.py', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('libs/atlassian-extras-3.2.jar', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('libs/atlassian-password-encoder-3.2.3.jar', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('libs/bcprov-jdk15on-1.50.jar', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('libs/commons-codec-1.9.jar', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('libs/commons-lang-2.6.jar', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('libs/liquibase-core-3.5.3.jar', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('libs/mssql-jdbc-6.3.0.jre8-preview.jar', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/home-confluence.cfg.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/shared-confluence.cfg.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/server.xml.template', parameters('_artifactsLocationSasToken')))]",

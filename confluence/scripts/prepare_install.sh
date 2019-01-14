@@ -62,25 +62,21 @@ function preserve_installer {
 }
 
 function download_installer {
-  if [ ${ATL_CONFLUENCE_VERSION} = 'latest' ]
-  then
-    log "using the latest version of confluence"
-    local confluence_version_file_url="${LATEST_CONFLUENCE_PRODUCT_VERSION_URL}"
-    log "Downloading installer description from ${confluence_version_file_url}"
-
-    if ! curl -L -f --silent "${confluence_version_file_url}" -o "version" 2>&1
-    then
-        error "Could not download installer description from ${confluence_version_file_url}"
-    fi
-  else
-    log "using version ${ATL_CONFLUENCE_VERSION} of confluence"
-    echo -n "${ATL_CONFLUENCE_VERSION}" > version
+    
+  log "Will use version: ${ATL_CONFLUENCE_VERSION} but first retrieving latest confluence version info from Atlassian..."
+  LATEST_INFO=$(curl -L -f --silent https://my.atlassian.com/download/feeds/current/confluence.json | sed 's/^downloads(//g' | sed 's/)$//g')
+  if [ "$?" -ne "0" ]; then
+    error "Could not get latest info installer description from https://my.atlassian.com/download/feeds/current/confluence.json"
   fi
 
+  LATEST_VERSION=$(echo ${LATEST_INFO} | jq '.[] | select(.platform == "Unix") |  select(.zipUrl|test("x64")) | .version' | sed 's/"//g')
+  LATEST_VERSION_URL=$(echo ${LATEST_INFO} | jq '.[] | select(.platform == "Unix") |  select(.zipUrl|test("x64")) | .zipUrl' | sed 's/"//g')
+  log "Latest confluence info: $LATEST_VERSION and download URL: $LATEST_VERSION_URL"
+
+  [ ${ATL_CONFLUENCE_VERSION} = 'latest' ] &&  echo -n "${LATEST_VERSION}" > version || echo -n "${ATL_CONFLUENCE_VERSION}" > version
 
   local confluence_version=$(cat version)
-  local confluence_installer="${ATL_CONFLUENCE_PRODUCT}-${confluence_version}-x64.bin"
-  local confluence_installer_url="${ATL_CONFLUENCE_RELEASES_BASE_URL}/${confluence_installer}"
+  local confluence_installer_url=$(echo ${LATEST_VERSION_URL} | sed "s/${LATEST_VERSION}/${confluence_version}/g")
 
   log "Downloading ${ATL_CONFLUENCE_PRODUCT} installer from ${confluence_installer_url}"
 
