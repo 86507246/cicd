@@ -62,7 +62,7 @@ echo "--------------------------------------------------------------------------
 # Set the JVM arguments used to start Confluence. For a description of the options, see
 # http://www.oracle.com/technetwork/java/javase/tech/vmoptions-jsp-140102.html
 CATALINA_OPTS="-XX:-PrintGCDetails -XX:+PrintGCDateStamps -XX:-PrintTenuringDistribution ${CATALINA_OPTS}"
-CATALINA_OPTS="-Xloggc:{{ATL_CONFLUENCE_SHARED_HOME}}/gclogs/gc-`date +%F_%H-%M-%S`.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:GCLogFileSize=2M ${CATALINA_OPTS}"
+CATALINA_OPTS="-Xloggc:{{ATL_CONFLUENCE_SHARED_HOME}}/gclogs/gc-`uname -n`-`date +%F_%H-%M-%S`.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:GCLogFileSize=2M ${CATALINA_OPTS}"
 CATALINA_OPTS="{{CONFLUENCE_GC_OPTS}} ${CATALINA_OPTS}"
 CATALINA_OPTS="-Xms{{CONFLUENCE_MEMORY_MAX}} ${CATALINA_OPTS}"
 CATALINA_OPTS="-Xmx{{CONFLUENCE_MEMORY_MAX}} ${CATALINA_OPTS}"
