@@ -308,7 +308,23 @@
             "metadata": {
                  "description": "Enable accelerated networking? Needs to be a supported instance type."
              }
-         }
+         },
+         "workspaceSku": {
+            "type": "string",
+            "defaultValue": "Free",
+            "allowedValues": [
+                "Free",
+                "Standard",
+                "Premium",
+                "Unlimited",
+                "PerNode",
+                "PerGB2018",
+                "Standalone"
+            ],
+            "metadata": {
+                "description": "Workspace SKU"
+            }
+        }
     },
     "variables": {
         "namespace": "conf",
@@ -526,6 +542,9 @@
                     },
                     "enableAcceleratedNetworking": {
                         "value": "[parameters('enableAcceleratedNetworking')]"
+                    },
+                    "workspaceSku": {
+                        "value": "[parameters('workspaceSku')]"
                     }
                 }
             }

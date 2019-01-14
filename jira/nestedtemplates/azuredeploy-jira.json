@@ -343,6 +343,22 @@
             "metadata": {
                 "description": "Enable accelerated networking. Note that this needs to be on a supported instance type."
             }
+        },
+        "workspaceSku": {
+            "type": "string",
+            "defaultValue": "Free",
+            "allowedValues": [
+                "Free",
+                "Standard",
+                "Premium",
+                "Unlimited",
+                "PerNode",
+                "PerGB2018",
+                "Standalone"
+            ],
+            "metadata": {
+                "description": "Workspace SKU"
+            }
         }
     },
     "variables": {
@@ -365,7 +381,7 @@
         },
         "workspace": {
             "name": "[concat(variables('namespace'), '-monitorworkspace-', uniqueString(resourceGroup().id))]",
-            "sku": "free",
+            "sku": "[parameters('workspaceSku')]",
             "retentionInDays": 7
         },
         "gtwyIpName": "[concat(variables('namespace'), '-appgtwyip-', uniqueString(resourceGroup().id))]",

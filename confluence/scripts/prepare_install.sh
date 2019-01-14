@@ -327,7 +327,7 @@ function hydrate_shared_config {
 }
 
 function copy_artefacts {
-  local excluded_files=(std* version *.bin *.jar prepare_install.sh *.py *.template *.sql *.js)
+  local excluded_files=(std* version installer *.bin *.jar prepare_install.sh *.py *.template *.sql *.js *.xsl)
 
   local exclude_rules=""
   for file in ${excluded_files[@]};
@@ -336,9 +336,6 @@ function copy_artefacts {
   done
 
   rsync -av ${exclude_rules} * ${ATL_CONFLUENCE_SHARED_HOME}
-  #log "cleaning up old node.id files..."
-  #rm -rfv ${ATL_CONFLUENCE_SHARED_HOME}/node.id.*
-  #rm -rfv ${ATL_CONFLUENCE_SHARED_HOME}/synchrony.id.*
 }
 
 function hydrate_db_dump {
@@ -749,6 +746,9 @@ function configure_confluence {
       error "${template_file} not found"
     fi
   done
+
+  log "Creating ${ATL_CONFLUENCE_SHARED_HOME}/gclogs directory..."
+  mkdir -p ${ATL_CONFLUENCE_SHARED_HOME}/gclogs
 
   log "Configuring cluster..."
   configure_cluster
