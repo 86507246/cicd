@@ -28,6 +28,21 @@
                 "description": "The Confluence software product version to install. By default the deployment will download and use the latest version published."
             }
         },
+        "confClusterSize": {
+            "type": "string",
+            "allowedValues": [
+                "",
+                "trial",
+                "small",
+                "medium",
+                "large",
+                "enterprise"
+            ],
+            "defaultValue": "",
+            "metadata": {
+                "description": "To use recommended hardware options for the Jira installation choose a size. NB if selected all further Gateway, VM, DB size parameters will be IGNORED."
+            }
+        },
         "jumpboxVmSize": {
             "type": "string",
             "defaultValue": "Standard_B1s",
@@ -333,50 +348,77 @@
         "domainTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-domain.json', parameters('_artifactsLocationSasToken')))]",
         "alertsTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-alerts.json', parameters('_artifactsLocationSasToken')))]",
         "dbServerName": "[concat(variables('namespace'), if(equals(parameters('dbType'),'Azure SQL DB'),'sqlserver','postgres'), uniqueString(resourceGroup().id))]",
-        "lookup": {
-            "dbTierToMaxConnections" : {
-                "Basic" : 300,
-                "S0" : 600,
-                "S1" : 900,
-                "S2" : 1200,
-                "S3" : 2400,
-                "S4" : 4800,
-                "S6" : 9600,
-                "S7" : 19200,
-                "S9" : 30000,
-                "S12" : 30000,
-                "P1" : 30000,
-                "P2" : 30000,
-                "P4" : 30000,
-                "P6" : 30000,
-                "P11" : 30000,
-                "P15" : 30000
+        "isConfClusterSizeUsed": "[not(empty(parameters('confClusterSize')))]",
+        "clusterLookup": {
+            "appGtwyTier": {
+                "trial": "Standard_Small",
+                "small": "Standard_Medium",
+                "medium": "Standard_Medium",
+                "large": "Standard_Large",
+                "enterprise": "Standard_Large"
             },
-            "clusterSizeToDbTier": {
-                "1": "P1",
-                "2": "P2",
-                "3": "P4",
-                "4": "P4",
-                "5": "P6",
-                "6": "P11"
+            "appGtwySize": {
+                "trial": 1,
+                "small": 2,
+                "medium": 2,
+                "large": 4,
+                "enterprise": 6
             },
-            "dbTierToDbEdition": {
-                "S2": "Standard",
-                "S3": "Standard",
-                "P1": "Premium",
-                "P2": "Premium",
-                "P4": "Premium",
-                "P6": "Premium",
-                "P11": "Premium",
-                "P15": "Premium"
+            "dbTier": {
+                "trial": "Basic",
+                "small": "Standard",
+                "medium": "Standard",
+                "large": "Premium",
+                "enterprise": "Premium"
             },
-            "clusterSizeToApplicationGatewaySize" : {
-                "1": "Standard_Small",
-                "2": "Standard_Small",
-                "3": "Standard_Medium",
-                "4": "Standard_Medium",
-                "5": "Standard_Large",
-                "6": "Standard_Large"
+            "dbTierSize": {
+                "trial": "Basic",
+                "small": "S2",
+                "medium": "S4",
+                "large": "P4",
+                "enterprise": "P6"
+            },
+            "postgresDbSku": {
+                "trial": "GP_Gen5_2",
+                "small": "GP_Gen5_2",
+                "medium": "GP_Gen5_4",
+                "large": "GP_Gen5_8",
+                "enterprise": "MO_Gen5_8"
+            },
+            "postgresDbStorageSize": {
+                "trial": 102400,
+                "small": 102400,
+                "medium": 256000,
+                "large": 512000,
+                "enterprise": 1024000
+            },
+            "clusterVmSize": {
+                "trial": "Standard_DS2_v2",
+                "small": "Standard_DS3_v2",
+                "medium": "Standard_DS3_v2",
+                "large": "Standard_DS4_v2",
+                "enterprise": "Standard_DS5_v2"
+            },
+            "clusterSize": {
+                "trial": 1,
+                "small": 2,
+                "medium": 3,
+                "large": 8,
+                "enterprise": 10
+            },
+            "jumpboxVmSize": {
+                "trial": "Standard_B1s",
+                "small": "Standard_B1s",
+                "medium": "Standard_B1s",
+                "large": "Standard_B1s",
+                "enterprise": "Standard_B1s"
+            },
+            "workspaceSku": {
+                "trial": "Free",
+                "small": "Free",
+                "medium": "Standard",
+                "large": "Standard",
+                "enterprise": "Standard"
             }
         }
     },
@@ -410,7 +452,7 @@
                         "value": "[parameters('location')]"
                     },
                     "jumpboxVmSize": {
-                        "value": "[parameters('jumpboxVmSize')]"
+                        "value": "[if(variables('isConfClusterSizeUsed'), variables('clusterLookup').jumpboxVmSize[parameters('confClusterSize')], parameters('jumpboxVmSize'))]"
                     },
                     "jumpboxSshKey": {
                         "value": "[parameters('jumpboxSshKey')]"
@@ -448,16 +490,16 @@
                         "value": "[parameters('confluenceVersion')]"
                     },
                     "clusterSize": {
-                        "value": "[parameters('clusterSize')]"
+                        "value": "[if(variables('isConfClusterSizeUsed'), int(variables('clusterLookup').clusterSize[parameters('confClusterSize')]), parameters('clusterSize'))]"
                     },
                     "clusterVmSize": {
-                        "value": "[parameters('clusterVmSize')]"
+                        "value": "[if(variables('isConfClusterSizeUsed'), variables('clusterLookup').clusterVmSize[parameters('confClusterSize')], parameters('clusterVmSize'))]"
                     },
                     "appGtwyClusterSize": {
-                        "value": "[parameters('appGtwyClusterSize')]"
+                        "value": "[if(variables('isConfClusterSizeUsed'), int(variables('clusterLookup').appGtwySize[parameters('confClusterSize')]), parameters('appGtwyClusterSize'))]"
                     },
                     "appGtwyTier": {
-                        "value": "[parameters('appGtwyTier')]"
+                        "value": "[if(variables('isConfClusterSizeUsed'), variables('clusterLookup').appGtwyTier[parameters('confClusterSize')], parameters('appGtwyTier'))]"
                     },
                     "nodeSshUser": {
                         "value": "[parameters('nodeSshUser')]"
@@ -469,10 +511,10 @@
                         "value": "[parameters('dbCreateNew')]"
                     },
                     "dbTier": {
-                        "value": "[parameters('dbTier')]"
+                        "value": "[if(variables('isConfClusterSizeUsed'), variables('clusterLookup').dbTier[parameters('confClusterSize')], parameters('dbTier'))]"
                     },
                     "dbTierSize": {
-                        "value": "[parameters('dbTierSize')]"
+                        "value": "[if(variables('isConfClusterSizeUsed'), variables('clusterLookup').dbTierSize[parameters('confClusterSize')], parameters('dbTierSize'))]"
                     },
                     "dbHost": {
                         "value": "[if(parameters('dbCreateNew'), variables('dbServerName'), parameters('dbHost'))]"
@@ -544,7 +586,7 @@
                         "value": "[parameters('enableAcceleratedNetworking')]"
                     },
                     "workspaceSku": {
-                        "value": "[parameters('workspaceSku')]"
+                        "value": "[if(variables('isConfClusterSizeUsed'), variables('clusterLookup').workspaceSku[parameters('confClusterSize')], parameters('workspaceSku'))]"
                     }
                 }
             }

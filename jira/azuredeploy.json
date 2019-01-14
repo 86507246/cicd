@@ -453,6 +453,13 @@
                 "medium": "Standard_B1s",
                 "large": "Standard_B1s",
                 "enterprise": "Standard_B1s"
+            },
+            "workspaceSku": {
+                "trial": "Free",
+                "small": "Free",
+                "medium": "Standard",
+                "large": "Standard",
+                "enterprise": "Standard"
             }
         }
     },
@@ -629,7 +636,7 @@
                         "value": "[parameters('enableAcceleratedNetworking')]"
                     },
                     "workspaceSku": {
-                        "value": "[parameters('workspaceSku')]"
+                        "value": "[if(variables('isConfClusterSizeUsed'), variables('clusterLookup').workspaceSku[parameters('workspaceSku')], parameters('workspaceSku'))]"
                     }
                 }
             }

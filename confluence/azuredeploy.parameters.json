@@ -2,14 +2,8 @@
     "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "confluenceVmSize": {
-            "value": "Standard_DS2_v2"
-        },
-        "natVmSize": {
-            "value": "Standard_DS3_v2"
-        },
-        "clusterSize": {
-            "value": 2
+        "confClusterSize": {
+            "value": "small"
         },
         "nodeSshPassword": {
             "value": "CONFLUENCE@dmin"
@@ -17,29 +11,8 @@
         "dbPassword": {
             "value": ".Jkv435jxaDKL2345KA7YpbLyWJLPmocWx43rcn69"
         },
-        "userName": {
-            "value": "admin"
-        },
-        "userFullname": {
-            "value": "Admin Admin"
-        },
-        "userEmail": {
-            "value": "admin@example.com"
-        },
         "userCredential": {
             "value": "admin"
-        },
-        "applicationGatewaySize": {
-            "value": "Standard_Small"
-        },
-        "dbTierOption": {
-            "value": "manual"
-        },
-        "dbTier": {
-            "value": "S3"
-        },
-        "dbEdition": {
-            "value": "Standard"
         }
     }
 }
