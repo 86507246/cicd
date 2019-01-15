@@ -18,4 +18,4 @@ Further information on parameters and other installation options for the Atlassi
 ## View Azure Deployment Results
 
 View deployment output values in Azure Portal for endpoints, DB url etc.  
-![alt text](https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/master/jira/images/ConfDeploymentResults.png "Confluence Deployment Results")
+![alt text](https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/master/confluence/images/ConfDeploymentResults.png "Confluence Deployment Results")
