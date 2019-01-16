@@ -13,9 +13,11 @@ NB. The current Azure deployment utilises certain Azure functionality like App I
 4. Canada Central
 5. Central India
 
+You can of course disable App Insights, Analytics etc via the template parameters to allow installation to your desired region.
+
 Further information on parameters and other installation options for the Atlassian Azure solution can be found at our [Support Page](https://hello.atlassian.net/wiki/spaces/DC/pages/369608838/Azure+Support+Page)  
 
 ## View Azure Deployment Results
 
 View deployment output values in Azure Portal for endpoints, DB url etc.  
-![alt text](https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/master/confluence/images/ConfDeploymentResults.png "Confluence Deployment Results")
+![Confluence Deployment Results](images/ConfDeploymentResults.png "Confluence Deployment Results")

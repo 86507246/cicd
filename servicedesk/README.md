@@ -8,7 +8,7 @@ Jira Service Desk Data Center gives you uninterrupted access to JIRA Service Des
 
 **_NB. Jira Service Desk uses the same ARM templates as Jira Software. Ensure you select the "servicedesk" option from the Jira-Product parameter droplist._**
 
-![alt text](https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/master/jira/images/ServiceDeskJiraOption.png "Jira Service Desk Option")
+![alt text](../jira/images/ServiceDeskJiraOption.png "Jira Service Desk Option")
 
 NB. The current Azure deployment utilises certain Azure functionality like App Insights, Azure Monitoring, SQL Analytics etc that are still in Preview mode and not available in most regions. To ensure you can utilise these technologies deploy into the following regions:
 1. East US
@@ -17,9 +17,11 @@ NB. The current Azure deployment utilises certain Azure functionality like App I
 4. Canada Central
 5. Central India
 
+You can of course disable App Insights, Analytics etc via the template parameters to allow installation to your desired region.
+
 Further information on parameters and other installation options for the Atlassian Azure solution can be found at our [Support Page](https://hello.atlassian.net/wiki/spaces/DC/pages/369608838/Azure+Support+Page)  
 
 ## View Azure Deployment Results
 
 View deployment output values in Azure Portal for endpoints, DB url etc.  
-![alt text](https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/master/jira/images/JiraDeploymentResults.png "Jira Service Desk Deployment Results")
+![alt text](../jira/images/JiraDeploymentResults.png "Jira Service Desk Deployment Results")
