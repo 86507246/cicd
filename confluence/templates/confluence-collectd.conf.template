@@ -95,105 +95,147 @@ LoadPlugin java
     LoadPlugin "org.collectd.java.GenericJMX"
     <Plugin "GenericJMX">
 
-        # Confluence indexing statistics
-        <MBean "confluence_index">
+ # Confluence indexing statistics
+        <MBean "confluence/IndexingStatistics">
             ObjectName "Confluence:name=IndexingStatistics"
-            InstancePrefix "confluence_index"
-            #InstanceFrom ""
+            InstancePrefix "confluence-IndexingStatistics"
 
-            # Items currently waiting for indexing
             <Value>
-                Type "gauge"
-                InstancePrefix "queue"
-                #InstanceFrom ""
-                Table false
-                Attribute "getTaskQueueLength"
-            </Value>
-
-            # Time in ms of the last index run
-            <Value>
-                Type "time_ms"
-                InstancePrefix "elapsed_time_in_ms"
-                #InstanceFrom ""
+		        InstancePrefix "last_elapsed_ms"
+                Type "total_time_in_ms"
                 Table false
                 Attribute "LastElapsedMilliseconds"
             </Value>
+
+            <Value>
+		        InstancePrefix "task_queue_length"
+                Type "queue_length"
+                Table false
+                Attribute "TaskQueueLength"
+            </Value>
         </MBean>
 
-        # Confluence mail statistics
-        <MBean "confluence_mail_task_queue">
+        <MBean "confluence/MailTaskQueue">
             ObjectName "Confluence:name=MailTaskQueue"
-            InstancePrefix "confluence_mail_task_queue"
-            #InstanceFrom ""
+            InstancePrefix "confluence-MailTaskQueue"
 
-            # Mails currently waiting to be send 
+            <Value>
+                Type "email_count"
+                InstancePrefix "retry_count"
+                Table false
+                Attribute "RetryCount"
+            </Value>
+
             <Value>
                 Type "email_count"
                 InstancePrefix "tasks"
-                #InstanceFrom ""
                 Table false
                 Attribute "TasksSize"
             </Value>
 
-            # Mails currently stuck due to an error
             <Value>
                 Type "email_count"
                 InstancePrefix "error_queue"
-                #InstanceFrom ""
                 Table false
                 Attribute "ErrorQueueSize"
             </Value>
         </MBean>
 
-        # Confluence example latency as seen on the System Information page
-        <MBean "confluence_database">
+        <MBean "confluence/RequestMetrics">
+            ObjectName "Confluence:name=RequestMetrics"
+            InstancePrefix "confluence-RequestMetrics"
+
+            <Value>
+                Type "requests"
+                InstancePrefix "avg_exec_time_for_last_ten_requests"
+                Table false
+                Attribute "AverageExecutionTimeForLastTenRequests"
+	        </Value>
+
+            <Value>
+                Type "requests"
+                InstancePrefix "current_num_requests_being_served"
+                Table false
+                Attribute "CurrentNumberOfRequestsBeingServed"
+	        </Value>
+
+            <Value>
+                Type "requests"
+                InstancePrefix "error_count"
+                Table false
+                Attribute "ErrorCount"
+	        </Value>
+
+            <Value>
+                Type "requests"
+                InstancePrefix "num_requests_in_last_ten_secs"
+                Table false
+                Attribute "NumberOfRequestsInLastTenSeconds"
+	         </Value>
+
+            <Value>
+                Type "requests"
+                InstancePrefix "requests_began"
+                Table false
+                Attribute "RequestsBegan"
+	        </Value>
+
+            <Value>
+                Type "requests"
+                InstancePrefix "requests_served"
+                Table false
+                Attribute "RequestsServed"
+	        </Value>
+        </MBean>
+	
+        <MBean "confluence/SystemInformation">
             ObjectName "Confluence:name=SystemInformation"
-            InstancePrefix "confluence_database"
-            #InstanceFrom ""
+            InstancePrefix "confluence-SystemInformation"
 
             <Value>
                 Type "latency"
-                InstancePrefix "example_latency"
-                #InstanceFrom ""
+                InstancePrefix "database_example_latency"
                 Table false
-                Attribute "getDatabaseExampleLatency"
+                Attribute "DatabaseExampleLatency"
+            </Value>
+
+            <Value>
+                Type "response_time"
+                InstancePrefix "start_time"
+                Table false
+                Attribute "StartTime"
             </Value>
         </MBean>
 
         # Hazelcast statistic JMX configuration
         <MBean "com.hazelcast/HazelcastInstance.OperationService.hazelcast.operationServicehazelcast">
             ObjectName "com.hazelcast:instance=confluence,name=operationServiceconfluence,type=HazelcastInstance.OperationService"
-            InstancePrefix "com.hazelcast/HazelcastInstance.OperationService.hazelcast.operationServicehazelcast"
+            InstancePrefix "confluence-Hazelcast-OperationService"
 
-            # fqname = com.hazelcast/HazelcastInstance.OperationService.hazelcast.operationServicehazelcast#executedOperationCount
             <Value>
                 Type "derive"
                 InstancePrefix "executedOperationCount"
                 Attribute "executedOperationCount"
             </Value>
 
-            # fqname = com.hazelcast/HazelcastInstance.OperationService.hazelcast.operationServicehazelcast#operationThreadCount
             <Value>
                 Type "gauge"
                 InstancePrefix "operationThreadCount"
                 Attribute "operationThreadCount"
             </Value>
 
-            # fqname = com.hazelcast/HazelcastInstance.OperationService.hazelcast.operationServicehazelcast#remoteOperationCount
             <Value>
                 Type "gauge"
                 InstancePrefix "remoteOperationCount"
                 Attribute "remoteOperationCount"
             </Value>
 
-            # fqname = com.hazelcast/HazelcastInstance.OperationService.hazelcast.operationServicehazelcast#responseQueueSize
             <Value>
                 Type "gauge"
                 InstancePrefix "responseQueueSize"
                 Attribute "responseQueueSize"
             </Value>
 
-            # fqname = com.hazelcast/HazelcastInstance.OperationService.hazelcast.operationServicehazelcast#runningOperationsCount
             <Value>
                 Type "gauge"
                 InstancePrefix "runningOperationsCount"
@@ -204,23 +246,20 @@ LoadPlugin java
 
         <MBean "com.hazelcast/HazelcastInstance.EventService.hazelcast.hazelcast">
             ObjectName "com.hazelcast:instance=confluence,name=confluence,type=HazelcastInstance.EventService"
-            InstancePrefix "com.hazelcast/HazelcastInstance.EventService.hazelcast.hazelcast"
+            InstancePrefix "confluence-Hazelcast-EventService"
 
-            # fqname = com.hazelcast/HazelcastInstance.EventService.hazelcast.hazelcast#eventThreadCount
             <Value>
                 Type "gauge"
                 InstancePrefix "eventThreadCount"
                 Attribute "eventThreadCount"
             </Value>
 
-            # fqname = com.hazelcast/HazelcastInstance.EventService.hazelcast.hazelcast#eventQueueCapacity
             <Value>
                 Type "gauge"
                 InstancePrefix "eventQueueCapacity"
                 Attribute "eventQueueCapacity"
             </Value>
 
-            # fqname = com.hazelcast/HazelcastInstance.EventService.hazelcast.hazelcast#eventQueueSize
             <Value>
                 Type "gauge"
                 InstancePrefix "eventQueueSize"
@@ -228,81 +267,70 @@ LoadPlugin java
             </Value>
         </MBean>
 
-        # Hibernate statistics JMX configuration
         <MBean "com.atlassian.confluence/HibernateStatistics">
-                    ObjectName "Confluence:name=HibernateStatistics"
-                    InstancePrefix "com.atlassian.confluence/HibernateStatistics"
-            # fqname = org.hibernate.core/#CloseStatementCount
+            ObjectName "Confluence:name=HibernateStatistics"
+            InstancePrefix "confluence-HibernateStatistics"
+
             <Value>
                 Type "gauge"
                 InstancePrefix "CloseStatementCount"
                 Attribute "CloseStatementCount"
             </Value>
 
-            # fqname = org.hibernate.core/#CollectionFetchCount
             <Value>
                 Type "gauge"
                 InstancePrefix "CollectionFetchCount"
                 Attribute "CollectionFetchCount"
             </Value>
 
-            # fqname = org.hibernate.core/#CollectionLoadCount
             <Value>
                 Type "gauge"
                 InstancePrefix "CollectionLoadCount"
                 Attribute "CollectionLoadCount"
             </Value>
 
-            # fqname = org.hibernate.core/#CollectionRecreateCount
             <Value>
                 Type "gauge"
                 InstancePrefix "CollectionRecreateCount"
                 Attribute "CollectionRecreateCount"
             </Value>
 
-            # fqname = org.hibernate.core/#CollectionRemoveCount
             <Value>
                 Type "gauge"
                 InstancePrefix "CollectionRemoveCount"
                 Attribute "CollectionRemoveCount"
             </Value>
 
-            # fqname = org.hibernate.core/#CollectionUpdateCount
             <Value>
                 Type "gauge"
                 InstancePrefix "CollectionUpdateCount"
                 Attribute "CollectionUpdateCount"
             </Value>
 
-            # fqname = org.hibernate.core/#ConnectCount
             <Value>
                 Type "gauge"
                 InstancePrefix "ConnectCount"
                 Attribute "ConnectCount"
             </Value>
 
-            # fqname = org.hibernate.core/#EntityDeleteCount
             <Value>
                 Type "gauge"
                 InstancePrefix "EntityDeleteCount"
                 Attribute "EntityDeleteCount"
             </Value>
 
-            # fqname = org.hibernate.core/#EntityFetchCount
             <Value>
                 Type "gauge"
                 InstancePrefix "EntityFetchCount"
                 Attribute "EntityFetchCount"
             </Value>
 
-            # fqname = org.hibernate.core/#EntityInsertCount
             <Value>
                 Type "gauge"
                 InstancePrefix "EntityInsertCount"
                 Attribute "EntityInsertCount"
             </Value>
 
-            # fqname = org.hibernate.core/#EntityLoadCount
             <Value>
                 Type "gauge"
                 InstancePrefix "EntityLoadCount"
@@ -467,30 +495,26 @@ LoadPlugin java
         # C3P0 Connection pool JMX Configuration
         <MBean "com.mchange.v2.c3p0/PooledDataSource">
             ObjectName "com.mchange.v2.c3p0:type=PooledDataSource,*"
-            InstancePrefix "com.mchange.v2.c3p0/PooledDataSource"
+            InstancePrefix "confluence-c3p0-PooledDataSource"
 
-            # fqname = com.mchange.v2.c3p0/PooledDataSource#numBusyConnections
             <Value>
                 Type "gauge"
                 InstancePrefix "numBusyConnections"
                 Attribute "numBusyConnections"
             </Value>
 
-            # fqname = com.mchange.v2.c3p0/PooledDataSource#numIdleConnections
             <Value>
                 Type "gauge"
                 InstancePrefix "numIdleConnections"
                 Attribute "numIdleConnections"
             </Value>
 
-            # fqname = com.mchange.v2.c3p0/PooledDataSource#threadPoolNumIdleThreads
             <Value>
                 Type "gauge"
                 InstancePrefix "threadPoolNumIdleThreads"
                 Attribute "threadPoolNumIdleThreads"
             </Value>
 
-            # fqname = com.mchange.v2.c3p0/PooledDataSource#numConnections
             <Value>
                 Type "gauge"
                 InstancePrefix "numConnections"
@@ -704,9 +728,10 @@ LoadPlugin java
             User "monitorRole"
 
             # Confluence
-            Collect "confluence_index"
-            Collect "confluence_mail_task_queue"
-            Collect "confluence_database"
+            Collect "confluence/IndexingStatistics"
+	        Collect "confluence/MailTaskQueue"
+            Collect "confluence/RequestMetrics"
+            Collect "confluence/SystemInformation"
 
             # Hazelcast
             Collect "com.hazelcast/HazelcastInstance.OperationService.hazelcast.operationServicehazelcast"
