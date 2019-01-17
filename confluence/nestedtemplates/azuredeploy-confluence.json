@@ -138,7 +138,7 @@
         },
         "dbPort": {
             "type": "string",
-            "defaultValue": "1433",
+            "defaultValue": "[if(equals(parameters('dbType'), 'sqlserver'), '1433', if(equals(parameters('dbType'), 'postgres'), '5432', '3306'))]",
             "metadata": {
                 "description": "Database port to use. 1433 for MS SQL, 5432 for Postgres, 3306 for MySQL"
             }
@@ -204,6 +204,34 @@
             "defaultValue": "S2",
             "metadata": {
                 "description": "The database service tier size"
+            }
+        },
+        "postgresDbSku": {
+            "type": "string",
+            "defaultValue": "GP_Gen5_4",
+            "allowedValues": [
+                "GP_Gen5_2",
+                "GP_Gen5_4",
+                "GP_Gen5_8",
+                "GP_Gen5_16",
+                "GP_Gen5_32",
+                "MO_Gen5_2",
+                "MO_Gen5_4",
+                "MO_Gen5_8",
+                "MO_Gen5_16",
+                "MO_Gen5_32"
+            ],
+            "metadata": {
+                "description": "The SKU (stock keeping unit) name of the PostgresSQL instance. Follows the convention {pricing tier}{compute generation}{vCores} eg General Purpose, Generation 5, 4 cores is GP_Gen5_4."
+            }
+        },
+        "postgresDbStorage": {
+            "type": "int",
+            "defaultValue": 102400,
+            "minValue": 102400,
+            "maxValue": 4194304,
+            "metadata": {
+                "description": "The storage size of the PostgresSQL instance."
             }
         },
         "userName": {
@@ -431,6 +459,7 @@
             "apiVersion": "2015-01-01",
             "name": "sqlDbTemplate",
             "type": "Microsoft.Resources/deployments",
+            "condition": "[and(parameters('dbCreateNew'), equals(parameters('dbType'), 'sqlserver'))]",
             "dependsOn": [
                 "[variables('workspace').name]"
             ],
@@ -473,6 +502,52 @@
                     },
                     "enableAnalytics": {
                         "value": "[parameters('enableAnalytics')]"
+                    },
+                    "jumpboxPublicIpAddress": {
+                        "value": "[parameters('jumpboxPublicIpAddress')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-01-01",
+            "name": "postgresDbTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[and(parameters('dbCreateNew'), equals(parameters('dbType'), 'postgres'))]",
+            "dependsOn": [],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('dbTemplateUri')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "dbServerName": {
+                        "value": "[parameters('dbHost')]"
+                    },
+                    "dbDatabaseName": {
+                        "value": "[parameters('dbDatabase')]"
+                    },
+                    "dbUsername": {
+                        "value": "[parameters('dbUsername')]"
+                    },
+                    "dbPassword": {
+                        "value": "[parameters('dbPassword')]"
+                    },
+                    "postgresDbSku": {
+                        "value": "[parameters('postgresDbSku')]"
+                    },
+                    "postgresDbStorage": {
+                        "value": "[parameters('postgresDbStorage')]"
+                    },
+                    "vnetName": {
+                        "value": "[parameters('vnetName')]"
+                    },
+                    "appSubnetName": {
+                        "value": "[parameters('appSubnetName')]"
                     },
                     "jumpboxPublicIpAddress": {
                         "value": "[parameters('jumpboxPublicIpAddress')]"

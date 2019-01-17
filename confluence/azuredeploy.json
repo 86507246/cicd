@@ -73,7 +73,7 @@
                 5,
                 6
             ],
-            "defaultValue": 3,
+            "defaultValue": 2,
             "metadata": {
                 "description": "The number of Confluence nodes in the cluster. Maximum is 6 nodes."
             }
@@ -223,7 +223,7 @@
         },
         "dbSchema": {
             "type": "string",
-            "defaultValue": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'Azure SQL DB'), 'confschema', 'public'), 'confschema')]",
+            "defaultValue": "AUTO-GENERATED",
             "metadata": {
                 "description": "Database schema to use"
             }
@@ -529,7 +529,7 @@
                         "value": "[parameters('dbDatabase')]"
                     },
                     "dbSchema": {
-                        "value": "[if(and(parameters('dbCreateNew'), equals(parameters('dbType'), 'Azure DB for PostgreSQL')), 'public', parameters('dbSchema'))]"
+                        "value": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'Azure DB for PostgreSQL'), 'public', 'jiraschema'), parameters('dbSchema'))]"
                     },
                     "dbUsername": {
                         "value": "[parameters('dbUsername')]"

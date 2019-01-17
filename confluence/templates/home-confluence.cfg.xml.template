@@ -24,13 +24,13 @@
     <property name="hibernate.c3p0.max_statements">0</property>
     <property name="hibernate.c3p0.min_size">{{CONFLUENCE_C3P0_MIN_SIZE}}</property>
     <property name="hibernate.c3p0.timeout">30</property>
-    <property name="hibernate.connection.driver_class">com.microsoft.sqlserver.jdbc.SQLServerDriver</property>
+    <property name="hibernate.connection.driver_class">{{DB_DRIVER_CLASS}}</property>
     <property name="hibernate.connection.isolation">2</property>
-    <property name="hibernate.connection.url">jdbc:sqlserver://{{DB_SERVER_NAME}}:1433;database={{DB_NAME}};encrypt=true;trustServerCertificate=false;hostNameInCertificate={{DB_TRUSTED_HOST}};loginTimeout=30;</property>
+    <property name="hibernate.connection.url">{{DB_JDBCURL}}</property>
     <property name="hibernate.connection.username">{{DB_USER}}</property>
     <property name="hibernate.connection.password">{{DB_PASSWORD}}</property>
     <property name="hibernate.database.lower_non_ascii_supported">true</property>
-    <property name="hibernate.dialect">com.atlassian.confluence.impl.hibernate.dialect.SQLServerDialect</property>
+    <property name="hibernate.dialect">{{DB_DRIVER_DIALECT}}</property>
     <property name="hibernate.setup">true</property>
     <property name="jwt.private.key">{{CONFLUENCE_JWT_PRIVATE_KEY}}</property>
     <property name="jwt.public.key">{{CONFLUENCE_JWT_PUBLIC_KEY}}</property>

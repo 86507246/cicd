@@ -6,8 +6,8 @@ ATL_GENERATE_JWT_KEYPAIR_SCRIPT='var keypairgen = java.security.KeyPairGenerator
 
 ATL_TEMP_DIR="/tmp"
 ATL_CONFLUENCE_VARFILE="${ATL_CONFLUENCE_SHARED_HOME}/confluence.varfile"
-ATL_MSSQL_DRIVER_VERSION="${CONFLUENCE_SQLSERVER_DRIVER_VERSION:-6.3.0.jre8-preview}"
-ATL_MSSQL_DRIVER_FILENAME="mssql-jdbc-${ATL_MSSQL_DRIVER_VERSION}.jar"
+ATL_MSSQL_DRIVER_URL="http://central.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/6.3.0.jre8-preview/mssql-jdbc-6.3.0.jre8-preview.jar"
+ATL_POSTGRES_DRIVER_URL="http://central.maven.org/maven2/org/postgresql/postgresql/9.4.1211/postgresql-9.4.1211.jar"
 
 function atl_log {
   local scope=$1
@@ -314,8 +314,34 @@ function hydrate_shared_config {
   export CONFLUENCE_JWT_PUBLIC_KEY=`echo ${_JWT_KEYPAIR} | cut -d '~' -f2`
   atl_log hydrate_shared_config "Generated JWT public key  :${CONFLUENCE_JWT_PUBLIC_KEY}"
   atl_log hydrate_shared_config "Generated JWT private key :${CONFLUENCE_JWT_PRIVATE_KEY}"
+  export DB_SCRIPT_NAME_LOC=$(ls -C1 *_db.sql.template | sed 's/\.template$//')
 
-  local template_files=(home-confluence.cfg.xml.template shared-confluence.cfg.xml.template server.xml.template ApplicationInsights.xml.template confluence-collectd.conf.template setenv.sh.template)
+  case $DB_TYPE in
+     sqlserver)
+         export DB_CONFIG_TYPE="mssql"
+         export DB_DRIVER_JAR="mssql-jdbc-6.3.0.jre8-preview.jar"
+         export DB_DRIVER_CLASS="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+         export DB_DRIVER_DIALECT="com.atlassian.confluence.impl.hibernate.dialect.SQLServerDialect"
+         export DB_JDBCURL="jdbc:sqlserver://${DB_SERVER_NAME}:${DB_PORT};database=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=${DB_TRUSTED_HOST}"
+         export DB_USER_LIQUIBASE="${DB_USER}@${DB_SERVER_NAME}"
+         ;;
+     postgres)
+         export DB_CONFIG_TYPE="postgres72"
+         export DB_DRIVER_JAR="postgresql-9.4.1211.jar"
+         export DB_DRIVER_CLASS="org.postgresql.Driver"
+         export DB_DRIVER_DIALECT="com.atlassian.confluence.impl.hibernate.dialect.PostgreSQLDialect"
+         export DB_USER="$DB_USER@$(echo ${DB_SERVER_NAME} | cut -d '.' -f1)"
+         export DB_JDBCURL="jdbc:postgresql://${DB_SERVER_NAME}:${DB_PORT}/${DB_NAME}?ssl=true"
+         export DB_USER_LIQUIBASE="${DB_USER}"
+         ;;
+     *)
+         error "Unsupported DB Type: ${DB_TYPE}"
+         ;;
+  esac
+
+  atl_log hdyrate_shared_config "Created DB_JDBCURL=${DB_JDBCURL}"
+  
+  local template_files=(dbconfig.xml.template home-confluence.cfg.xml.template shared-confluence.cfg.xml.template server.xml.template ApplicationInsights.xml.template confluence-collectd.conf.template setenv.sh.template databaseChangeLog.xml.template )
   local output_file=""
   for template_file in ${template_files[@]};
   do
@@ -340,77 +366,27 @@ function copy_artefacts {
 
 function hydrate_db_dump {
   export USER_ENCRYPTION_METHOD="atlassian-security"
-
   export USER_PASSWORD=`run_password_generator ${USER_CREDENTIAL}`
-
   export USER_FIRSTNAME=`echo ${USER_FULLNAME} | cut -d ' ' -f 1`
   export USER_LASTNAME=`echo ${USER_FULLNAME} | cut -d ' ' -f 2-`
-
   export USER_FIRSTNAME_LOWERCASE=`echo ${USER_FULLNAME_LOWERCASE} | cut -d ' ' -f 1`
   export USER_LASTNAME_LOWERCASE=`echo ${USER_FULLNAME_LOWERCASE} | cut -d ' ' -f 2-`
-
+  export SERVER_ID=`generate_server_id`
+  export DB_USER=`echo ${DB_USER} | cut -d '@' -f 1`
+  
   log "Prepare database dump [user=${USER_NAME}, password=${USER_PASSWORD}, credential=${USER_CREDENTIAL}]"
 
-  local template_files=(configuredb.sql.template tables.sql.template data.sql.template index.sql.template constraints.sql.template)
-  local output_file=""
-  for template_file in ${template_files[@]};
-  do
-    output_file=`echo "${template_file}" | sed 's/\.template$//'`
-    log "Start hydrating '${template_file}' into '${output_file}'"
-    cat ${template_file} | python3 hydrate_confluence_config.py > ${output_file}
-    log "Hydrated '${template_file}' into '${output_file}'"
-  done
+  local template_file=$(ls -C1 *_db.sql.template)
+  local output_file=`echo "${template_file}" | sed 's/\.template$//'`
+
+  cat ${template_file} | python3 hydrate_confluence_config.py > ${output_file}
+  log "Hydrated '${template_file}' into '${output_file}'"
 }
 
 function install_liquibase {
   atl_log install_liquibase "Downloading liquibase"
-  if ! [ -f liquibase-core-3.5.3.jar ] ;  then
-    mvn dependency:get -Dartifact=org.liquibase:liquibase-core:3.5.3 -Dtransitive=false -Ddest=.
-    atl_log install_liquibase "Liquibase has been downloaded"
-  else
-    atl_log install_liquibase "Liquibase file found: not downloading."
-  fi
-
-  atl_log install_liquibase "Preparing liquibase migration file"
-
-  cat <<EOT >> "databaseChangeLog.xml"
-<databaseChangeLog
-    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd
-    http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
-    <changeSet id="1" author="confluence">
-      <sqlFile dbms="mssql"
-               encoding="utf8"
-               endDelimiter=";"
-               path="configuredb.sql"
-               relativeToChangelogFile="true" />
-      <sqlFile dbms="mssql"
-               encoding="utf8"
-               endDelimiter=";"
-               path="tables.sql"
-               relativeToChangelogFile="true" />
-      <sqlFile dbms="mssql"
-               encoding="utf8"
-               endDelimiter=";"
-               path="data.sql"
-               relativeToChangelogFile="true" />
-      <sqlFile dbms="mssql"
-               encoding="utf8"
-               endDelimiter=";"
-               path="index.sql"
-               relativeToChangelogFile="true" />
-      <sqlFile dbms="mssql"
-               encoding="utf8"
-               endDelimiter=";"
-               path="constraints.sql"
-               relativeToChangelogFile="true" />
-    </changeSet>
-</databaseChangeLog>
-EOT
-
-  atl_log install_liquibase "Prepared liquibase migration file"
+  mvn dependency:get -Dartifact=org.liquibase:liquibase-core:3.5.3 -Dtransitive=false -Ddest=.
+  atl_log install_liquibase "Liquibase has been downloaded"
 }
 
 function prepare_database {
@@ -427,16 +403,23 @@ function get_trusted_dbhost {
 }
 
 function apply_database_dump {
-  log 'applying database dump'
-  java  \
-    -cp liquibase-core-3.5.3.jar:${ATL_MSSQL_DRIVER_FILENAME} \
-    liquibase.integration.commandline.Main \
-    --driver=com.microsoft.sqlserver.jdbc.SQLServerDriver \
-    --url="jdbc:sqlserver://${DB_SERVER_NAME}:1433;database=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=${DB_TRUSTED_HOST};loginTimeout=30;" \
-    --username="${DB_USER}@${DB_SERVER_NAME}" \
+  log "applying database dump with DB vars: $(env | grep DB_)"
+  java -jar liquibase-core-3.5.3.jar \
+    --classpath="${DB_DRIVER_JAR}" \
+    --driver=${DB_DRIVER_CLASS} \
+    --url="${DB_JDBCURL}" \
+    --username="${DB_USER_LIQUIBASE}" \
     --password="${DB_PASSWORD}" \
+    --logLevel=info \
     --changeLogFile=databaseChangeLog.xml \
     update
+    
+  # if [ "$?" -ne "0" ]; then
+  #   copy_artefacts
+  #   error "Liquibase dump failed with and error. Check logs and rectify!!"
+  # else
+  #   atl_log apply_database_dump "Liquibase has been successfully executed"
+  # fi
 }
 
 function prepare_env {
@@ -580,14 +563,19 @@ function perform_install {
   log "${ATL_CONFLUENCE_PDORUCT} installation completed"
 }
 
-function download_mssql_driver {
-  atl_log install_mssql_driver "Downloading Microsoft database driver"
+function install_jdbc_drivers {
+  local install_location="${1:-${ATL_CONFLUENCE_INSTALL_DIR}/lib}"
 
-  if ! [ -f ${ATL_MSSQL_DRIVER_FILENAME} ] ; then
-    mvn dependency:get -Dartifact=com.microsoft.sqlserver:mssql-jdbc:${ATL_MSSQL_DRIVER_VERSION} -Dtransitive=false -Ddest=.
-  fi
+  for jarURL in $(echo $ATL_MSSQL_DRIVER_URL $ATL_POSTGRES_DRIVER_URL)
+  do
+     atl_log install_jdbc_drivers "Downloading JDBC driver from ${jarURL}"
+     curl -O "${jarURL}"
 
-  atl_log install_mssql_driver 'MS JDBC driver has been downloaded'
+     atl_log install_jdbc_drivers "Copying JDBC driver to ${install_location}"
+     cp -fp $(basename $(echo ${jarURL})) "${install_location}"
+  done
+
+  atl_log install_jdbc_drivers 'JDBC drivers has been copied.'
 }
 
 function get_node_ip {
@@ -754,9 +742,9 @@ function configure_confluence {
   configure_cluster
   log "Done configuring cluster!"
 
-  atl_log configure_jira "Configuring app insights..."
+  atl_log configure_confluence "Configuring app insights..."
   install_appinsights
-  atl_log configure_jira "Done app insights!"
+  atl_log configure_confluence "Done app insights!"
   
   chown -R confluence:confluence "/datadisks/disk1"
   chown -R confluence:confluence "${ATL_CONFLUENCE_HOME}"
@@ -825,7 +813,7 @@ function prepare_install {
   copy_artefacts
   prepare_password_generator
   install_password_generator
-  download_mssql_driver
+  install_jdbc_drivers "`pwd`"
   prepare_database
   apply_database_dump
 }
