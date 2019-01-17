@@ -494,7 +494,7 @@
             "dataVmSize": "[parameters('esNodeSize')]",
             "lbIp": "10.0.5.99",
             "name": "[concat(variables('namespace'), '-elasticsearch')]",
-            "templateBaseUrl": "https://raw.githubusercontent.com/elastic/azure-marketplace/6.3.1/src/",
+            "templateBaseUrl": "https://raw.githubusercontent.com/elastic/azure-marketplace/6.5.3/src/",
             "version": "5.5.1"
         },
         "sql": {
