@@ -11,7 +11,7 @@
     <property name="dbms" value="postgresql" dbms="postgresql"/>
     <property name="delimiter" value=";" dbms="postgresql"/>
 
-    <changeSet author="jira" id="1">
+    <changeSet author="confluence" id="1">
       <sqlFile dbms="${dbms}"
                encoding="utf8"
                path="{{DB_SCRIPT_NAME_LOC}}"

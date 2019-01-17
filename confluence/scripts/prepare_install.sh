@@ -353,7 +353,7 @@ function hydrate_shared_config {
 }
 
 function copy_artefacts {
-  local excluded_files=(std* version installer *.bin *.jar prepare_install.sh *.py *.template *.sql *.js *.xsl)
+  local excluded_files=(std* version installer *.bin *.jar prepare_install.sh *.py *.template *.sql *.js *.xsl oms*sh onboard*sh vm-disk-utils*.sh)
 
   local exclude_rules=""
   for file in ${excluded_files[@]};
@@ -414,12 +414,12 @@ function apply_database_dump {
     --changeLogFile=databaseChangeLog.xml \
     update
     
-  # if [ "$?" -ne "0" ]; then
-  #   copy_artefacts
-  #   error "Liquibase dump failed with and error. Check logs and rectify!!"
-  # else
-  #   atl_log apply_database_dump "Liquibase has been successfully executed"
-  # fi
+  if [ "$?" -ne "0" ]; then
+    copy_artefacts
+    error "Liquibase dump failed with and error. Check logs and rectify!!"
+  else
+    atl_log apply_database_dump "Liquibase has been successfully executed"
+  fi
 }
 
 function prepare_env {
@@ -735,7 +735,9 @@ function configure_confluence {
     fi
   done
 
-  log "Creating ${ATL_CONFLUENCE_SHARED_HOME}/gclogs directory..."
+  log "Creating ${ATL_CONFLUENCE_SHARED_HOME} subdirectories..."
+  mkdir -p ${ATL_CONFLUENCE_SHARED_HOME}/backups
+  mkdir -p ${ATL_CONFLUENCE_SHARED_HOME}/attachments
   mkdir -p ${ATL_CONFLUENCE_SHARED_HOME}/gclogs
 
   log "Configuring cluster..."
