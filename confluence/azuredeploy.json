@@ -40,7 +40,7 @@
             ],
             "defaultValue": "",
             "metadata": {
-                "description": "To use recommended hardware options for the Jira installation choose a size. NB if selected all further Gateway, VM, DB size parameters will be IGNORED."
+                "description": "To use recommended hardware options for the Confluence installation choose a size. NB if selected all further Gateway, VM, DB size parameters will be IGNORED."
             }
         },
         "jumpboxVmSize": {
@@ -529,7 +529,7 @@
                         "value": "[parameters('dbDatabase')]"
                     },
                     "dbSchema": {
-                        "value": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'Azure DB for PostgreSQL'), 'public', 'jiraschema'), parameters('dbSchema'))]"
+                        "value": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'Azure DB for PostgreSQL'), 'public', 'dbo'), parameters('dbSchema'))]"
                     },
                     "dbUsername": {
                         "value": "[parameters('dbUsername')]"

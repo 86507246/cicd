@@ -525,7 +525,7 @@
         "confPrepareCmd": "[concat(variables('scripts').prepare.env, ' FILE_STORE_URL_DOMAIN=\"', parameters('storageFilesEndpoint'), '\" ', './prepare_install.sh ', parameters('storageAccessKey'), ' prepare ', parameters('confBaseUrl'), ' ', parameters('confDbServerName'), ' 2>&1 > ./confluence.prepare.log')]",
         "confInstallCmd": "[concat(variables('scripts').prepare.env, ' FILE_STORE_URL_DOMAIN=\"', parameters('storageFilesEndpoint'), '\" ', './prepare_install.sh ', parameters('storageAccessKey'), ' install ', parameters('confBaseUrl'), ' 2>&1 > ./confluence.install-$(uname -n).log')]",
         "isMsSql": "[equals(parameters('dbType'), 'sqlserver')]",
-        "confDbScriptTemplate": "[if(variables('isMsSql'), 'templates/conf_db.sql.template', 'templates/confluence_postgres_db.sql.template')]"
+        "confDbScriptTemplate": "[if(variables('isMsSql'), 'templates/confluence_mssql_db.sql.template', 'templates/confluence_postgres_db.sql.template')]"
     },
     "resources": [
         {
@@ -546,11 +546,6 @@
                         "[uri(parameters('_artifactsLocation'), concat('templates/shared-confluence.cfg.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/server.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat(variables('confDbScriptTemplate'), parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('templates/configuredb.sql.template', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('templates/constraints.sql.template', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('templates/data.sql.template', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('templates/tables.sql.template', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('templates/index.sql.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/ApplicationInsights.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/databaseChangeLog.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/confluence-collectd.conf.template', parameters('_artifactsLocationSasToken')))]",
