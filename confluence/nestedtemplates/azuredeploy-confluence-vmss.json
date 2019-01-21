@@ -410,19 +410,27 @@
                 },
                 {
                     "name": "DB_NAME",
-                    "value": "[parameters('dbDatabase')]"
+                    "value": "[if(equals(parameters('dbType'), 'sqlserver'), parameters('dbDatabase'), toLower(parameters('dbDatabase')))]"
                 },
                 {
                     "name": "DB_SCHEMA",
-                    "value": "[parameters('dbSchema')]"
+                    "value": "[if(equals(parameters('dbType'), 'sqlserver'), parameters('dbSchema'), toLower(parameters('dbSchema')))]"
+                },
+                {
+                    "name": "DB_PORT",
+                    "value": "[if(parameters('dbCreateNew'), if(equals(parameters('dbType'), 'sqlserver'), '1433', '5432'), parameters('dbPort'))]"
+                },
+                {
+                    "name": "DB_TYPE",
+                    "value": "[parameters('dbType')]"
+                },
+                {
+                    "name": "DB_CREATE",
+                    "value": "[parameters('dbCreateNew')]"
                 },
                 {
                     "name": "CONFLUENCE_SQLSERVER_DATABASE_COMPATIBILITY_LEVEL",
                     "value": "100"
-                },
-                {
-                    "name": "CONFLUENCE_SQLSERVER_DRIVER_VERSION",
-                    "value": "6.3.0.jre8-preview"
                 }
             ],
             "sql": [
@@ -515,7 +523,9 @@
             }
         },
         "confPrepareCmd": "[concat(variables('scripts').prepare.env, ' FILE_STORE_URL_DOMAIN=\"', parameters('storageFilesEndpoint'), '\" ', './prepare_install.sh ', parameters('storageAccessKey'), ' prepare ', parameters('confBaseUrl'), ' ', parameters('confDbServerName'), ' 2>&1 > ./confluence.prepare.log')]",
-        "confInstallCmd": "[concat(variables('scripts').prepare.env, ' FILE_STORE_URL_DOMAIN=\"', parameters('storageFilesEndpoint'), '\" ', './prepare_install.sh ', parameters('storageAccessKey'), ' install ', parameters('confBaseUrl'), ' 2>&1 > ./confluence.install-$(uname -n).log')]"
+        "confInstallCmd": "[concat(variables('scripts').prepare.env, ' FILE_STORE_URL_DOMAIN=\"', parameters('storageFilesEndpoint'), '\" ', './prepare_install.sh ', parameters('storageAccessKey'), ' install ', parameters('confBaseUrl'), ' 2>&1 > ./confluence.install-$(uname -n).log')]",
+        "isMsSql": "[equals(parameters('dbType'), 'sqlserver')]",
+        "confDbScriptTemplate": "[if(variables('isMsSql'), 'templates/confluence_mssql_db.sql.template', 'templates/confluence_postgres_db.sql.template')]"
     },
     "resources": [
         {
@@ -535,12 +545,9 @@
                         "[uri(parameters('_artifactsLocation'), concat('templates/home-confluence.cfg.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/shared-confluence.cfg.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/server.xml.template', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('templates/configuredb.sql.template', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('templates/constraints.sql.template', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('templates/data.sql.template', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('templates/tables.sql.template', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(parameters('_artifactsLocation'), concat('templates/index.sql.template', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat(variables('confDbScriptTemplate'), parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/ApplicationInsights.xml.template', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(parameters('_artifactsLocation'), concat('templates/databaseChangeLog.xml.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/confluence-collectd.conf.template', parameters('_artifactsLocationSasToken')))]",
                         "[uri(parameters('_artifactsLocation'), concat('templates/setenv.sh.template', parameters('_artifactsLocationSasToken')))]"
                     ]

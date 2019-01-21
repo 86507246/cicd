@@ -396,7 +396,7 @@ function apply_database_dump {
     copy_artefacts
     error "Liquibase dump failed with and error. Check logs and rectify!!"
   else
-    atl_log apply_database_dump "Liquibase has been sucessfully executed"
+    atl_log apply_database_dump "Liquibase has been successfully executed"
   fi
 }
 
