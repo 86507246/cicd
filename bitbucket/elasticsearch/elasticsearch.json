@@ -33,8 +33,7 @@
             "type": "string",
             "metadata": {
                 "description": "The base URI where the official Elasticsearch artifacts are located."
-            },
-            "defaultValue": "https://raw.githubusercontent.com/elastic/azure-marketplace/master/src/"
+            }
         },
         "jumpboxIp": {
             "type": "string",

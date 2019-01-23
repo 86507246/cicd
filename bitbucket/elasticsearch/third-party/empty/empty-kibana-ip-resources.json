@@ -2,12 +2,6 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "templateBaseUrl": {
-      "type": "string",
-      "metadata": {
-        "description": "Base uri of resources"
-      }
-    },
     "location": {
       "type": "string",
       "metadata": {
@@ -16,24 +10,19 @@
     },
     "namespace": {
       "type": "string",
-      "defaultValue": ""
-    },
-    "networkSettings": {
-      "type": "object",
       "metadata": {
-        "description": "Network settings"
+        "description": "The unique namespace for the Kibana VM"
       }
     },
-    "credentials": {
-      "type": "secureObject",
+    "https": {
+      "type": "string",
+      "defaultValue": "No",
+      "allowedValues": [
+        "Yes",
+        "No"
+      ],
       "metadata": {
-        "description": "Credential information block"
-      }
-    },
-    "osSettings": {
-      "type": "object",
-      "metadata": {
-        "description": "Elasticsearch deployment platform settings"
+        "description": "Controls if the output address should be HTTP or HTTPS"
       }
     },
     "elasticTags": {
@@ -46,10 +35,12 @@
       }
     }
   },
-  "variables": {},
-  "resources": [],
+  "variables": {
+  },
+  "resources": [
+  ],
   "outputs": {
-    "ssh": {
+    "fqdn": {
       "value": "N/A",
       "type": "string"
     }

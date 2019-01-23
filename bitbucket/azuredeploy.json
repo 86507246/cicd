@@ -564,7 +564,6 @@
         },
         "env": {
             "SQL": [
-                "[concat('SQL_HOST', '=\"', variables('sql').server.name, '\" ')]",
                 "[concat('SQL_USER', '=\"', variables('sql').server.user, '\" ')]",
                 "[concat('SQL_PASS', '=\"', variables('sql').server.password, '\" ')]"
             ],
@@ -1426,7 +1425,7 @@
                         "autoUpgradeMinorVersion": true,
                         "settings": {
                             "fileUris": "[variables('vm').bbs.scripts]",
-                            "commandToExecute": "[concat(variables('data').SQL, variables('data').BBS, ' NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' BBS_URL=\"', 'http://', reference(variables('net').appGw.names.publicIP).dnsSettings.fqdn, '\"', ' BBS_SSH_URL=\"', 'ssh://', reference(variables('net').lb.names.publicIP).dnsSettings.fqdn, ':7999', '\"', ' bash install.sh bbs')]"
+                            "commandToExecute": "[concat(variables('data').SQL, variables('data').BBS, ' SQL_HOST=\"', reference(variables('sql').server.name).fullyQualifiedDomainName, '\"', ' NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' BBS_URL=\"', 'http://', reference(variables('net').appGw.names.publicIP).dnsSettings.fqdn, '\"', ' BBS_SSH_URL=\"', 'ssh://', reference(variables('net').lb.names.publicIP).dnsSettings.fqdn, ':7999', '\"', ' bash install.sh bbs')]"
                         }
                     }
                 }
