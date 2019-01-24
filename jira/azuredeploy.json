@@ -636,7 +636,7 @@
                         "value": "[parameters('enableAcceleratedNetworking')]"
                     },
                     "workspaceSku": {
-                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').workspaceSku[parameters('workspaceSku')], parameters('workspaceSku'))]"
+                        "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').workspaceSku[parameters('jiraClusterSize')], parameters('workspaceSku'))]"
                     }
                 }
             }
