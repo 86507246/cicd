@@ -278,7 +278,7 @@
             "minConnections": "[div(div(variables('lookup').dbTierToMaxConnections[parameters('dbTierSize')], parameters('clusterSize')), 2)]"
         },
         "httpSettings": {
-            "dbConnectionsMinus25Percent": "[div(mul(variables('c3p0Settings').maxConnections, 75),100)]",
+            "dbConnectionsMinus20Percent": "[div(mul(variables('c3p0Settings').maxConnections, 80),100)]",
             "dbConnectionsMinus10": "[sub(variables('c3p0Settings').maxConnections, 10)]"
         },
         "isSslSpecified": "[not(empty(parameters('sslBase64EncodedPfxCertificate')))]",
@@ -344,11 +344,11 @@
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_THREADS",
-                    "value": "[string(if(less(variables('httpSettings').dbConnectionsMinus25Percent, variables('httpSettings').dbConnectionsMinus10), variables('httpSettings').dbConnectionsMinus25Percent, variables('httpSettings').dbConnectionsMinus10))]"
+                    "value": "[string(if(less(variables('httpSettings').dbConnectionsMinus20Percent, variables('httpSettings').dbConnectionsMinus10), variables('httpSettings').dbConnectionsMinus20Percent, variables('httpSettings').dbConnectionsMinus10))]"
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MIN_THREADS",
-                    "value": "[string(div(if(less(variables('httpSettings').dbConnectionsMinus25Percent, variables('httpSettings').dbConnectionsMinus10), variables('httpSettings').dbConnectionsMinus25Percent, variables('httpSettings').dbConnectionsMinus10),2))]"
+                    "value": "[string(div(if(less(variables('httpSettings').dbConnectionsMinus20Percent, variables('httpSettings').dbConnectionsMinus10), variables('httpSettings').dbConnectionsMinus20Percent, variables('httpSettings').dbConnectionsMinus10),2))]"
                 },
                 {
                     "name": "CONFLUENCE_HTTP_CONNECTOR_MAX_ACCEPT_COUNT",
@@ -688,7 +688,7 @@
         },
         "maxHttpThreads": {
             "type": "int",
-            "value": "[if(less(variables('httpSettings').dbConnectionsMinus25Percent, variables('httpSettings').dbConnectionsMinus10), variables('httpSettings').dbConnectionsMinus25Percent, variables('httpSettings').dbConnectionsMinus10)]"
+            "value": "[if(less(variables('httpSettings').dbConnectionsMinus20Percent, variables('httpSettings').dbConnectionsMinus10), variables('httpSettings').dbConnectionsMinus20Percent, variables('httpSettings').dbConnectionsMinus10)]"
          }
     }
 }

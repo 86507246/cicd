@@ -356,14 +356,14 @@
             "name": "[concat(variables('namespace'), 'storage', uniqueString(resourceGroup().id))]"
         },
         "workspace": {
-            "name": "[concat(variables('namespace'), '-omsworkspace-', uniqueString(resourceGroup().id))]",
-            "sku": "[parameters('workspaceSku')]",
-            "retentionInDays": 7
+            "name": "[concat(variables('namespace'), '-omsworkspace-', uniqueString(resourceGroup().id))]"
         },
         "gtwyIpName": "[concat(variables('namespace'), '-appgtwyip-', uniqueString(resourceGroup().id))]",
         "gtwyName": "[if(empty(parameters('sslBase64EncodedPfxCertificate')), concat(variables('namespace'), 'appgateway'), concat(variables('namespace'), 'appgateway-https'))]",
         "gtwyAddressPoolName": "[concat(variables('namespace'), 'appgwaddrpool')]",
         "dbTemplateUri": "[uri(parameters('_artifactsLocation'), concat(if(equals(parameters('dbType'),'sqlserver'),'nestedtemplates/azuredeploy-db-mssql.json','nestedtemplates/azuredeploy-db-postgres.json'), parameters('_artifactsLocationSasToken')))]",
+        "byodbTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-db-byo.json', parameters('_artifactsLocationSasToken')))]",
+        "workspaceTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-workspace.json', parameters('_artifactsLocationSasToken')))]",
         "appGtwyTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-confluence-gtwy.json', parameters('_artifactsLocationSasToken')))]",
         "vmssTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-confluence-vmss.json', parameters('_artifactsLocationSasToken')))]",
         "appInsightsTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-app-insights.json', parameters('_artifactsLocationSasToken')))]",
@@ -373,87 +373,39 @@
     "resources": [
         {
             "type": "Microsoft.Storage/storageAccounts",
-            "apiVersion": "2018-02-01",
+            "apiVersion": "2018-07-01",
             "name": "[variables('storage').name]",
             "location": "[parameters('location')]",
-            "tags": "[variables('tags')]",
             "sku": {
-                "name": "Standard_LRS"
+                "name": "Standard_GRS",
+                "tier": "Standard"
             },
-            "kind": "Storage",
-            "properties": {}
+            "kind": "StorageV2",
+            "tags": "[variables('tags')]"
         },
         {
-            "type": "Microsoft.OperationalInsights/workspaces",
-            "name": "[variables('workspace').name]",
-            "apiVersion": "2015-11-01-preview",
+            "apiVersion": "2015-01-01",
+            "name": "workspaceTemplate",
+            "type": "Microsoft.Resources/deployments",
             "condition": "[parameters('enableAnalytics')]",
-            "location": "[parameters('location')]",
-            "scale": null,
             "properties": {
-                "sku": {
-                    "name": "[variables('workspace').sku]"
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('workspaceTemplateUri')]",
+                    "contentVersion": "1.0.0.0"
                 },
-                "retentionInDays": "[variables('workspace').retentionInDays]"
-            },
-            "resources": [
-                {
-                    "apiVersion": "2015-11-01-preview",
-                    "type": "dataSources",
-                    "name": "ConfluenceLogs",
-                    "dependsOn": [
-                        "[concat('Microsoft.OperationalInsights/workspaces/', variables('workspace').name)]"
-                    ],
-                    "kind": "CustomLog",
-                    "properties": {
-                        "customLogName": "ConfluenceLogs",
-                        "description": "Captures all Atlassian logs found at /var/atlassian/application-data/confluence/logs",
-                        "inputs": [
-                            {
-                                "location": {
-                                    "fileSystemLocations": {
-                                        "linuxFileTypeLogPaths": [
-                                            "/var/atlassian/application-data/confluence/logs/atlassian*.log"
-                                        ]
-                                    }
-                                },
-                                "recordDelimiter": {
-                                    "regexDelimiter": {
-                                        "pattern": "((\\d{2})|(\\d{4}))-([0-1]\\d)-(([0-3]\\d)|(\\d))\\s((\\d)|([0-1]\\d)|(2[0-4])):[0-5][0-9]:[0-5][0-9]",
-                                        "matchIndex": 0,
-                                        "matchIndexSpecified": true,
-                                        "numberedGroup": null
-                                    }
-                                }
-                            }
-                        ],
-                        "extractions": [
-                            {
-                                "extractionName": "TimeGenerated",
-                                "extractionType": "DateTime",
-                                "extractionProperties": {
-                                    "dateTimeExtraction": {
-                                        "regex": null,
-                                        "joinStringRegex": null
-                                    }
-                                }
-                            }
-                        ]
-                    }
-                },
-                {
-                    "apiVersion": "2015-11-01-preview",
-                    "type": "dataSources",
-                    "name": "confLogCollection",
-                    "dependsOn": [
-                        "[concat('Microsoft.OperationalInsights/workspaces/', variables('workspace').name)]"
-                    ],
-                    "kind": "CustomLogCollection",
-                    "properties": {
-                        "state": "LinuxLogsEnabled"
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "workspaceName": {
+                        "value": "[variables('workspace').name]"
+                    },
+                    "workspaceSku": {
+                        "value": "[parameters('workspaceSku')]"
                     }
                 }
-            ]
+            }
         },
         {
             "apiVersion": "2015-01-01",
@@ -461,7 +413,7 @@
             "type": "Microsoft.Resources/deployments",
             "condition": "[and(parameters('dbCreateNew'), equals(parameters('dbType'), 'sqlserver'))]",
             "dependsOn": [
-                "[variables('workspace').name]"
+                "workspaceTemplate"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -514,7 +466,6 @@
             "name": "postgresDbTemplate",
             "type": "Microsoft.Resources/deployments",
             "condition": "[and(parameters('dbCreateNew'), equals(parameters('dbType'), 'postgres'))]",
-            "dependsOn": [],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
@@ -556,6 +507,48 @@
             }
         },
         {
+            "apiVersion": "2015-01-01",
+            "name": "byodbTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[not(parameters('dbCreateNew'))]",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('byodbTemplateUri')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "dbType": {
+                        "value": "[parameters('dbType')]"
+                    },
+                    "dbServerName": {
+                        "value": "[parameters('dbHost')]"
+                    },
+                    "dbDatabaseName": {
+                        "value": "[parameters('dbDatabase')]"
+                    },
+                    "dbPort": {
+                        "value": "[parameters('dbPort')]"
+                    },
+                    "dbPassword": {
+                        "value": "[parameters('dbPassword')]"
+                    },
+                    "dbUsername": {
+                        "value": "[parameters('dbUsername')]"
+                    },
+                    "vnetName": {
+                        "value": "[parameters('vnetName')]"
+                    },
+                    "appSubnetName": {
+                        "value": "[parameters('appSubnetName')]"
+                    }
+                }
+            }
+        },
+        {
             "apiVersion": "2018-08-01",
             "type": "Microsoft.Network/publicIPAddresses",
             "name": "[variables('gtwyIpName')]",
@@ -577,7 +570,7 @@
             "name": "appGtwyTemplate",
             "type": "Microsoft.Resources/deployments",
             "dependsOn": [
-                "[variables('workspace').name]",
+                "workspaceTemplate",
                 "[variables('gtwyIpName')]"
             ],
             "properties": {
@@ -741,13 +734,13 @@
                         "value": "[parameters('enableAcceleratedNetworking')]"
                     },
                     "workspaceId": {
-                        "value": "[reference(resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name), '2015-11-01-preview').customerId]"
+                        "value": "[if(parameters('enableAnalytics'), reference('workspaceTemplate').outputs.workspaceId.value, '')]"
                     },
                     "workspacePrimaryKey": {
-                        "value": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name), '2015-11-01-preview').primarySharedKey]"
+                        "value": "[if(parameters('enableAnalytics'), reference('workspaceTemplate').outputs.workspacePrimaryKey.value, '')]"
                     },
                     "workspaceSecondaryKey": {
-                        "value": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces/', variables('workspace').name), '2015-11-01-preview').secondarySharedKey]"
+                        "value": "[if(parameters('enableAnalytics'), reference('workspaceTemplate').outputs.workspaceSecondaryKey.value, '')]"
                     }
                 }
             }
@@ -758,7 +751,7 @@
             "type": "Microsoft.Resources/deployments",
             "condition": "[parameters('enableApplicationInsights')]",
             "dependsOn": [
-                "[variables('workspace').name]",
+                "workspaceTemplate",
                 "[variables('dbTemplate')]"
             ],
             "properties": {
@@ -780,7 +773,7 @@
             "type": "Microsoft.Resources/deployments",
             "condition": "[parameters('enableAnalytics')]",
             "dependsOn": [
-                "[variables('workspace').name]",
+                "workspaceTemplate",
                 "[variables('dbTemplate')]"
             ],
             "properties": {

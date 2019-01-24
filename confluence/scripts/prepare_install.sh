@@ -98,22 +98,10 @@ function prepare_password_generator {
 function install_password_generator {
   apt-get -qqy install openjdk-8-jre-headless
   apt-get -qqy install maven
-
-  if ! [ -f atlassian-password-encoder-3.2.3.jar ]; then
-    mvn dependency:get -DremoteRepositories="${ATLASSIAN_MAVEN_REPOSITORY_URL}" -Dartifact=com.atlassian.security:atlassian-password-encoder:3.2.3 -Dtransitive=false -Ddest=.
-  fi
-
-  if ! [ -f commons-lang-2.6.jar ]; then
-    mvn dependency:get -Dartifact=commons-lang:commons-lang:2.6 -Dtransitive=false -Ddest=.
-  fi
-
-  if ! [ -f commons-codec-1.9.jar ]; then
-    mvn dependency:get -Dartifact=commons-codec:commons-codec:1.9 -Dtransitive=false -Ddest=.
-  fi
-
-  if ! [ -f bcprov-jdk15on-1.50.jar ]; then
-    mvn dependency:get -Dartifact=org.bouncycastle:bcprov-jdk15on:1.50 -Dtransitive=false -Ddest=.
-  fi
+  mvn dependency:get -DremoteRepositories="${ATLASSIAN_MAVEN_REPOSITORY_URL}" -Dartifact=com.atlassian.security:atlassian-password-encoder:3.2.3 -Dtransitive=false -Ddest=.
+  mvn dependency:get -Dartifact=commons-lang:commons-lang:2.6 -Dtransitive=false -Ddest=.
+  mvn dependency:get -Dartifact=commons-codec:commons-codec:1.9 -Dtransitive=false -Ddest=.
+  mvn dependency:get -Dartifact=org.bouncycastle:bcprov-jdk15on:1.50 -Dtransitive=false -Ddest=.
 }
 
 function run_password_generator {
@@ -341,7 +329,7 @@ function hydrate_shared_config {
 
   atl_log hdyrate_shared_config "Created DB_JDBCURL=${DB_JDBCURL}"
   
-  local template_files=(dbconfig.xml.template home-confluence.cfg.xml.template shared-confluence.cfg.xml.template server.xml.template ApplicationInsights.xml.template confluence-collectd.conf.template setenv.sh.template databaseChangeLog.xml.template )
+  local template_files=(home-confluence.cfg.xml.template shared-confluence.cfg.xml.template server.xml.template ApplicationInsights.xml.template confluence-collectd.conf.template setenv.sh.template databaseChangeLog.xml.template )
   local output_file=""
   for template_file in ${template_files[@]};
   do
@@ -427,7 +415,7 @@ function prepare_env {
   for var in `printenv | grep _ATL_ENV_DATA | cut -d "=" -f 1`; \
     do printf '%s\n' "${!var}" | \
         base64 --decode | \
-        jq -r '.[] | "export " + .name + "=" + "\"" + .value + "\""' \
+        jq -r '[.[] | { name, escaped_value: .value | @sh }] | .[]| "export " + .name + "=" + "$(echo " + .escaped_value + ")"' \
            >> exportenv.sh; \
     done
 
@@ -798,9 +786,22 @@ function set_shared_home_permissions {
 }
 
 function install_oms_linx_agent {
-  atl_log install_oms_linx_agent  "Installing OMS Linux Agent with workspace id: ${OMS_WORKSPACE_ID} and primary key: ${OMS_PRIMARY_KEY}"
-  wget https://raw.githubusercontent.com/Microsoft/OMS-Agent-for-Linux/master/installer/scripts/onboard_agent.sh && sh onboard_agent.sh -w "${OMS_WORKSPACE_ID}" -s "${OMS_PRIMARY_KEY}" -d opinsights.azure.com
-  atl_log install_oms_linx_agent  "Finished installing OMS Linux Agent!"
+  atl_log install_oms_linx_agent "Have OMS Workspace Key? |${OMS_WORKSPACE_ID}|"
+  if [[ -n ${OMS_WORKSPACE_ID} ]]; then
+    atl_log install_oms_linx_agent  "Installing OMS Linux Agent with workspace id: ${OMS_WORKSPACE_ID} and primary key: ${OMS_PRIMARY_KEY}"
+    wget https://raw.githubusercontent.com/Microsoft/OMS-Agent-for-Linux/master/installer/scripts/onboard_agent.sh && sh onboard_agent.sh -w "${OMS_WORKSPACE_ID}" -s "${OMS_PRIMARY_KEY}" -d opinsights.azure.com
+    atl_log install_oms_linx_agent  "Finished installing OMS Linux Agent!"
+  fi
+}
+
+function preloadDatabase {
+  atl_log preloadDatabase  "Preloading new database"
+  prepare_password_generator
+  install_password_generator
+  prepare_database
+  apply_database_dump
+  atl_log preloadDatabase "ready to hydrate db dump"
+
 }
 
 function prepare_install {
@@ -812,12 +813,13 @@ function prepare_install {
   prepare_server_id_generator
   prepare_jwt_keypair_generator
   hydrate_shared_config
-  copy_artefacts
-  prepare_password_generator
-  install_password_generator
   install_jdbc_drivers "`pwd`"
-  prepare_database
-  apply_database_dump
+
+  log "Going to preload database: ${DB_CREATE}"
+  if [ "$DB_CREATE" = 'true' ]; then
+     preloadDatabase
+  fi
+  copy_artefacts
 }
 
 function install_confluence {
