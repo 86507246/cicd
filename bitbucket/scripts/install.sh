@@ -316,7 +316,7 @@ function bbs_download_installer {
     local version="${BBS_INSTALLER_VERSION}"
     local file="${BBS_INSTALLER_FILE}"
 
-    local url="${base}/${bucket}/${path}/${version}/${file}"
+    local url="https://s3.us-east-2.amazonaws.com/tmp-6-bb/atlassian-bitbucket-6.0.0-SNAPSHOT-linux-x64.bin"
     local target="${NFS_INSTALLER_DIR}/installer"
 
     log "Downloading Bitbucket Server installer [base=${base}, bucket=${bucket}, path=${path}, version=${version}, file=${file}] from [url=${url}]"
