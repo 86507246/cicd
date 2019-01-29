@@ -30,6 +30,7 @@
                         "type": "Microsoft.Common.TextBox",
                         "constraints": {
                             "required": true,
+                            "regex": ".+",
                             "validationMessage": "You must specify a full name"
                         }
                     },
@@ -228,24 +229,6 @@
                 },
                 "elements": [
                     {
-                        "name": "autogeneratePassword",
-                        "type": "Microsoft.Common.OptionsGroup",
-                        "label": "Autogenerate username and password?",
-                        "defaultValue": "Yes",
-                        "constraints": {
-                            "allowedValues": [
-                                {
-                                    "label": "Yes",
-                                    "value": "yes"
-                                },
-                                {
-                                    "label": "No",
-                                    "value": "no"
-                                }
-                            ]
-                        }
-                    },
-                    {
                         "name": "username",
                         "type": "Microsoft.Common.TextBox",
                         "label": "Username",
@@ -253,8 +236,7 @@
                             "required": true,
                             "regex": "^(?!admin$|administrator$|sa$|root$|dbmanager$|loginmanager$|dbo$|guest$|information_schema$|sys$|db_accessadmin$|db_backupoperator$|db_datareader$|db_datawriter$|db_ddladmin$|db_denydatareader$|db_denydatawriter$|db_owner$|db_securityadmin$|public$)[a-zA-Z][a-zA-Z0-9]{1,9}$",
                             "validationMessage": "This username needs to be a SQL Identifier - it can't be a typical username like admin, adminstrator, sa, root, dbmanager, loginmanager, dbo, guest, or public. It can't begin with numbers or symbols, and can't include whitespaces, unicode characters, or non-alphabetic characters."
-                        },
-                        "visible": "[equals('no', steps('database').autogeneratePassword)]"
+                        }
                     },
                     {
                         "name": "password",
@@ -265,10 +247,9 @@
                         },
                         "constraints": {
                             "required": true,
-                            "regex": "^(?=.*[A-Z])(?=.*[!@#$%])(?=.*[0-9])(?=.*[a-z]).{8,16}$",
-                            "validationMessage": "This password must be between 8 and 16 characters long, and must contain at least one uppercase letter, one lowercase letter, one number (0-9), and one non-alphanumeric character (!, $, #, %, etc.)."
-                        },
-                        "visible": "[equals('no', steps('database').autogeneratePassword)]"
+                            "regex": "^(?=.*[A-Z])(?=.*[!@#$%^&*-])(?=.*[0-9])(?=.*[a-z]).{12,16}$",
+                            "validationMessage": "This password must be between 12 and 16 characters long, and must contain at least one uppercase letter, one lowercase letter, one number (0-9), and one non-alphanumeric character (!, $, #, %, ^, &, * or -)."
+                        }
                     },
                     {
                         "name": "sqlTier",
