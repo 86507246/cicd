@@ -93,7 +93,7 @@
             "type": "securestring",
             "defaultValue": "",
             "metadata": {
-                "description": "The password of the certificate for SSL termination."
+                "description": "The password of the certificate for SSL termination on the Azure Application Gateway."
             }
         },
         "jumpboxSshKey": {
@@ -316,7 +316,7 @@
                 "MO_Gen5_32"
             ],
             "metadata": {
-                "description": "The SKU (stock keeping unit) name of the PostgresSQL instance. Follows the convention {pricing tier}{compute generation}{vCores} eg General Purpose, Generation 5, 4 cores is GP_Gen5_4. Note that if the 'jiraClusterSize' parameter is used this value will be ignored."
+                "description": "The SKU (Stock Keeping Unit) name of the PostgresSQL instance. Follows the convention {pricing tier}{compute generation}{vCores} eg General Purpose, Generation 5, 4 cores is GP_Gen5_4. Note that if the 'jiraClusterSize' parameter is used this value will be ignored."
             }
         },
         "postgresDbStorage": {

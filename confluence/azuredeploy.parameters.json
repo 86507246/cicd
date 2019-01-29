@@ -5,13 +5,13 @@
         "confClusterSize": {
             "value": "small"
         },
-        "nodeSshPassword": {
+        "clusterSshPassword": {
             "value": "CONFLUENCE@dmin"
         },
         "dbPassword": {
             "value": ".Jkv435jxaDKL2345KA7YpbLyWJLPmocWx43rcn69"
         },
-        "userCredential": {
+        "confAdminUserPassword": {
             "value": "admin"
         }
     }
