@@ -18,24 +18,13 @@
             "name": "jiraVersion",
             "label": "Jira Version",
             "type": "Microsoft.Common.TextBox",
-            "toolTip": "Specify version of Jira (>7) you want to install. By default it will download the latest available.",
+            "toolTip": "Specify which version of Jira (>7) you want to install. By default it will download the latest available.",
             "constraints": {
               "required": true,
-              "regex": "latest|[7,8,9]\\.[0-9]{1,2}\\.[0-9]{1,2}",
+               "regex": "latest|^([7,8,9]\\.[0-9]{1,2}\\.[0-9]{1,2})$",
               "validationMessage": "You must specify a version."
             },
             "defaultValue": "latest"
-          },
-          {
-            "name": "adminEmail",
-            "label": "Admin Email",
-            "type": "Microsoft.Common.TextBox",
-            "toolTip": "The email address of the Jira administrator user.",
-            "constraints": {
-              "required": true,
-              "regex": "[^@]+@[^@]+\\.[A-z]{2,4}",
-              "validationMessage": "You must specify an email address."
-            }
           },
           {
             "name": "adminfullname",
@@ -46,6 +35,17 @@
               "required": true,
               "regex": "^[a-zA-Z0-9 ]*$",
               "validationMessage": "You must specify a full name."
+            }
+          },
+          {
+            "name": "adminEmail",
+            "label": "Admin Email",
+            "type": "Microsoft.Common.TextBox",
+            "toolTip": "The email address of the Jira administrator user.",
+            "constraints": {
+              "required": true,
+              "regex": "[^@]+@[^@]+\\.[A-z]{2,4}",
+              "validationMessage": "You must specify an email address."
             }
           },
           {
@@ -331,7 +331,7 @@
                 "name": "hascname",
                 "type": "Microsoft.Common.OptionsGroup",
                 "label": "Do you have an existing registered CNAME?",
-                "toolTip": "This is the Canonical Name record (CNAME) for your organization. If you don't provide one, Azure will generate a random sub domain for your instance.",
+                "toolTip": "If you provide one, the deployment will be made available from confluence.<CNAME> URL eg confluence.domain.com. If you don't, Azure will generate a random domain for your deployment endpoint.",
                 "defaultValue": "No",
                 "constraints": {
                   "allowedValues": [
@@ -362,14 +362,14 @@
           },
           {
             "name": "sslSection",
-            "label": "Set up SSL",
+            "label": "Set up HTTPS/SSL",
             "type": "Microsoft.Common.Section",
             "elements": [
               {
                 "name": "hasssl",
                 "type": "Microsoft.Common.OptionsGroup",
                 "label": "Do you want to use SSL?",
-                "toolTip": "If you have a SSL PFX certificate and password, you can enter it here.",
+                "toolTip": "If you have a SSL PFX certificate and password, you can enter it here to setup HTTPS/SSL.",
                 "defaultValue": "No",
                 "constraints": {
                   "allowedValues": [
@@ -404,7 +404,7 @@
                   "password": "Certificate Password",
                   "confirmPassword": "Confirm Certificate Password"
                 },
-                "toolTip": "The password of the certificate for SSL termination.",
+                "toolTip": "The certificate password to be used for SSL termination on the Azure Application Gateway.",
                 "constraints": {
                   "required": true,
                   "validationMessage": "You must specify a password."
@@ -533,7 +533,7 @@
       "jiraVersion": "[steps('administrator').jiraVersion]",
       "jiraAdminUserName": "[steps('administrator').adminUsername]",
       "jiraAdminUserPassword": "[steps('administrator').adminPassword]",
-      "jiraAdminUserEmail": "[steps('administrator').username]",
+      "jiraAdminUserEmail": "[steps('administrator').adminEmail]",
       "jiraAdminUserFullname": "[steps('administrator').adminfullname]",
       "jiraClusterSize": "[steps('administrator').jiraClusterSize]",
       "dbCreateNew": "[equals('no', steps('database').hasDatabase)]",
