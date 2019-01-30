@@ -606,13 +606,11 @@ function install_appinsights_collectd {
     cp -fp applicationinsights-collectd*.jar /usr/share/collectd/java/
 
     atl_log install_appinsights_collectd "Starting collectd..."
-    /etc/init.d/collectd start
-    /etc/init.d/collectd status
+    systemctl start collectd
     
     # Bouncing collectd - cgroups issue with Azure wagent
     sleep 5
-    /etc/init.d/collectd restart
-    /etc/init.d/collectd status
+    systemctl restart collectd
   fi
 }
 
@@ -834,8 +832,9 @@ function install_confluence {
   configure_confluence
   remount_share
   install_oms_linx_agent
+  systemctl enable confluence
   log "Done installing CONFLUENCE! Starting..."
-  env -i /etc/init.d/confluence start
+  env -i systemctl start confluence
   wait_until_startup_complete
   install_appinsights_collectd
   set_shared_home_permissions

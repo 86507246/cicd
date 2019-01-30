@@ -592,13 +592,11 @@ function install_appinsights_collectd {
     cp -fp applicationinsights-collectd*.jar /usr/share/collectd/java/
 
     atl_log install_appinsights_collectd "Starting collectd..."
-    /etc/init.d/collectd start
-    /etc/init.d/collectd status
+    systemctl start collectd
 
     # Bouncing collectd - cgroups issue with Azure wagent
     sleep 5
-    /etc/init.d/collectd restart
-    /etc/init.d/collectd status
+    systemctl restart collectd
   fi
 }
 
@@ -761,8 +759,9 @@ function install_jira {
   configure_jira
   remount_share
   install_oms_linux_agent
+  systemctl enable jira
   atl_log install_jira "Done installing JIRA! Starting..."
-  /etc/init.d/jira start
+  systemctl start jira
   install_appinsights_collectd
   set_shared_home_permissions
   copy_artefacts

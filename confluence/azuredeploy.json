@@ -97,7 +97,7 @@
             "defaultValue": "admin",
             "minLength": 5,
             "metadata": {
-                "description": "The username for the Confluence Administrator's account."
+                "description": "The username for the Confluence Administrator's account. Has to be in lowercase."
             }
         },
         "confAdminUserPassword": {
@@ -613,7 +613,7 @@
                         "value": "[parameters('dbPassword')]"
                     },
                     "confAdminUserName": {
-                        "value": "[parameters('confAdminUserName')]"
+                        "value": "[toLower(parameters('confAdminUserName'))]"
                     },
                     "confAdminUserPassword": {
                         "value": "[parameters('confAdminUserPassword')]"
