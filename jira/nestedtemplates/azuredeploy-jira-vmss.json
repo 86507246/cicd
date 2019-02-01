@@ -271,6 +271,22 @@
             "metadata": {
                 "description": "The secondary key of the Azure Operations Management Suite (OMS) workspace."
             }
+        },
+        "clusterVmDiskSize": {
+            "type": "int",
+            "defaultValue": 1000,
+            "metadata": {
+                "description": "The desired size of the Cluster Node's allocation disk in GB"
+            }
+        },
+        "clusterVmDiskCount": {
+            "type": "int",
+            "defaultValue": 8,
+            "minValue": 8,
+            "maxValue": 32,
+            "metadata": {
+                "description": "The requested Cluster Node disk will be striped for performance. Essentially the desired disk size will be divided by the clusterVmDiskCount and can't exceed 1023 GB.. The clusterVmDiskCount count can't exceed the MaxDiskCount assigned to the VM Size."
+            }
         }
     },
     "variables": {
@@ -464,7 +480,7 @@
                     "datadisk": {
                         "type": "Premium_LRS",
                         "caching": "ReadWrite",
-                        "size": "100"
+                        "size": "[if(greater(div(parameters('clusterVmDiskSize'), parameters('clusterVmDiskCount')), 1020), 1020, div(parameters('clusterVmDiskSize'), parameters('clusterVmDiskCount')))]"
                     }
                 }
             },
@@ -570,77 +586,18 @@
                             "diskSizeGB": "[variables('jira').cluster.vm.osdisk.size]",
                             "createOption": "FromImage"
                         },
-                        "dataDisks": [
+                       "copy": [
                             {
-                                "lun": 0,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 1,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 2,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 3,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 4,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 5,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 6,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
-                                }
-                            },
-                            {
-                                "lun": 7,
-                                "caching": "[variables('jira').cluster.vm.datadisk.caching]",
-                                "createOption": "Empty",
-                                "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
-                                "managedDisk": {
-                                    "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
+                                "name": "dataDisks",
+                                "count": "[parameters('clusterVmDiskCount')]",
+                                "input": {
+                                    "lun": "[copyIndex('dataDisks')]",
+                                    "caching": "[variables('jira').cluster.vm.datadisk.caching]",
+                                    "createOption": "Empty",
+                                    "diskSizeGB": "[variables('jira').cluster.vm.datadisk.size]",
+                                    "managedDisk": {
+                                        "storageAccountType": "[variables('jira').cluster.vm.datadisk.type]"
+                                    }
                                 }
                             }
                         ]
@@ -710,6 +667,10 @@
         "installJiraCmdArgs": {
             "type": "string",
             "value": "[variables('jiraInstallCmd')]"
+        },
+        "vmmsSingleDiskSizeGB": {
+            "type": "int",
+            "value": "[variables('jira').cluster.vm.datadisk.size]"
         }
     }
 }
