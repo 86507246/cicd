@@ -359,6 +359,22 @@
             "metadata": {
                 "description": "Workspace SKU"
             }
+        },
+        "clusterVmDiskSize" : {
+            "type": "int",
+            "defaultValue": 1000,
+            "metadata": {
+                "description": "The desired size of the Cluster Node's allocation disk in GB"
+            }
+        },
+        "clusterVmDiskCount" : {
+            "type": "int",
+            "defaultValue": 8,
+            "minValue": 8,
+            "maxValue": 32,
+            "metadata": {
+                "description": "The requested Cluster Node disk will be striped for performance. Essentially the desired disk size will be divided by the clusterVmDiskCount and can't exceed 1023 GB. The clusterVmDiskCount count can't exceed the MaxDiskCount assigned to the VM Size."
+            }
         }
     },
     "variables": {
@@ -803,6 +819,12 @@
                     },
                     "workspaceSecondaryKey": {
                         "value": "[if(parameters('enableAnalytics'), reference('workspaceTemplate').outputs.workspaceSecondaryKey.value, '')]"
+                    },
+                    "clusterVmDiskSize" : {
+                        "value": "[parameters('clusterVmDiskSize')]"
+                    },
+                    "clusterVmDiskCount" : {
+                        "value": "[parameters('clusterVmDiskCount')]"
                     }
                 }
             }
