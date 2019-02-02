@@ -57,6 +57,9 @@
                 "description": "The database type."
             }
         },
+        "isDbVCoreModel": {
+            "type": "bool"
+        },
         "dbDatabaseServerName": {
             "type": "string",
             "metadata": {
@@ -375,7 +378,7 @@
             "name": "[variables('alerts').dbDtuPercentage.name]",
             "apiVersion": "2016-03-01",
             "location": "[parameters('location')]",
-            "condition": "[and(not(empty(parameters('appInsightsName'))), equals(parameters('dbType'), 'sqlserver'))]",
+            "condition": "[and(and(not(empty(parameters('appInsightsName'))), equals(parameters('dbType'), 'sqlserver')), not(parameters('isDbVCoreModel')))]",
             "properties": {
                 "name": "[variables('alerts').dbDtuPercentage.name]",
                 "description": "[variables('alerts').dbDtuPercentage.description]",

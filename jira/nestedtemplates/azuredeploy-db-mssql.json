@@ -18,7 +18,7 @@
         "dbDatabaseName": {
             "type": "string",
             "metadata": {
-                "description": "The name of the Jira database."
+                "description": "The name of the database."
             }
         },
         "dbUsername": {
@@ -39,7 +39,9 @@
             "allowedValues": [
                 "Basic",
                 "Standard",
-                "Premium"
+                "Premium",
+                "GeneralPurpose",
+                "BusinessCritical"
             ],
             "defaultValue": "Standard",
             "metadata": {
@@ -63,7 +65,59 @@
                 "P4",
                 "P6",
                 "P11",
-                "P15"
+                "P15",
+                "GP_Gen4_1",
+                "GP_Gen4_10",
+                "GP_Gen4_16",
+                "GP_Gen4_2",
+                "GP_Gen4_24",
+                "GP_Gen4_3",
+                "GP_Gen4_4",
+                "GP_Gen4_5",
+                "GP_Gen4_6",
+                "GP_Gen4_7",
+                "GP_Gen4_8",
+                "GP_Gen4_9",
+                "GP_Gen5_10",
+                "GP_Gen5_12",
+                "GP_Gen5_14",
+                "GP_Gen5_16",
+                "GP_Gen5_18",
+                "GP_Gen5_2",
+                "GP_Gen5_20",
+                "GP_Gen5_24",
+                "GP_Gen5_32",
+                "GP_Gen5_4",
+                "GP_Gen5_40",
+                "GP_Gen5_6",
+                "GP_Gen5_8",
+                "GP_Gen5_80",
+                "BC_Gen4_1",
+                "BC_Gen4_10",
+                "BC_Gen4_16",
+                "BC_Gen4_2",
+                "BC_Gen4_24",
+                "BC_Gen4_3",
+                "BC_Gen4_4",
+                "BC_Gen4_5",
+                "BC_Gen4_6",
+                "BC_Gen4_7",
+                "BC_Gen4_8",
+                "BC_Gen4_9",
+                "BC_Gen5_10",
+                "BC_Gen5_12",
+                "BC_Gen5_14",
+                "BC_Gen5_16",
+                "BC_Gen5_18",
+                "BC_Gen5_2",
+                "BC_Gen5_20",
+                "BC_Gen5_24",
+                "BC_Gen5_32",
+                "BC_Gen5_4",
+                "BC_Gen5_40",
+                "BC_Gen5_6",
+                "BC_Gen5_8",
+                "BC_Gen5_80"
             ],
             "defaultValue": "S2",
             "metadata": {
@@ -73,20 +127,20 @@
         "vnetName": {
             "type": "string",
             "metadata": {
-                "description": "The name of the Jira virtual network."
+                "description": "The name of the virtual network."
             }
         },
         "appSubnetName": {
             "type": "string",
             "metadata": {
-                "description": "The name of the subnet within the Jira virtual network where the Jira cluster is located."
+                "description": "The name of the subnet within the virtual network where the VMSS cluster is located."
             }
         },
         "clusterDbAccessNetworkRule": {
             "type": "string",
             "defaultValue": "allowClusterDbAccess",
             "metadata": {
-                "description": "The name of the network rule that enables the Jira cluster to access the database."
+                "description": "The name of the network rule that enables the VMSS cluster to access the database."
             }
         },
         "jumpboxPublicIpAddress": {
@@ -128,7 +182,9 @@
             "maxSizeInBytes": {
                 "Basic": 2147483648,
                 "Standard": 268435456000,
-                "Premium": 536870912000
+                "Premium": 536870912000,
+                "GeneralPurpose": 1099511627776,
+                "BusinessCritical": 536870912000
             }
         },
         "tags": {
@@ -152,7 +208,7 @@
             "resources": [
                 {
                     "type": "databases",
-                    "apiVersion": "2017-03-01-preview",
+                    "apiVersion": "2017-10-01-preview",
                     "name": "[variables('sql').database.name]",
                     "location": "[parameters('location')]",
                     "tags": "[variables('tags')]",

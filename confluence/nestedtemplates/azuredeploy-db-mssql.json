@@ -3,30 +3,35 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "location": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The region where Azure will house the deployment."
+            },
+            "minLength": 5
         },
         "dbServerName": {
             "type": "string",
             "metadata": {
-                "description": "DB Server Name"
+                "description": "The database server name."
             }
         },
         "dbDatabaseName": {
             "type": "string",
             "metadata": {
-                "description": "DB Database Name"
+                "description": "The name of the database."
             }
         },
         "dbUsername": {
             "type": "string",
             "metadata": {
-                "description": "Database username"
+                "description": "The username for the dedicated database user."
             }
         },
         "dbPassword": {
             "type": "securestring",
+            "minLength": 8,
             "metadata": {
-                "description": "Database password"
+                "description": "The password for the dedicated database user."
             }
         },
         "dbTier": {
@@ -34,11 +39,13 @@
             "allowedValues": [
                 "Basic",
                 "Standard",
-                "Premium"
+                "Premium",
+                "GeneralPurpose",
+                "BusinessCritical"
             ],
             "defaultValue": "Standard",
             "metadata": {
-                "description": "The database service tier"
+                "description": "The database service tier."
             }
         },
         "dbTierSize": {
@@ -58,29 +65,102 @@
                 "P4",
                 "P6",
                 "P11",
-                "P15"
+                "P15",
+                "GP_Gen4_1",
+                "GP_Gen4_10",
+                "GP_Gen4_16",
+                "GP_Gen4_2",
+                "GP_Gen4_24",
+                "GP_Gen4_3",
+                "GP_Gen4_4",
+                "GP_Gen4_5",
+                "GP_Gen4_6",
+                "GP_Gen4_7",
+                "GP_Gen4_8",
+                "GP_Gen4_9",
+                "GP_Gen5_10",
+                "GP_Gen5_12",
+                "GP_Gen5_14",
+                "GP_Gen5_16",
+                "GP_Gen5_18",
+                "GP_Gen5_2",
+                "GP_Gen5_20",
+                "GP_Gen5_24",
+                "GP_Gen5_32",
+                "GP_Gen5_4",
+                "GP_Gen5_40",
+                "GP_Gen5_6",
+                "GP_Gen5_8",
+                "GP_Gen5_80",
+                "BC_Gen4_1",
+                "BC_Gen4_10",
+                "BC_Gen4_16",
+                "BC_Gen4_2",
+                "BC_Gen4_24",
+                "BC_Gen4_3",
+                "BC_Gen4_4",
+                "BC_Gen4_5",
+                "BC_Gen4_6",
+                "BC_Gen4_7",
+                "BC_Gen4_8",
+                "BC_Gen4_9",
+                "BC_Gen5_10",
+                "BC_Gen5_12",
+                "BC_Gen5_14",
+                "BC_Gen5_16",
+                "BC_Gen5_18",
+                "BC_Gen5_2",
+                "BC_Gen5_20",
+                "BC_Gen5_24",
+                "BC_Gen5_32",
+                "BC_Gen5_4",
+                "BC_Gen5_40",
+                "BC_Gen5_6",
+                "BC_Gen5_8",
+                "BC_Gen5_80"
             ],
-            "defaultValue": "S2"
+            "defaultValue": "S2",
+            "metadata": {
+                "description": "The size of the database service tier. Basic, Standard (S1..S12) and Premium (P1..P15) tier sizes are available. Note that if the 'jiraClusterSize' parameter is used this value will be ignored."
+            }
         },
         "vnetName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the virtual network."
+            }
         },
         "appSubnetName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the subnet within the virtual network where the VMSS cluster is located."
+            }
         },
         "clusterDbAccessNetworkRule": {
             "type": "string",
-            "defaultValue": "allowClusterDbAccess"
+            "defaultValue": "allowClusterDbAccess",
+            "metadata": {
+                "description": "The name of the network rule that enables the VMSS cluster to access the database."
+            }
         },
         "jumpboxPublicIpAddress": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+              "description": "The public IP address of the Jumpbox."
+            }
         },
         "workspaceName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Azure Operations Management Suite (OMS) workspace."
+            }
         },
         "enableAnalytics": {
             "type": "bool",
-            "defaultValue": true
+            "defaultValue": true,
+            "metadata": {
+                "description": "Enable Azure Operational Insights. Note that an Azure Operations Management Suite (OMS) workspace must first exist."
+            }
         }
     },
     "variables": {
@@ -102,7 +182,9 @@
             "maxSizeInBytes": {
                 "Basic": 2147483648,
                 "Standard": 268435456000,
-                "Premium": 536870912000
+                "Premium": 536870912000,
+                "GeneralPurpose": 1099511627776,
+                "BusinessCritical": 536870912000
             }
         },
         "tags": {
@@ -126,7 +208,7 @@
             "resources": [
                 {
                     "type": "databases",
-                    "apiVersion": "2017-03-01-preview",
+                    "apiVersion": "2017-10-01-preview",
                     "name": "[variables('sql').database.name]",
                     "location": "[parameters('location')]",
                     "tags": "[variables('tags')]",
