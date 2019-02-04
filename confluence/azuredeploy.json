@@ -198,7 +198,9 @@
             "allowedValues": [
                 "Basic",
                 "Standard",
-                "Premium"
+                "Premium",
+                "GeneralPurpose",
+                "BusinessCritical"
             ],
             "defaultValue": "Standard",
             "metadata": {
@@ -222,11 +224,63 @@
                 "P4",
                 "P6",
                 "P11",
-                "P15"
+                "P15",
+                "GP_Gen4_1",
+                "GP_Gen4_10",
+                "GP_Gen4_16",
+                "GP_Gen4_2",
+                "GP_Gen4_24",
+                "GP_Gen4_3",
+                "GP_Gen4_4",
+                "GP_Gen4_5",
+                "GP_Gen4_6",
+                "GP_Gen4_7",
+                "GP_Gen4_8",
+                "GP_Gen4_9",
+                "GP_Gen5_10",
+                "GP_Gen5_12",
+                "GP_Gen5_14",
+                "GP_Gen5_16",
+                "GP_Gen5_18",
+                "GP_Gen5_2",
+                "GP_Gen5_20",
+                "GP_Gen5_24",
+                "GP_Gen5_32",
+                "GP_Gen5_4",
+                "GP_Gen5_40",
+                "GP_Gen5_6",
+                "GP_Gen5_8",
+                "GP_Gen5_80",
+                "BC_Gen4_1",
+                "BC_Gen4_10",
+                "BC_Gen4_16",
+                "BC_Gen4_2",
+                "BC_Gen4_24",
+                "BC_Gen4_3",
+                "BC_Gen4_4",
+                "BC_Gen4_5",
+                "BC_Gen4_6",
+                "BC_Gen4_7",
+                "BC_Gen4_8",
+                "BC_Gen4_9",
+                "BC_Gen5_10",
+                "BC_Gen5_12",
+                "BC_Gen5_14",
+                "BC_Gen5_16",
+                "BC_Gen5_18",
+                "BC_Gen5_2",
+                "BC_Gen5_20",
+                "BC_Gen5_24",
+                "BC_Gen5_32",
+                "BC_Gen5_4",
+                "BC_Gen5_40",
+                "BC_Gen5_6",
+                "BC_Gen5_8",
+                "BC_Gen5_80"
             ],
             "defaultValue": "S2",
             "metadata": {
-                "description": "The size of the database service tier. Basic, Standard (S1..S12) and Premium (P1..P15) tier sizes are available. Note that if the 'confClusterSize' parameter is used this value will be ignored."
+                "description": "The size of the database service tier. Basic, Standard (S1..S12) and Premium (P1..P15) tier sizes are available. Choose GP and BC SKUs for vCore model. Note that if the 'confClusterSize' parameter is used this value will be ignored."
             }
         },
         "clusterSize": {
@@ -289,17 +343,17 @@
                 "Standard_L32s"
             ],
             "metadata": {
-                "description": "The size of the virtual machine to use for each Confluence node in the cluster. The virtual machine must have capacity for 8 or more premium LRS data disks. Note that if the 'confClusterSize' parameter is used this value will be ignored."
+                "description": "The size of the virtual machine to use for each Confluence node in the cluster. Note that if the 'confClusterSize' parameter is used this value will be ignored."
             }
         },
-        "clusterVmDiskSize" : {
+        "clusterVmDiskSize": {
             "type": "int",
             "defaultValue": 1000,
             "metadata": {
                 "description": "The desired size of the Cluster Node's allocation disk in GB"
             }
         },
-        "clusterVmDiskCount" : {
+        "clusterVmDiskCount": {
             "type": "int",
             "defaultValue": 8,
             "maxValue": 32,
@@ -678,10 +732,10 @@
                     "workspaceSku": {
                         "value": "[if(variables('isConfClusterSizeUsed'), variables('clusterLookup').workspaceSku[parameters('confClusterSize')], parameters('workspaceSku'))]"
                     },
-                    "clusterVmDiskSize" : {
+                    "clusterVmDiskSize": {
                         "value": "[parameters('clusterVmDiskSize')]"
                     },
-                    "clusterVmDiskCount" : {
+                    "clusterVmDiskCount": {
                         "value": "[parameters('clusterVmDiskCount')]"
                     }
                 }
@@ -752,6 +806,9 @@
                     },
                     "dbType": {
                         "value": "[if(equals(parameters('dbType'), 'Azure SQL DB'), 'sqlserver', if(equals(parameters('dbType'), 'Azure DB for PostgreSQL'), 'postgres', 'mysql'))]"
+                    },
+                    "isDbVCoreModel": {
+                        "value": "[contains('GeneralPurpose, BusinessCritical', parameters('dbTier'))]"
                     },
                     "dbDatabaseServerName": {
                         "value": "[split(reference('confluenceTemplate').outputs.dbDatabaseServerName.value, '.')[0]]"

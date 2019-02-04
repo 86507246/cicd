@@ -32,17 +32,17 @@
             ],
             "defaultValue": "jira-software",
             "metadata": {
-                 "description": "The Jira software product to install."
-             }
-         },
-         "jiraVersion": {
+                "description": "The Jira software product to install."
+            }
+        },
+        "jiraVersion": {
             "type": "string",
             "defaultValue": "latest",
             "metadata": {
-                 "description": "The Jira software product version to install. By default the deployment will download and use the latest version published."
-             }
-         },
-         "dbCreateNew": {
+                "description": "The Jira software product version to install. By default the deployment will download and use the latest version published."
+            }
+        },
+        "dbCreateNew": {
             "type": "bool",
             "defaultValue": true,
             "metadata": {
@@ -210,7 +210,9 @@
             "allowedValues": [
                 "Basic",
                 "Standard",
-                "Premium"
+                "Premium",
+                "GeneralPurpose",
+                "BusinessCritical"
             ],
             "defaultValue": "Standard",
             "metadata": {
@@ -234,11 +236,63 @@
                 "P4",
                 "P6",
                 "P11",
-                "P15"
+                "P15",
+                "GP_Gen4_1",
+                "GP_Gen4_10",
+                "GP_Gen4_16",
+                "GP_Gen4_2",
+                "GP_Gen4_24",
+                "GP_Gen4_3",
+                "GP_Gen4_4",
+                "GP_Gen4_5",
+                "GP_Gen4_6",
+                "GP_Gen4_7",
+                "GP_Gen4_8",
+                "GP_Gen4_9",
+                "GP_Gen5_10",
+                "GP_Gen5_12",
+                "GP_Gen5_14",
+                "GP_Gen5_16",
+                "GP_Gen5_18",
+                "GP_Gen5_2",
+                "GP_Gen5_20",
+                "GP_Gen5_24",
+                "GP_Gen5_32",
+                "GP_Gen5_4",
+                "GP_Gen5_40",
+                "GP_Gen5_6",
+                "GP_Gen5_8",
+                "GP_Gen5_80",
+                "BC_Gen4_1",
+                "BC_Gen4_10",
+                "BC_Gen4_16",
+                "BC_Gen4_2",
+                "BC_Gen4_24",
+                "BC_Gen4_3",
+                "BC_Gen4_4",
+                "BC_Gen4_5",
+                "BC_Gen4_6",
+                "BC_Gen4_7",
+                "BC_Gen4_8",
+                "BC_Gen4_9",
+                "BC_Gen5_10",
+                "BC_Gen5_12",
+                "BC_Gen5_14",
+                "BC_Gen5_16",
+                "BC_Gen5_18",
+                "BC_Gen5_2",
+                "BC_Gen5_20",
+                "BC_Gen5_24",
+                "BC_Gen5_32",
+                "BC_Gen5_4",
+                "BC_Gen5_40",
+                "BC_Gen5_6",
+                "BC_Gen5_8",
+                "BC_Gen5_80"
             ],
             "defaultValue": "S2",
             "metadata": {
-                "description": "The size of the database service tier. Basic, Standard (S1..S12) and Premium (P1..P15) tier sizes are available. Note that if the 'jiraClusterSize' parameter is used this value will be ignored."
+                "description": "The size of the database service tier. Basic, Standard (S1..S12) and Premium (P1..P15) tier sizes are available. Choose GP and BC SKUs for vCore model. Note that if the 'jiraClusterSize' parameter is used this value will be ignored."
             }
         },
         "clusterSize": {
@@ -253,33 +307,57 @@
             "type": "string",
             "defaultValue": "Standard_DS3_v2",
             "allowedValues": [
+                "Standard_D4s_v3",
+                "Standard_D8s_v3",
+                "Standard_D16s_v3",
+                "Standard_D32s_v3",
+                "Standard_D64s_v3",
                 "Standard_DS2_v2",
                 "Standard_DS3_v2",
                 "Standard_DS4_v2",
                 "Standard_DS5_v2",
-                "Standard_F4s_v2",
-                "Standard_F8s_v2",
-                "Standard_F16s_v2",
-                "Standard_F32s_v2",
-                "Standard_F64s_v2",
-                "Standard_F72s_v2",
+                "Standard_DS2",
+                "Standard_DS3",
+                "Standard_DS4",
+                "Standard_B4ms",
+                "Standard_B8ms",
+                "Standard_F2s",
+                "Standard_F4s",
+                "Standard_F8s",
+                "Standard_F16s",
+                "Standard_E4s_v3",
                 "Standard_E8s_v3",
                 "Standard_E16s_v3",
-                "Standard_E20s_v3",
-                "Standard_E32s_v3"
+                "Standard_E32s_v3",
+                "Standard_E64s_v3",
+                "Standard_GS2",
+                "Standard_GS3",
+                "Standard_GS4",
+                "Standard_GS5",
+                "Standard_DS12_v2",
+                "Standard_DS13_v2",
+                "Standard_DS14_v2",
+                "Standard_DS15_v2",
+                "Standard_DS12",
+                "Standard_DS13",
+                "Standard_DS14",
+                "Standard_L4s",
+                "Standard_L8s",
+                "Standard_L16s",
+                "Standard_L32s"
             ],
             "metadata": {
                 "description": "The size of the virtual machine to use for each Jira node in the cluster."
             }
         },
-        "clusterVmDiskSize" : {
+        "clusterVmDiskSize": {
             "type": "int",
             "defaultValue": 1000,
             "metadata": {
                 "description": "The desired size of the Cluster Node's allocation disk in GB"
             }
         },
-        "clusterVmDiskCount" : {
+        "clusterVmDiskCount": {
             "type": "int",
             "defaultValue": 8,
             "maxValue": 32,
@@ -391,9 +469,9 @@
             "type": "bool",
             "defaultValue": true,
             "metadata": {
-                 "description": "Enable accelerated networking. Note that this needs to be on a supported instance type."
-             }
-         }
+                "description": "Enable accelerated networking. Note that this needs to be on a supported instance type."
+            }
+        }
     },
     "variables": {
         "vpcTemplateUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/azuredeploy-vpc.json', parameters('_artifactsLocationSasToken')))]",
@@ -653,10 +731,10 @@
                     "workspaceSku": {
                         "value": "[if(variables('isJiraClusterSizeUsed'), variables('clusterLookup').workspaceSku[parameters('jiraClusterSize')], parameters('workspaceSku'))]"
                     },
-                    "clusterVmDiskSize" : {
+                    "clusterVmDiskSize": {
                         "value": "[parameters('clusterVmDiskSize')]"
                     },
-                    "clusterVmDiskCount" : {
+                    "clusterVmDiskCount": {
                         "value": "[parameters('clusterVmDiskCount')]"
                     }
                 }
@@ -727,6 +805,9 @@
                     },
                     "dbType": {
                         "value": "[if(equals(parameters('dbType'), 'Azure SQL DB'), 'sqlserver', if(equals(parameters('dbType'), 'Azure DB for PostgreSQL'), 'postgres', 'mysql'))]"
+                    },
+                    "isDbVCoreModel": {
+                        "value": "[contains('GeneralPurpose, BusinessCritical', parameters('dbTier'))]"
                     },
                     "dbDatabaseServerName": {
                         "value": "[split(reference('jiraTemplate').outputs.dbDatabaseServerName.value, '.')[0]]"

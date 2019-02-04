@@ -3,7 +3,11 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "location": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The region where Azure will house the deployment."
+            },
+            "minLength": 5
         },
         "adminUserEmail": {
             "type": "string"
@@ -31,6 +35,9 @@
                 "mysql"
             ],
             "defaultValue": "sqlserver"
+        },
+        "isDbVCoreModel": {
+            "type": "bool"
         },
         "dbDatabaseServerName": {
             "type": "string"
@@ -344,7 +351,7 @@
             "name": "[variables('alerts').dbDtuPercentage.name]",
             "apiVersion": "2016-03-01",
             "location": "[parameters('location')]",
-            "condition": "[and(not(empty(parameters('appInsightsName'))), equals(parameters('dbType'), 'sqlserver'))]",
+            "condition": "[and(and(not(empty(parameters('appInsightsName'))), equals(parameters('dbType'), 'sqlserver')), not(parameters('isDbVCoreModel')))]",
             "properties": {
                 "name": "[variables('alerts').dbDtuPercentage.name]",
                 "description": "[variables('alerts').dbDtuPercentage.description]",
