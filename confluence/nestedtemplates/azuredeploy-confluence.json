@@ -617,9 +617,6 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "location": {
-                        "value": "[parameters('location')]"
-                    },
                     "dbType": {
                         "value": "[parameters('dbType')]"
                     },
@@ -724,7 +721,8 @@
             "type": "Microsoft.Resources/deployments",
             "dependsOn": [
                 "[concat('Microsoft.Storage/storageAccounts/', variables('storage').name)]",
-                "[variables('dbTemplate')]"
+                "[variables('dbTemplate')]",
+                "byodbTemplate"
             ],
             "properties": {
                 "mode": "Incremental",
