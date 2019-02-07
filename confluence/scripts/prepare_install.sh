@@ -701,6 +701,12 @@ function configure_confluence_ram {
   log "Using ${CONFLUENCE_MEMORY_MAX} as java memory opts"
 }
 
+function configure_confluence_datasource {
+  log "Adding DS info to web.xml"
+  cp -fp ${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/web.xml ${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/web.xml.dsorig
+  sed 's_</web-app>_<resource-ref><description>Connection Pool</description><res-ref-name>jdbc/confluence</res-ref-name><res-type>javax.sql.DataSource</res-type><res-auth>Container</res-auth></resource-ref></web-app>_' ${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/web.xml.dsorig > ${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/web.xml
+}
+
 function configure_confluence {
   local confluence_configs=(${ATL_CONFLUENCE_SHARED_HOME}/setenv.sh          ${ATL_CONFLUENCE_SHARED_HOME}/server.xml)
   local confluence_configs_dest=(${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh ${ATL_CONFLUENCE_INSTALL_DIR}/conf/server.xml)
@@ -720,6 +726,8 @@ function configure_confluence {
       error "${template_file} not found"
     fi
   done
+
+  configure_confluence_datasource
 
   log "Creating ${ATL_CONFLUENCE_SHARED_HOME} subdirectories..."
   mkdir -p ${ATL_CONFLUENCE_SHARED_HOME}/backups
