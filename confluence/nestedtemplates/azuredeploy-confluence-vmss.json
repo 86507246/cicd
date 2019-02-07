@@ -293,6 +293,25 @@
                 "description": "The size of the database service tier. Basic, Standard (S1..S12) and Premium (P1..P15) tier sizes are available. Note that if the 'confClusterSize' parameter is used this value will be ignored."
             }
         },
+        "postgresDbSku": {
+            "type": "string",
+            "defaultValue": "GP_Gen5_4",
+            "allowedValues": [
+                "GP_Gen5_2",
+                "GP_Gen5_4",
+                "GP_Gen5_8",
+                "GP_Gen5_16",
+                "GP_Gen5_32",
+                "MO_Gen5_2",
+                "MO_Gen5_4",
+                "MO_Gen5_8",
+                "MO_Gen5_16",
+                "MO_Gen5_32"
+            ],
+            "metadata": {
+                "description": "The SKU (Stock Keeping Unit) name of the PostgresSQL instance. Follows the convention {pricing tier}{compute generation}{vCores} eg General Purpose, Generation 5, 4 cores is GP_Gen5_4. Note that if the 'confClusterSize' parameter is used this value will be ignored."
+            }
+        },
         "clusterVmDiskSize": {
             "type": "int",
             "defaultValue": 1000,
@@ -345,7 +364,7 @@
             "license": "AAABHg0ODAoPeNplUNtKw0AQfe9XLPickotaKSwYk2ALuRTbeHkc14kuJJswuwmtX2+aLdTq6zkz53aVtYoVwrDAZd5ieXO39K5ZmMQ75rveYiZaVc2jVhkQJslA1hw+GqnucQ9NV+NctI29GXk5IDfUowU2QEYh5dAgt0gMBiJUBunXWSoFKo27Q4fTaVRkWfIUrcPU8gV9gpIajGwVD00NWktQlksGqHvLnAXHkKOFAiUw2XeSDqMt8k0Q3K5mW6QBaR3zh8f0zSmf3Rfn1Q9zZ+WXW/ud9807UlGVGklzxzt16Ul8gcZJ6riL47lO4F40+GdmO6MWJLsp4zkuq+0Pq1pix1mY3YWNVPjdE17sPu0yzX6CCSeVv2l+ADS1nIEwLAIUYrE66+LiEoBSjmLEkXQfICx+OWgCFBGV5jXbxAkFBPrUt2XQVCBu7lybX02ee"
         },
         "lookup": {
-            "dbTierToMaxConnections": {
+            "sqlDbTierToMaxConnections": {
                 "Basic": 30,
                 "S0": 60,
                 "S1": 90,
@@ -414,11 +433,22 @@
                 "BC_Gen5_32": 3200,
                 "BC_Gen5_40": 4000,
                 "BC_Gen5_80": 8000
+            },
+            "postgresTierToMaxConnections": {
+                "GP_Gen5_2": 140,
+                "GP_Gen5_4": 240,
+                "GP_Gen5_8": 470,
+                "GP_Gen5_16": 940,
+                "GP_Gen5_32": 1490,
+                "MO_Gen5_2": 1890,
+                "MO_Gen5_4": 490,
+                "MO_Gen5_8": 950,
+                "MO_Gen5_16": 1890,
+                "MO_Gen5_32": 1890
             }
         },
         "c3p0Settings": {
-            "maxConnections": "[div(variables('lookup').dbTierToMaxConnections[parameters('dbTierSize')], parameters('clusterSize'))]",
-            "minConnections": "[div(div(variables('lookup').dbTierToMaxConnections[parameters('dbTierSize')], parameters('clusterSize')), 2)]"
+            "maxConnections": "[if(equals(parameters('dbType'), 'sqlserver'), div(variables('lookup').sqlDbTierToMaxConnections[parameters('dbTierSize')], parameters('clusterSize')), div(variables('lookup').postgresTierToMaxConnections[parameters('postgresDbSku')], parameters('clusterSize')))]"
         },
         "httpSettings": {
             "dbConnectionsMinus20Percent": "[div(mul(variables('c3p0Settings').maxConnections, 80),100)]",
@@ -503,7 +533,7 @@
                 },
                 {
                     "name": "CONFLUENCE_C3P0_MIN_SIZE",
-                    "value": "[string(variables('c3p0Settings').minConnections)]"
+                    "value": "10"
                 },
                 {
                     "name": "CONFLUENCE_PRELOAD_DARKFEATURES",

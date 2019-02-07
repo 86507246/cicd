@@ -23,6 +23,7 @@
     <property name="hibernate.c3p0.max_size">{{CONFLUENCE_C3P0_MAX_SIZE}}</property>
     <property name="hibernate.c3p0.max_statements">0</property>
     <property name="hibernate.c3p0.min_size">{{CONFLUENCE_C3P0_MIN_SIZE}}</property>
+    <property name="hibernate.c3p0.validate">true</property>
     <property name="hibernate.c3p0.preferredTestQuery">select 1</property>
     <property name="hibernate.c3p0.timeout">30</property>
     <property name="hibernate.connection.driver_class">{{DB_DRIVER_CLASS}}</property>
