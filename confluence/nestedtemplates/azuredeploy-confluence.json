@@ -764,6 +764,12 @@
                     "dbType": {
                         "value": "[parameters('dbType')]"
                     },
+                    "dbTierSize": {
+                        "value": "[parameters('dbTierSize')]"
+                    },
+                    "postgresDbSku": {
+                        "value": "[parameters('postgresDbSku')]"
+                    },
                     "dbPort": {
                         "value": "[parameters('dbPort')]"
                     },
