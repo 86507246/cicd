@@ -62,11 +62,12 @@ function preserve_installer {
 function download_installer {
 
   local jira_version=${ATL_JIRA_PRODUCT_VERSION}
+  echo "${ATL_JIRA_PRODUCT_VERSION}" > version
   atl_log download_installer "Going to use ${ATL_JIRA_PRODUCT} with version: ${ATL_JIRA_PRODUCT_VERSION}"
 
   if [[ ${ATL_JIRA_PRODUCT_VERSION} == 'latest' ]]
   then
-
+    # Get latest version from the special /latest url.
     local jira_version_file_url="${ATL_JIRA_RELEASES_BASE_URL}/${ATL_JIRA_PRODUCT}/latest"
     atl_log download_installer "Downloading installer description from ${jira_version_file_url}"
 
@@ -80,10 +81,10 @@ function download_installer {
     local jira_version=$(cat version)
   fi
   
-  local jira_installer="atlassian-${ATL_JIRA_PRODUCT}-${jira_version}-x64.bin"
-  local jira_installer_url="${ATL_JIRA_RELEASES_BASE_URL}/${ATL_JIRA_PRODUCT}/${jira_installer}"
 
-  atl_log download_installer "Downloading ${ATL_JIRA_PRODUCT} installer ${jira_installer} from ${ATL_JIRA_RELEASES_BASE_URL}"
+  local jira_installer="atlassian-${ATL_JIRA_PRODUCT}-${jira_version}-x64.bin"
+  [ -n "${ATL_JIRA_CUSTOM_DOWNLOAD_URL}" ] && local jira_installer_url="${ATL_JIRA_CUSTOM_DOWNLOAD_URL}/${jira_installer}" || local jira_installer_url="${ATL_JIRA_RELEASES_BASE_URL}/${ATL_JIRA_PRODUCT}/${jira_installer}"
+  atl_log download_installer "Downloading ${ATL_JIRA_PRODUCT} installer from ${jira_installer_url}"
 
   if ! curl -L -f --silent "${jira_installer_url}" \
        -o "installer" 2>&1

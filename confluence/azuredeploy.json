@@ -31,6 +31,13 @@
                 "description": "The Confluence software product version to install. By default the deployment will download and use the latest version published."
             }
         },
+        "customDownloadUrl": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                 "description": "Use this URL to override standard Atlassian download url eg for EAP, RC versions. NB will be used in conjunction with the confluenceVersion parameter."
+             }
+        },
         "dbCreateNew": {
             "type": "bool",
             "defaultValue": true,
@@ -623,6 +630,9 @@
                     },
                     "confluenceVersion": {
                         "value": "[parameters('confluenceVersion')]"
+                    },
+                    "customDownloadUrl": {
+                        "value": "[parameters('customDownloadUrl')]"
                     },
                     "clusterSize": {
                         "value": "[if(variables('isConfClusterSizeUsed'), int(variables('clusterLookup').clusterSize[parameters('confClusterSize')]), parameters('clusterSize'))]"
