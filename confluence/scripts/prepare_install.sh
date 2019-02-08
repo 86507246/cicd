@@ -62,22 +62,24 @@ function preserve_installer {
 }
 
 function download_installer {
-    
-  log "Will use version: ${ATL_CONFLUENCE_VERSION} but first retrieving latest confluence version info from Atlassian..."
-  LATEST_INFO=$(curl -L -f --silent https://my.atlassian.com/download/feeds/current/confluence.json | sed 's/^downloads(//g' | sed 's/)$//g')
-  if [ "$?" -ne "0" ]; then
-    error "Could not get latest info installer description from https://my.atlassian.com/download/feeds/current/confluence.json"
-  fi
+  
+  if [ ! -n "${ATL_JIRA_CUSTOM_DOWNLOAD_URL}" ]
+  then
+    log "Will use version: ${ATL_CONFLUENCE_VERSION} but first retrieving latest confluence version info from Atlassian..."
+    LATEST_INFO=$(curl -L -f --silent https://my.atlassian.com/download/feeds/current/confluence.json | sed 's/^downloads(//g' | sed 's/)$//g')
+    if [ "$?" -ne "0" ]; then
+      error "Could not get latest info installer description from https://my.atlassian.com/download/feeds/current/confluence.json"
+    fi
 
-  LATEST_VERSION=$(echo ${LATEST_INFO} | jq '.[] | select(.platform == "Unix") |  select(.zipUrl|test("x64")) | .version' | sed 's/"//g')
-  LATEST_VERSION_URL=$(echo ${LATEST_INFO} | jq '.[] | select(.platform == "Unix") |  select(.zipUrl|test("x64")) | .zipUrl' | sed 's/"//g')
-  log "Latest confluence info: $LATEST_VERSION and download URL: $LATEST_VERSION_URL"
+    LATEST_VERSION=$(echo ${LATEST_INFO} | jq '.[] | select(.platform == "Unix") |  select(.zipUrl|test("x64")) | .version' | sed 's/"//g')
+    LATEST_VERSION_URL=$(echo ${LATEST_INFO} | jq '.[] | select(.platform == "Unix") |  select(.zipUrl|test("x64")) | .zipUrl' | sed 's/"//g')
+    log "Latest confluence info: $LATEST_VERSION and download URL: $LATEST_VERSION_URL"
+  fi
 
   [ ${ATL_CONFLUENCE_VERSION} = 'latest' ] &&  echo -n "${LATEST_VERSION}" > version || echo -n "${ATL_CONFLUENCE_VERSION}" > version
 
   local confluence_version=$(cat version)
-  local confluence_installer_url=$(echo ${LATEST_VERSION_URL} | sed "s/${LATEST_VERSION}/${confluence_version}/g")
-
+  [ -n "${ATL_JIRA_CUSTOM_DOWNLOAD_URL}" ] && local confluence_installer_url="${ATL_JIRA_CUSTOM_DOWNLOAD_URL}/atlassian-confluence-${ATL_CONFLUENCE_VERSION}-x64.bin"  || local confluence_installer_url=$(echo ${LATEST_VERSION_URL} | sed "s/${LATEST_VERSION}/${confluence_version}/g")
   log "Downloading ${ATL_CONFLUENCE_PRODUCT} installer from ${confluence_installer_url}"
 
   if ! curl -L -f --silent "${confluence_installer_url}" -o "installer" 2>&1

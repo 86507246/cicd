@@ -10,12 +10,16 @@ Jira Service Desk Data Center gives you uninterrupted access to JIRA Service Des
 
 ![alt text](../jira/images/ServiceDeskJiraOption.png "Jira Service Desk Option")
 
-NB. The current Azure deployment utilises certain Azure functionality like App Insights, Azure Monitoring, SQL Analytics etc that are still in Preview mode and not available in most regions. To ensure you can utilise these technologies deploy into the following regions:
-1. East US
-2. West Europe
-3. Southeast Asia
-4. Canada Central
-5. Central India
+NB. The current Azure deployment utilises certain Azure functionality like App Insights, Azure Monitoring, SQL Analytics etc that are still in Preview mode and not available in most regions. To ensure you can utilise these technologies deploy into the following regions:  
+
+1. Canada Central  
+2. Central India  
+3. East US  
+4. Southeast Asia  
+5. UK South  
+6. West Europe  
+7. West US 2  
+
 
 You can of course disable App Insights, Analytics etc via the template parameters to allow installation to your desired region.
 

@@ -39,8 +39,15 @@
             "type": "string",
             "defaultValue": "latest",
             "metadata": {
-                "description": "The Jira software product version to install. By default the deployment will download and use the latest version published."
+                "description": "The Jira software product version to install. By default the deployment will download and use the latest version published. If using with customDownloadUrl, you have to specify the correct version."
             }
+        },
+        "customDownloadUrl": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                 "description": "Use this URL to override standard Atlassian download url eg for EAP, RC versions. NB will be used in conjunction with the jiraVersion parameter."
+             }
         },
         "dbCreateNew": {
             "type": "bool",
@@ -736,6 +743,9 @@
                     },
                     "clusterVmDiskCount": {
                         "value": "[parameters('clusterVmDiskCount')]"
+                    },
+                    "customDownloadUrl": {
+                        "value": "[parameters('customDownloadUrl')]"
                     }
                 }
             }
