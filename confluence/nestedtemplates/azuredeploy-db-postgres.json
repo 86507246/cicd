@@ -76,6 +76,19 @@
     },
     "jumpboxPublicIpAddress": {
       "type": "string"
+    },
+    "workspaceName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Azure Operations Management Suite (OMS) workspace."
+      }
+    },
+    "enableAnalytics": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable Azure Operational Insights. Note that an Azure Operations Management Suite (OMS) workspace must first exist."
+      }
     }
   },
   "variables": {
@@ -96,9 +109,9 @@
         "geoRedundantBackup": "Enabled",
         "charset": "UTF8",
         "collation": "[parameters('postgresDbCollation')]"
-
       }
-    }
+    },
+    "retentionInDays": 7
   },
   "resources": [
     {
@@ -122,7 +135,68 @@
         "administratorLoginPassword": "[variables('postgresql').server.password]",
         "version": "9.6",
         "sslEnforcement": "Enabled"
-      }
+      },
+      "resources": [
+        {
+          "type": "providers/diagnosticSettings",
+          "name": "Microsoft.Insights/PostgresDiagnostics",
+          "condition": "[parameters('enableAnalytics')]",
+          "apiVersion": "2017-05-01-preview",
+          "dependsOn": [
+            "[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('dbServerName'))]"
+          ],
+          "properties": {
+            "name": "postgresSaveToWorkspace",
+            "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]",
+            "logs": [
+              {
+                "category": "PostgreSQLLogs",
+                "enabled": true,
+                "retentionPolicy": {
+                  "days": "[variables('retentionInDays')]",
+                  "enabled": false
+                }
+              }
+            ],
+            "metrics": [
+              {
+                "category": "AllMetrics",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": false,
+                  "days": "[variables('retentionInDays')]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/servers/configurations",
+      "name": "[concat(parameters('dbServerName'), '/', 'pg_qs.query_capture_mode')]",
+      "apiVersion": "2017-12-01-preview",
+      "scale": null,
+      "properties": {
+        "value": "ALL",
+        "source": "user-override"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('dbServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/servers/configurations",
+      "name": "[concat(parameters('dbServerName'), '/', 'pgms_wait_sampling.query_capture_mode')]",
+      "apiVersion": "2017-12-01-preview",
+      "scale": null,
+      "properties": {
+        "value": "ALL",
+        "source": "user-override"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('dbServerName'))]"
+      ]
     },
     {
       "type": "Microsoft.DBforPostgreSQL/servers/databases",

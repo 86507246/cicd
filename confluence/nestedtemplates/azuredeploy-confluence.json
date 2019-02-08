@@ -569,6 +569,9 @@
             "name": "postgresDbTemplate",
             "type": "Microsoft.Resources/deployments",
             "condition": "[and(parameters('dbCreateNew'), equals(parameters('dbType'), 'postgres'))]",
+            "dependsOn": [
+                "workspaceTemplate"
+            ],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
@@ -608,6 +611,12 @@
                     },
                     "jumpboxPublicIpAddress": {
                         "value": "[parameters('jumpboxPublicIpAddress')]"
+                    },
+                    "workspaceName": {
+                        "value": "[variables('workspace').name]"
+                    },
+                    "enableAnalytics": {
+                        "value": "[parameters('enableAnalytics')]"
                     }
                 }
             }
