@@ -18,13 +18,13 @@
             "name": "jiraVersion",
             "label": "Jira Version",
             "type": "Microsoft.Common.TextBox",
-            "toolTip": "Specify which version of Jira (>7) you want to install. By default it will download the latest available.",
+            "toolTip": "Specify which version of Jira (>7.13) you want to install. You can also specify 'latest' to download the latest version available.",
             "constraints": {
               "required": true,
                "regex": "latest|^([7,8,9]\\.[0-9]{1,2}\\.[0-9]{1,2})$",
               "validationMessage": "You must specify a version."
             },
-            "defaultValue": "latest"
+            "defaultValue": "7.13.0"
           },
           {
             "name": "adminfullname",
