@@ -18,7 +18,7 @@
             }
         },
         "_artifactsLocationSasToken": {
-            "type": "string",
+            "type": "securestring",
             "defaultValue": "",
             "metadata": {
                 "description": "The Shared Access Signature (SAS) token that provides access to resources in the storage account."
@@ -37,9 +37,9 @@
         },
         "jiraVersion": {
             "type": "string",
-            "defaultValue": "latest",
+            "defaultValue": "7.13.0",
             "metadata": {
-                "description": "The Jira software product version to install. By default the deployment will download and use the latest version published. If using with customDownloadUrl, you have to specify the correct version."
+                "description": "The Jira software product version to install. You can also specify 'latest' to download the latest version available. If using with customDownloadUrl you have to specify the correct version."
             }
         },
         "customDownloadUrl": {

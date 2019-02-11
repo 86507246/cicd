@@ -26,9 +26,9 @@
         },
         "confluenceVersion": {
             "type": "string",
-            "defaultValue": "latest",
+            "defaultValue": "6.13.2",
             "metadata": {
-                "description": "The Confluence software product version to install. By default the deployment will download and use the latest version published."
+                "description": "The Confluence software product version to install. You can also specify 'latest' to download the latest version available. If using with customDownloadUrl you have to specify the correct version."
             }
         },
         "customDownloadUrl": {

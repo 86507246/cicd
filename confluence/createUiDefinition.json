@@ -18,13 +18,13 @@
 						"name": "confluenceVersion",
 						"label": "Confluence Version",
 						"type": "Microsoft.Common.TextBox",
-						"toolTip": "Specify which version of Confluence (>6.12) you want to install. By default it will download the latest available.",
+						"toolTip": "Specify which version of Confluence (>6.12) you want to install. You can also specify 'latest' to download the latest version available.",
 						"constraints": {
 							"required": true,
 							"regex": "latest|^(6\\.1[2-9]{1}\\.[0-9]{1,2}|[7,8,9]\\.[0-9]{1,2}\\.[0-9]{1,2})$",
 							"validationMessage": "You must specify a version >= 6.12.0"
 						},
-						"defaultValue": "latest"
+						"defaultValue": "6.13.2"
 					},
 					{
 						"name": "adminfullname",
