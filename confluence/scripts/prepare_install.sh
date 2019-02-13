@@ -506,7 +506,7 @@ function ensure_readable {
 # otherwise just downloads the installer and puts it into shared home
 function prepare_installer {
   log "Checking if installer has been downloaded aready"
-  ensure_readable "${ATL_CONFLUENCE_SHARED_HOME}/${ATL_CONFLUENCE_PRODUCT}.version"
+  ensure_readable "${ATL_CONFLUENCE_SHARED_HOME}/server.xml"
   if [[ -f ${ATL_CONFLUENCE_SHARED_HOME}/${ATL_CONFLUENCE_PRODUCT}.version ]]; then
     log "Detected installer, restoring it"
     restore_installer
