@@ -17,7 +17,9 @@ NB. The current Azure deployment utilises certain Azure functionality like App I
 7. West US 2  
 
 
-You can of course disable App Insights, Analytics etc via the template parameters to allow installation to your desired region.
+You can of course disable App Insights, Analytics etc via the template parameters to allow installation to your desired region.  
+
+NB That the templates will delete the latest version available from Atlassian Download site. These new releases might introduce breaking changes but you can always specify particular version by updating the jiraVersion parameter.  
 
 Further information on parameters and other installation options for the Atlassian Azure solution can be found at our [Support Page](https://hello.atlassian.net/wiki/spaces/DC/pages/369608838/Azure+Support+Page)  
 

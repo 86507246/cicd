@@ -41,7 +41,7 @@ az storage container create --name jiratemplateupload --account-name atlassianup
 ```
 ~/apps/azcopy/azcopy --quiet --source ~/git/atlassian-azure-deployment/jira/ --destination https://atlassianupload.blob.core.windows.net/jiratemplateupload/ --recursive --dest-sas '?se=2020-02-13T15%3A37Z&sp=rwdlacup&sv=2018-03-28&ss=bfqt&srt=sco&sig=XanVOenVIroHQFbkyUjk6E9nuHFEm1Rpyu3N2AiOOX0%3D'
 ```
-* Since you will be using the same AzCopy command often, I suggest you cut/paste this command into a new script file eg ~/atlassiab/bin/jiraupload  
+* Since you will be using the same AzCopy command often, I suggest you cut/paste this command into a new script file eg ~/atlassian/bin/jiraupload  
 * Create a local directory for your templates and copy the default azuredeploy.parameters.json to your own copy ie  
 ```
 mkdir -p ~/atlassian/templates
@@ -87,7 +87,7 @@ cp azuredeploy.parameters.json ~/atlassian/templates/jira.msql.parameters.json
 ```
 cd ~/git/atlassian-azure-deployment/jira
 az group create --resource-group smontgomeryjira --location canadacentral
-~/atlassiab/bin/jiraupload && az group deployment create --resource-group smontgomeryjira --template-file azuredeploy.json --parameters ~/atlassian/templates/jira.msql.parameters.json
+~/atlassian/bin/jiraupload && az group deployment create --resource-group smontgomeryjira --template-file azuredeploy.json --parameters ~/atlassian/templates/jira.msql.parameters.json
 ```
 * You can now use this paramaters template as a basis for other templates eg have a separate parameters template for Confluence, Service Desk, Postgres or SQL DB etc that can be reused in future.  
 * Deleting a deployment is simply a case of deleting the resource group ie  

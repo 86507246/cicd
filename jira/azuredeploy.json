@@ -37,7 +37,7 @@
         },
         "jiraVersion": {
             "type": "string",
-            "defaultValue": "7.13.0",
+            "defaultValue": "latest",
             "metadata": {
                 "description": "The Jira software product version to install. You can also specify 'latest' to download the latest version available. If using with customDownloadUrl you have to specify the correct version."
             }
