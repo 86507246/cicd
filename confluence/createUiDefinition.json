@@ -477,10 +477,10 @@
 					{
 						"name": "appInsightsCheck",
 						"type": "Microsoft.Common.InfoBox",
-						"visible": "[and(equals(steps('monitoring').enableAppInsights, 'yes'),  not(contains('eastus, westeurope, southeastasia, centralindia, canadacentral, southcentralus, northeurope, westus2, uksouth', location())))]",
+						"visible": "[and(equals(steps('monitoring').enableAppInsights, 'yes'),  not(contains('eastus, westeurope, southeastasia, centralindia, canadacentral, southcentralus, northeurope, westus2, uksouth, australiaeast, japaneast', location())))]",
 						"options": {
 							"icon": "Error",
-							"text": "App Insights product only available in regions: eastus, westeurope, southeastasia, centralindia, canadacentral, southcentralus, northeurope, westus2, uksouth. Please disable or change resource group location!",
+							"text": "App Insights product only available in regions: eastus, westeurope, southeastasia, centralindia, canadacentral, southcentralus, northeurope, westus2, uksouth, australiaeast, japaneast. Please disable or change resource group location!",
 							"uri": "https://azure.microsoft.com/en-gb/global-infrastructure/services/?products=monitor&regions=us-east,us-east-2,us-central,us-north-central,us-south-central,us-west-central,us-west,us-west-2,canada-east,canada-central,non-regional,europe-north,europe-west,france-central,france-south,united-kingdom-south,united-kingdom-west,asia-pacific-east,asia-pacific-southeast,australia-central,australia-central-2,australia-east,australia-southeast,germany-non-regional,germany-central,germany-northeast,usgov-non-regional,us-dod-central,us-dod-east,usgov-arizona,usgov-iowa,usgov-texas,usgov-virginia,brazil-south,japan-east,japan-west,central-india,south-india,west-india,korea-central,korea-south"
 						}
 					},
@@ -508,10 +508,10 @@
 					{
 						"name": "appAnalyticsCheck",
 						"type": "Microsoft.Common.InfoBox",
-						"visible": "[and(equals(steps('monitoring').enableAnalytics, 'yes'), not(contains('eastus, westeurope, southeastasia, centralindia, canadacentral, australiasoutheast, westcentralus, japaneast, uksouth', location())))]",
+						"visible": "[and(equals(steps('monitoring').enableAnalytics, 'yes'), not(contains('eastus, westeurope, southeastasia, centralindia, canadacentral, australiasoutheast, westcentralus, japaneast, uksouth, northeurope, southcentralus, westus2', location())))]",
 						"options": {
 							"icon": "Error",
-							"text": "Analytics products only available in regions: eastus, westeurope, southeastasia, centralindia, canadacentral, australiasoutheast, westcentralus, japaneast, uksouth. Please disable or change resource group location!",
+							"text": "Analytics products only available in regions: eastus, westeurope, southeastasia, centralindia, canadacentral, australiasoutheast, westcentralus, japaneast, uksouth, northeurope, southcentralus, westus2. Please disable or change resource group location!",
 							"uri": "https://azure.microsoft.com/en-gb/global-infrastructure/services/?products=monitor&regions=us-east,us-east-2,us-central,us-north-central,us-south-central,us-west-central,us-west,us-west-2,canada-east,canada-central,non-regional,europe-north,europe-west,france-central,france-south,united-kingdom-south,united-kingdom-west,asia-pacific-east,asia-pacific-southeast,australia-central,australia-central-2,australia-east,australia-southeast,germany-non-regional,germany-central,germany-northeast,usgov-non-regional,us-dod-central,us-dod-east,usgov-arizona,usgov-iowa,usgov-texas,usgov-virginia,brazil-south,japan-east,japan-west,central-india,south-india,west-india,korea-central,korea-south"
 						}
 					},
