@@ -443,11 +443,7 @@
             "defaultValue": "Free",
             "allowedValues": [
                 "Free",
-                "Standard",
-                "Premium",
-                "Unlimited",
                 "PerNode",
-                "PerGB2018",
                 "Standalone"
             ],
             "metadata": {
@@ -545,8 +541,8 @@
                 "trial": 1,
                 "small": 2,
                 "medium": 3,
-                "large": 8,
-                "enterprise": 10
+                "large": 6,
+                "enterprise": 6
             },
             "jumpboxVmSize": {
                 "trial": "Standard_B1s",
@@ -558,9 +554,9 @@
             "workspaceSku": {
                 "trial": "Free",
                 "small": "Free",
-                "medium": "Standard",
-                "large": "Standard",
-                "enterprise": "Standard"
+                "medium": "PerNode",
+                "large": "PerNode",
+                "enterprise": "PerNode"
             }
         }
     },

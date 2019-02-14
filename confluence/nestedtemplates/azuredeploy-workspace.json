@@ -13,11 +13,7 @@
             "defaultValue": "Free",
             "allowedValues": [
                 "Free",
-                "Standard",
-                "Premium",
-                "Unlimited",
                 "PerNode",
-                "PerGB2018",
                 "Standalone"
             ],
             "metadata": {
@@ -27,8 +23,7 @@
     },
     "variables": {
         "workspace": {
-            "sku": "[parameters('workspaceSku')]",
-            "retentionInDays": 7
+            "sku": "[parameters('workspaceSku')]"
         }
     },
     "resources": [
@@ -37,11 +32,11 @@
             "name": "[parameters('workspaceName')]",
             "apiVersion": "2015-11-01-preview",
             "location": "[parameters('location')]",
+            "scale": null,
             "properties": {
                 "sku": {
                     "name": "[variables('workspace').sku]"
-                },
-                "retentionInDays": "[variables('workspace').retentionInDays]"
+                }
             },
             "resources": [
                 {
