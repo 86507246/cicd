@@ -420,11 +420,7 @@
             "defaultValue": "Free",
             "allowedValues": [
                 "Free",
-                "Standard",
-                "Premium",
-                "Unlimited",
                 "PerNode",
-                "PerGB2018",
                 "Standalone"
             ],
             "metadata": {

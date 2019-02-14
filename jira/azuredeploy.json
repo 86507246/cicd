@@ -440,11 +440,7 @@
             "defaultValue": "Free",
             "allowedValues": [
                 "Free",
-                "Standard",
-                "Premium",
-                "Unlimited",
                 "PerNode",
-                "PerGB2018",
                 "Standalone"
             ],
             "metadata": {
@@ -557,9 +553,9 @@
             "workspaceSku": {
                 "trial": "Free",
                 "small": "Free",
-                "medium": "Standard",
-                "large": "Standard",
-                "enterprise": "Standard"
+                "medium": "PerNode",
+                "large": "PerNode",
+                "enterprise": "PerNode"
             }
         }
     },
