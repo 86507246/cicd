@@ -3,8 +3,8 @@ These development instructions are an alternative to the ones found in [DEVELOPI
 
 
 ## Dependencies  
-* Azure CLI (`curl -L https://aka.ms/InstallAzureCli | bash` or `brew install azure-cli`)  
-* AzCopy (https://github.com/Azure/azure-storage-azcopy)  
+* [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)  
+* [AzCopy](https://github.com/Azure/azure-storage-azcopy)  
 
 
 ## Configuration  
@@ -13,7 +13,7 @@ These development instructions are an alternative to the ones found in [DEVELOPI
 cd ~/git
 git clone git@bitbucket.org:atlassian/atlassian-azure-deployment.git
 ``` 
-* Create a blobstore (https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-cli) in a new storage account. This storage account should be kept in separate resource group from any deployment.   
+* Create a [blobstore](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-cli) in a new storage account. This storage account should be kept in separate resource group from any deployment.   
 ```
 az group create --name smontogmeryatlassian --location eastus
 az storage account create --name atlassianupload --resource-group smontogmeryatlassian --location eastus --sku Standard_LRS
@@ -28,7 +28,7 @@ az storage account create --name atlassianupload --resource-group smontogmeryatl
   },
 ...
 ```
-* Create SAS token (https://docs.microsoft.com/en-us/cli/azure/storage/account?view=azure-cli-latest#az-storage-account-generate-sas)  
+* Create [SAS token](https://docs.microsoft.com/en-us/cli/azure/storage/account?view=azure-cli-latest#az-storage-account-generate-sas)  
 ```
 az storage account generate-sas --account-name atlassianupload --services bfqt --resource-types sco --permissions cdlruwap --expiry $(date --date "next year" '+%Y-%m-%dT%H:%MZ')
 "se=2020-02-13T15%3A37Z&sp=rwdlacup&sv=2018-03-28&ss=bfqt&srt=sco&sig=XanVOenVIroHQFbkyUjk6E9nuHFEm1Rpyu3N2AiOOX0%3D"
@@ -83,15 +83,26 @@ cp azuredeploy.parameters.json ~/atlassian/templates/jira.msql.parameters.json
     }
 }
 ```
-* You have now configured a Jira parameters file specific to your own environment. Deploying your latest changes will be be done by the following:  
+* You have now configured a Jira parameters file specific to your own environment.  
+* You can now use this paramaters template as a basis for other templates eg have a separate parameters template for Confluence, Service Desk, Postgres or SQL DB etc that can be reused in future.   
+
+## Deployment  
+Deploying your latest changes will be be done by the following:  
 ```
 cd ~/git/atlassian-azure-deployment/jira
 az group create --resource-group smontgomeryjira --location canadacentral
 ~/atlassian/bin/jiraupload && az group deployment create --resource-group smontgomeryjira --template-file azuredeploy.json --parameters ~/atlassian/templates/jira.msql.parameters.json
 ```
-* You can now use this paramaters template as a basis for other templates eg have a separate parameters template for Confluence, Service Desk, Postgres or SQL DB etc that can be reused in future.  
+ 
+## Deleting a Deployment  
 * Deleting a deployment is simply a case of deleting the resource group ie  
 ```
  az group delete --resource-group smontgomeryjira 
+```
+
+## Static Code Analysis  
+* Please use install and use Microsoft's [Quickstart Validation tests](https://github.com/Azure/azure-quickstart-templates/tree/master/test/template-validation-tests) to verify any common template errors:  
+```
+npm --folder=/home/user/git/atlassian-azure-deployment/jira run all
 ```
 

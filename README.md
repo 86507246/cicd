@@ -47,7 +47,7 @@ However, for all apps, you'll always need to specify a `jumpboxSshKey` parameter
 ```
 
 ## Development
-Please see the [DEVELOPING.md](DEVELOPING.md) or [DEVELOPING2.md](DEVELOPING2.md) for more information on how you can use the update/develop the templates.
+Please see the development options [DEVELOPING.md](DEVELOPING.md) or [DEVELOPING2.md](DEVELOPING2.md) for more information on how you can use the update/develop the templates.
 
 ## Contributors
 
