@@ -421,7 +421,7 @@
                 "description": "[variables('alerts').dbCpuPercentage.description]",
                 "severity": 1,
                 "enabled": true,
-                "scopes": ["[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.DBforPostgreSQL/servers/', parameters('dbDatabaseServerName'))]"
+                "scopes": ["[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('dbDatabaseServerName'))]"
                 ],
                 "evaluationFrequency": "PT1M",
                 "windowSize": "PT5M",
@@ -460,7 +460,7 @@
                 "description": "[variables('alerts').dbIoConsumptionPercentage.description]",
                 "severity": 1,
                 "enabled": true,
-                "scopes": ["[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.DBforPostgreSQL/servers/', parameters('dbDatabaseServerName'))]"
+                "scopes": ["[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('dbDatabaseServerName'))]"
                 ],
                 "evaluationFrequency": "PT1M",
                 "windowSize": "PT5M",
@@ -499,7 +499,7 @@
                 "description": "[variables('alerts').dbSizePercentage.description]",
                 "severity": 1,
                 "enabled": true,
-                "scopes": ["[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.DBforPostgreSQL/servers/', parameters('dbDatabaseServerName'))]"
+                "scopes": ["[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('dbDatabaseServerName'))]"
                 ],
                 "evaluationFrequency": "PT1M",
                 "windowSize": "PT5M",

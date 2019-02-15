@@ -4,7 +4,6 @@
     "parameters": {
         "location": {
             "type": "string",
-            "defaultValue": "westeurope",
             "metadata": {
                 "description": "The region where Azure will house the deployment."
             },
@@ -23,7 +22,7 @@
             "name": "[variables('appinsights').name]",
             "type": "Microsoft.Insights/components",
             "location": "[parameters('location')]",
-            "apiVersion": "2014-04-01",
+            "apiVersion": "2015-05-01",
             "properties": {
                 "ApplicationId": "[variables('appinsights').name]",
                 "Application_Type": "[variables('appinsights').type]"

@@ -11,7 +11,6 @@
         },
         "_artifactsLocation": {
             "type": "string",
-            "defaultValue": "https://confluencedcresources.blob.core.windows.net/installfiles",
             "metadata": {
                 "description": "The URL specifying the location of the installation artifacts."
             }
@@ -483,7 +482,7 @@
             "tags": "[variables('tags')]"
         },
         {
-            "apiVersion": "2015-01-01",
+            "apiVersion": "2018-05-01",
             "name": "workspaceTemplate",
             "type": "Microsoft.Resources/deployments",
             "condition": "[parameters('enableAnalytics')]",
@@ -507,7 +506,7 @@
             }
         },
         {
-            "apiVersion": "2015-01-01",
+            "apiVersion": "2018-05-01",
             "name": "sqlDbTemplate",
             "type": "Microsoft.Resources/deployments",
             "condition": "[and(parameters('dbCreateNew'), equals(parameters('dbType'), 'sqlserver'))]",
@@ -561,7 +560,7 @@
             }
         },
         {
-            "apiVersion": "2015-01-01",
+            "apiVersion": "2018-05-01",
             "name": "postgresDbTemplate",
             "type": "Microsoft.Resources/deployments",
             "condition": "[and(parameters('dbCreateNew'), equals(parameters('dbType'), 'postgres'))]",
@@ -618,7 +617,7 @@
             }
         },
         {
-            "apiVersion": "2015-01-01",
+            "apiVersion": "2018-05-01",
             "name": "byodbTemplate",
             "type": "Microsoft.Resources/deployments",
             "condition": "[not(parameters('dbCreateNew'))]",
@@ -674,7 +673,7 @@
             }
         },
         {
-            "apiVersion": "2015-01-01",
+            "apiVersion": "2018-05-01",
             "name": "appGtwyTemplate",
             "type": "Microsoft.Resources/deployments",
             "dependsOn": [
@@ -728,7 +727,7 @@
             }
         },
         {
-            "apiVersion": "2015-01-01",
+            "apiVersion": "2018-05-01",
             "name": "vmssTemplate",
             "type": "Microsoft.Resources/deployments",
             "dependsOn": [
@@ -870,7 +869,7 @@
             }
         },
         {
-            "apiVersion": "2015-01-01",
+            "apiVersion": "2018-05-01",
             "name": "appInsightsTemplate",
             "type": "Microsoft.Resources/deployments",
             "condition": "[parameters('enableApplicationInsights')]",
@@ -892,7 +891,7 @@
             }
         },
         {
-            "apiVersion": "2015-01-01",
+            "apiVersion": "2018-05-01",
             "name": "analyticsTemplate",
             "type": "Microsoft.Resources/deployments",
             "condition": "[parameters('enableAnalytics')]",
