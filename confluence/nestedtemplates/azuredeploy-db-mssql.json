@@ -329,7 +329,7 @@
         {
             "type": "Microsoft.Sql/servers/virtualNetworkRules",
             "name": "[concat(parameters('dbServerName'), '/', parameters('clusterDbAccessNetworkRule'))]",
-            "apiVersion": "2017-03-01-preview",
+            "apiVersion": "2015-05-01-preview",
             "properties": {
                 "virtualNetworkSubnetId": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '/subnets/', parameters('appSubnetName'))]",
                 "ignoreMissingVnetServiceEndpoint": false
@@ -341,7 +341,7 @@
         {
             "comments": "Required for bastion host to populate/configure database. Not needed if going to use existing DB",
             "type": "Microsoft.Sql/servers/firewallRules",
-            "apiVersion": "2017-03-01-preview",
+            "apiVersion": "2015-05-01-preview",
             "name": "[concat(parameters('dbServerName'), '/', 'AllowAccessToSetupVMPublicIP')]",
             "dependsOn": [
                 "[resourceId('Microsoft.Sql/servers', parameters('dbServerName'))]"
