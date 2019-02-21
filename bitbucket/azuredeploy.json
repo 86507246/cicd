@@ -81,8 +81,8 @@
         },
         "sshKey": {
             "type": "string",
-			"defaultValue": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCfX6UVUUZlsk5tqcUVBgAROetcAdquNC91AWR+d4tcHxBLaPlf8yA4+goSn5aYrErU+DUOvV29SaFiVQqHW+97V/fVc2r2HQhZ570vxxtkZv1Kc+XnD6C7vJYosWldgddMhE2JNN/CoQC37Rulpr38aFMjZBM76dgRGFTXEHaFHmqi9PVjDIKsbdgezqv9hNrQD8FaFWFn2CpmtrWOVnBxm6FzCIr58D3XuIMMG8aEtcbDbWwqcYJoNG5nRsKeN7L2H5Nz7yM/CjyBy2pW21yrvxhzFNfemx3F2LQ7r2CLEusRRXHmWQEz/H6JbB7/s3VrOXLEWoUFaEZYtSf9S7IL TN1K4UC@VWAPBJLVI0622",
-            "metadata": {
+			"defaultValue": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDCd8YZtCdoalPwKn7TxffAJ2h9D1XtfZwevRsGqg9mkx7O0rJOb3RpxMJ3+Sfw7DU7q/B7AbZ5X0EasAHyBpRoVTsYH8mK+/AmIL8F5E7ycQ2U6L2oP8AVAAeXyfZqyoLeTh2BNhQxziXm0sy3kB9ao1WddaouWnrb+rnNJgIJN+z8w6cyGEDUlJXlNbekxYl6k83amDfCdlzet5sXWhyac21uX1gxQE3J402iDINMZ3xtr3NyhdUkhYxxkK4mj55DmyihH+o8JdMwFLH1EXgbhXeihx7ac+7898gfPRwll/kKfDaIDq/stbNiWjYgdHMKcXwv3IIUDJ7CdMlFyjcH TN1K4UC@VWAPBJLVI0622",
+			"metadata": {
                 "description": "SSH key to allow access to jumpbox."
             }
         },
