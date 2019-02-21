@@ -1287,7 +1287,7 @@
                             "createOption": "Empty",
                             "caching": "None",
                             "managedDisk": {
-                                "storageAccountType": "Premium_LRS"
+                                "storageAccountType": "Standard_LRS"
                             }
                         }
                     ]
