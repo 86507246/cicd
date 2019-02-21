@@ -14,7 +14,7 @@
             "metadata": {
                 "description": "The base URI where the source of the template are located"
             },
-            "defaultValue": "[concat('https://github.com/86507246/cicd/tree/', parameters('scriptsBranch'), '/')]"
+            "defaultValue": "[concat('https://github.com/86507246/cicd/raw/', parameters('scriptsBranch'), '/')]"
         },
         "_artifactsLocation": {
             "type": "string",
@@ -74,19 +74,21 @@
         },
         "adminUsername": {
             "type": "string",
+			"defaultValue": "bitadmin",
             "metadata": {
                 "description": "Username for SSH access to Bitbucket Server nodes as well as for the jumpbox"
             }
         },
         "sshKey": {
             "type": "string",
+			"defaultValue": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCfX6UVUUZlsk5tqcUVBgAROetcAdquNC91AWR+d4tcHxBLaPlf8yA4+goSn5aYrErU+DUOvV29SaFiVQqHW+97V/fVc2r2HQhZ570vxxtkZv1Kc+XnD6C7vJYosWldgddMhE2JNN/CoQC37Rulpr38aFMjZBM76dgRGFTXEHaFHmqi9PVjDIKsbdgezqv9hNrQD8FaFWFn2CpmtrWOVnBxm6FzCIr58D3XuIMMG8aEtcbDbWwqcYJoNG5nRsKeN7L2H5Nz7yM/CjyBy2pW21yrvxhzFNfemx3F2LQ7r2CLEusRRXHmWQEz/H6JbB7/s3VrOXLEWoUFaEZYtSf9S7IL TN1K4UC@VWAPBJLVI0622",
             "metadata": {
                 "description": "SSH key to allow access to jumpbox."
             }
         },
         "jumpboxSize": {
             "type": "string",
-            "defaultValue": "Standard_B1s",
+            "defaultValue": "Standard_A0",
             "metadata": {
                 "description": "The size of jumpbox VM"
             }
@@ -156,7 +158,7 @@
         },
         "azureSqlTier": {
             "type": "string",
-            "defaultValue": "P2",
+            "defaultValue": "S2",
             "allowedValues": [
                 "Basic",
                 "S0",
@@ -181,19 +183,21 @@
         },
         "azureSqlUsername": {
             "type": "string",
+			"defaultValue": "bitbucketdb",
             "metadata": {
                 "description": "Username to access Bitbucket Server database."
             }
         },
         "azureSqlPassword": {
             "type": "securestring",
+			"defaultValue": "Admin@123456",
             "metadata": {
                 "description": "Password to access Bitbucket Server database."
             }
         },
         "nfsVmSize": {
             "type": "string",
-            "defaultValue": "Standard_L4s",
+            "defaultValue": "Standard_D8s_v3",
             "allowedValues": [
                 "Standard_D8s_v3",
                 "Standard_DS4_v2",
@@ -274,20 +278,21 @@
         },
         "bitbucketAdminUsername": {
             "type": "string",
-            "defaultValue": "ssh",
+            "defaultValue": "bitadmin",
             "metadata": {
                 "description": "Username for Bitbucket Server administrator user. By default it's the same as ssh user."
             }
         },
         "bitbucketAdminPassword": {
             "type": "securestring",
+			"defaultValue": "bitadmin",
             "metadata": {
                 "description": "Password for Bitbucket Server administrator user."
             }
         },
         "bitbucketAdminName": {
             "type": "string",
-            "defaultValue": "John Doe",
+            "defaultValue": "Admin",
             "metadata": {
                 "description": "Bitbucket Server administorator full name."
             }
