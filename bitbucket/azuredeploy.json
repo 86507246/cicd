@@ -1,0 +1,1470 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "scriptsBranch": {
+            "type": "string",
+            "defaultValue": "master",
+            "metadata": {
+                "description": "A branch in the repository to download scripts from. We want to be able to override it during development."
+            }
+        },
+        "repositoryLocation": {
+            "type": "string",
+            "metadata": {
+                "description": "The base URI where the source of the template are located"
+            },
+            "defaultValue": "[concat('https://github.com/86507246/cicd/tree/', parameters('scriptsBranch'), '/')]"
+        },
+        "_artifactsLocation": {
+            "type": "string",
+            "metadata": {
+                "description": "The base URI where artifacts required by this template are located"
+            },
+            "defaultValue": "[parameters('repositoryLocation')]"
+        },
+        "_artifactsLocationSasToken": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The sasToken required to access _artifactsLocation.  When the template is deployed using the accompanying scripts, a sasToken will be automatically generated. Use the defaultValue if the staging location is not secured."
+            },
+            "defaultValue": ""
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Azure region (WestUS, CentralUs, AustraliaEast, etc) shared by all of the resources in the template"
+            }
+        },
+        "vnetCIDR": {
+            "type": "string",
+            "defaultValue": "10.0.0.0/16",
+            "metadata": {
+                "description": "Address space for the Virtual Network created by the template"
+            }
+        },
+        "publicNetCIDR": {
+            "type": "string",
+            "defaultValue": "10.0.1.0/24",
+            "metadata": {
+                "description": "Address space for the public subnet in the vnet"
+            }
+        },
+        "appgwNetCIDR": {
+            "type": "string",
+            "defaultValue": "10.0.2.0/24",
+            "metadata": {
+                "description": "Address space for the private subnet with Application Gateways"
+            }
+        },
+        "bbsNetCIDR": {
+            "type": "string",
+            "defaultValue": "10.0.4.0/24",
+            "metadata": {
+                "description": "Address space for the private subnet where Bitbucket Server nodes are deployed"
+            }
+        },
+        "esNetCIDR": {
+            "type": "string",
+            "defaultValue": "10.0.5.0/24",
+            "metadata": {
+                "description": "Address space for the private subnet where Elasticsearch nodes are deployed"
+            }
+        },
+        "adminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Username for SSH access to Bitbucket Server nodes as well as for the jumpbox"
+            }
+        },
+        "sshKey": {
+            "type": "string",
+            "metadata": {
+                "description": "SSH key to allow access to jumpbox."
+            }
+        },
+        "jumpboxSize": {
+            "type": "string",
+            "defaultValue": "Standard_B1s",
+            "metadata": {
+                "description": "The size of jumpbox VM"
+            }
+        },
+        "jumpboxHostname": {
+            "type": "string",
+            "defaultValue": "jumpbox",
+            "metadata": {
+                "description": "The hostname for jumpbox. Does not affect it's DNS name"
+            }
+        },
+        "bbsSize": {
+            "type": "string",
+            "defaultValue": "Standard_E8-4s_v3",
+            "metadata": {
+                "description": "The size of Bitbucket Server nodes vm"
+            }
+        },
+        "bbsNodeCount": {
+            "type": "int",
+            "defaultValue": 2,
+            "metadata": {
+                "description": "The amount of Bitbucket Server nodes to deploy"
+            }
+        },
+        "bbsNodePrefix": {
+            "type": "string",
+            "defaultValue": "bbsnode",
+            "metadata": {
+                "description": "Hostname prefix for nodes in Bitbucket Server cluster"
+            }
+        },
+        "bbsDiskSize": {
+            "type": "int",
+            "defaultValue": 31,
+            "metadata": {
+                "description": "The size (in GB) of the data disk that is used for logs on a Bitbucket Server node"
+            }
+        },
+        "bbsDiskStorageType": {
+            "type": "string",
+            "defaultValue": "Standard_LRS",
+            "metadata": {
+                "description": "The type of storage account used for logs on a Bitbucket Server node"
+            }
+        },
+        "bbsHttpPort": {
+            "type": "string",
+            "defaultValue": "7990",
+            "metadata": {
+                "description": "Internal port that Bitbucket Server uses to accept HTTP connections"
+            }
+        },
+        "bbsHazelcastTag": {
+            "type": "string",
+            "defaultValue": "HAZELCAST",
+            "metadata": {
+                "description": "Hazelcast tag for nodes in Bitbucket Server cluster"
+            }
+        },
+        "bbsHazelcastPort": {
+            "type": "string",
+            "defaultValue": "5701",
+            "metadata": {
+                "description": "Internal port that Bitbucket Server uses for Hazelcast communication"
+            }
+        },
+        "azureSqlTier": {
+            "type": "string",
+            "defaultValue": "P2",
+            "allowedValues": [
+                "Basic",
+                "S0",
+                "S1",
+                "S2",
+                "S3",
+                "S4",
+                "S6",
+                "S7",
+                "S9",
+                "S12",
+                "P1",
+                "P2",
+                "P4",
+                "P6",
+                "P11",
+                "P15"
+            ],
+            "metadata": {
+                "description": "Database Tier for Azure SQL DTU pricing model"
+            }
+        },
+        "azureSqlUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Username to access Bitbucket Server database."
+            }
+        },
+        "azureSqlPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Password to access Bitbucket Server database."
+            }
+        },
+        "nfsVmSize": {
+            "type": "string",
+            "defaultValue": "Standard_L4s",
+            "allowedValues": [
+                "Standard_D8s_v3",
+                "Standard_DS4_v2",
+                "Standard_E8-4s_v3",
+                "Standard_L4s",
+                "Standard_L8s",
+                "Standard_L16s",
+                "Standard_L32s",
+                "Standard_D16_v3",
+                "Standard_E16s_v3"
+            ],
+            "metadata": {
+                "description": "The size of the VM that is used for NFS server."
+            }
+        },
+        "nfsDiskSize": {
+            "type": "int",
+            "defaultValue": 128,
+            "allowedValues": [
+                128,
+                256,
+                512,
+                1024,
+                2048,
+                4095
+            ],
+            "metadata": {
+                "description": "The size of the data disk for Git repositories in GB"
+            }
+        },
+        "appGatewaySize": {
+            "type": "string",
+            "defaultValue": "Medium",
+            "allowedValues": [
+                "Small",
+                "Medium",
+                "Large"
+            ],
+            "metadata": {
+                "description": "The size of Application Gateway. Can be small, medium and large."
+            }
+        },
+        "appGatewayProbeInterval": {
+            "type": "int",
+            "defaultValue": 5,
+            "metadata": {
+                "description": "The interval in seconds for Application Gateway to very that Bitbucket Server node is available"
+            }
+        },
+        "appGatewayCapacity": {
+            "type": "int",
+            "defaultValue": 1,
+            "metadata": {
+                "description": "Amount of Application Gateway instances to created"
+            }
+        },
+        "httpGatewaySize": {
+            "type": "string",
+            "allowedValues": [
+                "Standard_D2s_v3",
+                "Standard_D4s_v3",
+                "Standard_D8s_v3",
+                "Standard_D16s_v3",
+                "Standard_D32s_v3",
+                "Standard_D64s_v3"
+            ],
+            "defaultValue": "Standard_D2s_v3",
+            "metadata": {
+                "description": "VM type which used for forwarding HTTP traffic from Load Balancer to Application Gateway"
+            }
+        },
+        "license": {
+            "type": "securestring",
+            "defaultValue": "AAABpg0ODAoPeNp1kUtP20AUhff+FVfqLtI4DkkgRLLUYA+UqtiR7SzawmLiXPBQe8aaR9r013ewDYG2LGZzH2fO+e6HorKQyD0ECwhmy/lsOZ3D1U0BJ8Fk4SW22aJK7zcalQ7JxIukMKw0CWswfDSVbJj+yEzNtOZM+KVsPG2YrvwvvEShsTi02M3mxSoraPZv96WztqqsmMaYGQyfPieTCQkW3ntKQ53+ark6dEvr6fT007NDesN4/Y7FHNUe1XUcXtAzSmbxtxNymn4+I1fT88Xg0AmyCIVBFRpl0cvtVpeKt4ZL0VdGo1GSFuQyzcg6S+NNVFynCdnk1DXCSKFztIPtAUyFMHgFKkq5QwWtko9YGvheGdPeLsfjB+m/sTiu+w2C/cadD7EEIQ3suDaKb61Bp8w1GAml1UY27kC+50I7z4KJ8jUYR/N8oNmnc3z4Hl9yRBldFTQmF1+fvP+f2RDBQduIH0L+FF5Ok9A9Mg8CL1UPTHDNOjyr31YhxNjW8tA4hl5Hw3X+Pm2MR6Z0z2rbTcGQHe6lgl5rd9Q6zvX2/wDFKfAUMCsCFH8cSCeQYWgwBdkxpTeUqGiTfg2qAhNxOHcjUrs7UMuuXFQw4T4+mxFqX02k8",
+            "metadata": {
+                "description": "Bitbucket Data Center 14 days evaluation license."
+            }
+        },
+        "bitbucketAdminUsername": {
+            "type": "string",
+            "defaultValue": "ssh",
+            "metadata": {
+                "description": "Username for Bitbucket Server administrator user. By default it's the same as ssh user."
+            }
+        },
+        "bitbucketAdminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Password for Bitbucket Server administrator user."
+            }
+        },
+        "bitbucketAdminName": {
+            "type": "string",
+            "defaultValue": "John Doe",
+            "metadata": {
+                "description": "Bitbucket Server administorator full name."
+            }
+        },
+        "bitbucketAdminEmail": {
+            "type": "string",
+            "defaultValue": "admin@example.com",
+            "metadata": {
+                "description": "Bitbucket Server administrator email."
+            }
+        },
+        "esDataNodeCount": {
+            "type": "int",
+            "defaultValue": 1,
+            "metadata": {
+                "description": "The number of elasticsearch data nodes to be deployed."
+            }
+        },
+        "esDataDiskSize": {
+            "type": "int",
+            "defaultValue": 32,
+            "metadata": {
+                "description": "The size of the data disk for elasticsearch in GB."
+            }
+        },
+        "esNodeSize": {
+            "type": "string",
+            "defaultValue": "Standard_E8-4s_v3",
+            "metadata": {
+                "description": "The size of Elasticsearch nodes VM."
+            }
+        }
+    },
+    "variables": {
+        "namespace": "bitbucket",
+        "suffix": "[uniqueString(resourceGroup().id)]",
+        "tags": {
+            "vendor": "Atlassian",
+            "product": "Bitbucket Server",
+            "provider": "2F0AF47A-92C7-413A-9009-C3815BFF7AF6"
+        },
+        "image": {
+            "publisher": "[variables('vm').jumpbox.image.publisher]",
+            "offer": "[variables('vm').jumpbox.image.offer]",
+            "sku": "[variables('vm').jumpbox.image.sku]",
+            "version": "latest"
+        },
+        "net": {
+            "vnet": {
+                "name": "[concat(variables('namespace'), '-vnet')]",
+                "cidr": "[parameters('vnetCIDR')]"
+            },
+            "nic": {
+                "jumpbox": {
+                    "name": "[concat(variables('namespace'), '-jumpbox-nic')]",
+                    "ipConfig": {
+                        "name": "[concat(variables('namespace'), '-jumpbox-ipconfig')]"
+                    }
+                },
+                "nfs": {
+                    "name": "[concat(variables('namespace'), '-nfs-nic')]",
+                    "ipConfig": {
+                        "name": "[concat(variables('namespace'), '-nfs-ipconfig')]"
+                    }
+                }
+            },
+            "nsg": {
+                "public": {
+                    "name": "[concat(variables('namespace'), '-public-nsg')]"
+                },
+                "appgw": {
+                    "name": "[concat(variables('namespace'), '-appgw-nsg')]"
+                },
+                "bbs": {
+                    "name": "[concat(variables('namespace'), '-bbs-nsg')]"
+                },
+                "rules": {
+                    "denyInbound": {
+                        "name": "denyInbound",
+                        "properties": {
+                            "description": "Deny All",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "direction": "Inbound",
+                            "priority": 1001
+                        }
+                    },
+                    "denyOutbound": {
+                        "name": "denyOutbound",
+                        "properties": {
+                            "description": "Deny All",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "direction": "Outbound",
+                            "priority": 1002
+                        }
+                    }
+                }
+            },
+            "subnets": {
+                "public": {
+                    "name": "[concat(variables('namespace'), '-net-public')]",
+                    "cidr": "[parameters('publicNetCIDR')]"
+                },
+                "appgw": {
+                    "name": "[concat(variables('namespace'), '-net-appgw')]",
+                    "cidr": "[parameters('appgwNetCIDR')]"
+                },
+                "bbs": {
+                    "name": "[concat(variables('namespace'), '-net-bbs')]",
+                    "cidr": "[parameters('bbsNetCIDR')]"
+                }
+            },
+            "appGw": {
+                "name": "[concat(variables('namespace'), '-app-gw')]",
+                "dns": "[concat(variables('namespace'), '-', variables('suffix'))]",
+                "probe": {
+                    "interval": "[parameters('appGatewayProbeInterval')]",
+                    "timeout": 10,
+                    "unhealthyThreshold": 1
+                },
+                "tier": "[variables('lookup').appGw.sizeToTier[concat('Standard_', parameters('appGatewaySize'))]]",
+                "size": "[concat('Standard_', parameters('appGatewaySize'))]",
+                "capacity": "[parameters('appGatewayCapacity')]",
+                "names": {
+                    "publicIP": "[concat(variables('namespace'), '-app-gw', '-public-ip')]",
+                    "ipConfig": "[concat(variables('namespace'), '-app-gw', '-ip-cfg')]",
+                    "fendIp": "[concat(variables('namespace'), '-app-gw', '-fend')]",
+                    "fendPort": "[concat(variables('namespace'), '-app-gw', '-fend-port')]",
+                    "bend": "[concat(variables('namespace'), '-app-gw', '-bend')]",
+                    "bendHttpSettings": "[concat(variables('namespace'), '-app-gw', '-bend-http')]",
+                    "httpListener": "[concat(variables('namespace'), '-app-gw', '-listener')]",
+                    "routeRule": "[concat(variables('namespace'), '-app-gw', '-route-rule')]",
+                    "probe": "[concat(variables('namespace'), '-app-gw', '-probe')]"
+                }
+            },
+            "lb": {
+                "name": "[concat(variables('namespace'), '-lb')]",
+                "dns": "[concat(variables('namespace'), '-ssh-', variables('suffix'))]",
+                "names": {
+                    "publicIP": "[concat(variables('namespace'), '-lb', '-public-ip')]",
+                    "fendIpConfig": "[concat(variables('namespace'), '-lb', '-fend-ipconfig')]",
+                    "bendGit": "[concat(variables('namespace'), '-lb', '-bend-git')]",
+                    "bendSsh": "[concat(variables('namespace'), '-lb', '-bend-ssh')]",
+                    "bendHttp": "[concat(variables('namespace'), '-lb', '-bend-http')]",
+                    "ruleGit": "[concat(variables('namespace'), '-lb', '-rule-git')]",
+                    "ruleSsh": "[concat(variables('namespace'), '-lb', '-rule-ssh')]",
+                    "ruleHttp": "[concat(variables('namespace'), '-lb', '-rule-http')]"
+                }
+            }
+        },
+        "vm": {
+            "jumpbox": {
+                "name": "[concat(variables('namespace'), 'jumpbox')]",
+                "size": "[parameters('jumpboxSize')]",
+                "hostname": "[parameters('jumpboxHostname')]",
+                "image": {
+                    "publisher": "Canonical",
+                    "offer": "UbuntuServer",
+                    "sku": "16.04-LTS"
+                }
+            },
+            "nfs": {
+                "name": "[concat(variables('namespace'), '-nfs')]",
+                "size": "[parameters('nfsVmSize')]",
+                "hostname": "bbsnfs",
+                "image": {
+                    "publisher": "Canonical",
+                    "offer": "UbuntuServer",
+                    "sku": "16.04-LTS"
+                }
+            },
+            "bbs": {
+                "name": "[concat(variables('namespace'), 'bbs-nodes')]",
+                "size": "[parameters('bbsSize')]",
+                "count": "[parameters('bbsNodeCount')]",
+                "hostname": "[parameters('bbsNodePrefix')]",
+                "image": {
+                    "publisher": "Canonical",
+                    "offer": "UbuntuServer",
+                    "sku": "16.04-LTS"
+                },
+                "role": {
+                    "name": "[guid(resourceGroup().id)]"
+                },
+                "hazelcastTag": {
+                    "[parameters('bbsHazelcastTag')]": "[parameters('bbsHazelcastPort')]"
+                },
+                "storage": {
+                    "size": "[parameters('bbsDiskSize')]",
+                    "type": "[parameters('bbsDiskStorageType')]",
+                    "caching": "None"
+                },
+                "scripts": [
+                    "[concat(uri(parameters('_artifactsLocation'), 'bitbucket/scripts/log.sh'), parameters('_artifactsLocationSasToken'))]",
+                    "[concat(uri(parameters('_artifactsLocation'), 'bitbucket/scripts/vm-disk-utils-0.1.sh') , parameters('_artifactsLocationSasToken'))]",
+                    "[concat(uri(parameters('_artifactsLocation'), 'bitbucket/scripts/bbs_settings.sh'), parameters('_artifactsLocationSasToken'))]",
+                    "[concat(uri(parameters('_artifactsLocation'), 'bitbucket/scripts/nfs_settings.sh'), parameters('_artifactsLocationSasToken'))]",
+                    "[concat(uri(parameters('_artifactsLocation'), 'bitbucket/scripts/settings.sh'), parameters('_artifactsLocationSasToken'))]",
+                    "[concat(uri(parameters('_artifactsLocation'), 'bitbucket/scripts/install.sh'), parameters('_artifactsLocationSasToken'))]"
+                ]
+            }
+        },
+        "elasticsearch": {
+            "dataDiskSize": "[parameters('esDataDiskSize')]",
+            "dataNodeCount": "[parameters('esDataNodeCount')]",
+            "dataVmSize": "[parameters('esNodeSize')]",
+            "lbIp": "10.0.5.99",
+            "name": "[concat(variables('namespace'), '-elasticsearch')]",
+            "templateBaseUrl": "[concat(uri(parameters('_artifactsLocation'), 'bitbucket/elasticsearch/third-party/'), '')]",
+            "version": "5.5.1"
+        },
+        "sql": {
+            "server": {
+                "name": "[concat(variables('namespace'), '-sql-server-', uniqueString(resourceGroup().id))]",
+                "user": "[parameters('azureSqlUsername')]",
+                "password": "[parameters('azureSqlPassword')]"
+            },
+            "database": {
+                "name": "[concat(variables('namespace'), '-db')]",
+                "edition": "[variables('lookup').sql.tierToEdition[parameters('azureSqlTier')]]"
+            },
+            "endpoint": {
+                "name": "[concat(variables('namespace'), '-endpoint')]"
+            }
+        },
+        "lookup": {
+            "sql": {
+                "tierToEdition": {
+                    "Basic": "Basic",
+                    "S0": "Standard",
+                    "S1": "Standard",
+                    "S2": "Standard",
+                    "S3": "Standard",
+                    "S4": "Standard",
+                    "S6": "Standard",
+                    "S7": "Standard",
+                    "S9": "Standard",
+                    "S12": "Standard",
+                    "P1": "Premium",
+                    "P2": "Premium",
+                    "P4": "Premium",
+                    "P6": "Premium",
+                    "P11": "Premium",
+                    "P15": "Premium"
+                }
+            },
+            "appGw": {
+                "sizeToTier": {
+                    "Standard_Small": "Standard",
+                    "Standard_Medium": "Standard",
+                    "Standard_Large": "Standard",
+                    "WAF_Medium": "WAF",
+                    "WAF_Large": "WAF"
+                }
+            }
+        },
+        "bitbucket": {
+            "license": "[parameters('license')]",
+            "admin": {
+                "username": "[if(equals(parameters('bitbucketAdminUsername'),'ssh'), parameters('adminUsername'), parameters('bitbucketAdminUsername'))]",
+                "password": "[parameters('bitbucketAdminPassword')]",
+                "fullName": "[parameters('bitbucketAdminName')]",
+                "email": "[parameters('bitbucketAdminEmail')]"
+            }
+        },
+        "env": {
+            "SQL": [
+                "[concat('SQL_USER', '=\"', variables('sql').server.user, '\" ')]",
+                "[concat('SQL_PASS', '=\"', variables('sql').server.password, '\" ')]"
+            ],
+            "BBS": [
+                "[concat('BBS_ADMIN', '=\"', variables('bitbucket').admin.username, '\" ')]",
+                "[concat('BBS_PASS', '=\"', variables('bitbucket').admin.password, '\" ')]",
+                "[concat('BBS_NAME', '=\"', variables('bitbucket').admin.fullName, '\" ')]",
+                "[concat('BBS_EMAIL', '=\"', variables('bitbucket').admin.email, '\" ')]",
+                "[concat('BBS_LICENSE', '=\"', variables('bitbucket').license, '\" ')]",
+                "[concat('BBS_HAZELCAST_PORT', '=\"', parameters('bbsHazelcastPort'), '\" ')]",
+                "[concat('BBS_HAZELCAST_CLUSTER_ID', '=\"', parameters('bbsHazelcastTag'), '\" ')]",
+                "[concat('BBS_HAZELCAST_GROUP_NAME', '=\"', resourceGroup().name, '\" ')]",
+                "[concat('BBS_HAZELCAST_SUBSCRIPTION_ID', '=\"', subscription().subscriptionId, '\" ')]",
+                "[concat('BBS_ES_BASE_URL', '=\"http://', variables('elasticsearch').lbIp, ':9200/\" ')]"
+            ]
+        },
+        "data": {
+            "SQL": "[replace(replace(replace(replace(string(variables('env').SQL), '[\"', ''), '\"]', ''), '\",\"', ''), '\\\"', '\"')]",
+            "BBS": "[replace(replace(replace(replace(string(variables('env').BBS), '[\"', ''), '\"]', ''), '\",\"', ''), '\\\"', '\"')]"
+        },
+        "reader-role": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')]"
+    },
+    "resources": [
+        { 
+            "apiVersion": "2018-02-01",
+            "name": "pid-49ff88fd-5e3c-58f7-aadf-6a73ac08ea91",
+            "type": "Microsoft.Resources/deployments",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": []
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2017-10-01",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nsg.public.name]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allow",
+                        "properties": {
+                            "description": "Allows HTTP/S, SSH and Git traffic only from the Internet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRanges": [
+                                "22",
+                                "80",
+                                "443",
+                                "7999"
+                            ],
+                            "sourceAddressPrefix": "Internet",
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 100
+                        }
+                    },
+                    {
+                        "name": "denyall",
+                        "properties": {
+                            "description": "Deny all",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "Internet",
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Deny",
+                            "direction": "Inbound",
+                            "priority": 1001
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2017-10-01",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nsg.appgw.name]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allowHTTP",
+                        "properties": {
+                            "description": "Allows HTTP/S traffic only from the Internet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRanges": [
+                                "80",
+                                "443"
+                            ],
+                            "sourceAddressPrefix": "Internet",
+                            "destinationAddressPrefix": "[variables('net').subnets.appgw.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 100
+                        }
+                    },
+                    {
+                        "name": "allowOutbound",
+                        "properties": {
+                            "description": "Allows outgoing HTTP traffic only from App Gateway subnet towards Internet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "[parameters('bbsHttpPort')]",
+                            "sourceAddressPrefix": "[variables('net').subnets.appgw.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Outbound",
+                            "priority": 101
+                        }
+                    },
+                    "[variables('net').nsg.rules.denyInbound]",
+                    "[variables('net').nsg.rules.denyOutbound]"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2017-10-01",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nsg.bbs.name]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allowAppGateway",
+                        "properties": {
+                            "description": "Allows incoming HTTP traffic from App Gateway subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "[parameters('bbsHttpPort')]",
+                            "sourceAddressPrefix": "[variables('net').subnets.appgw.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 100
+                        }
+                    },
+                    {
+                        "name": "allowGitSSH",
+                        "properties": {
+                            "description": "Allows incoming Git traffic from load balancer",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "7999",
+                            "sourceAddressPrefix": "Internet",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 101
+                        }
+                    },
+                    {
+                        "name": "allowSSH",
+                        "properties": {
+                            "description": "Allows incoming SSH traffic from public subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "[variables('net').subnets.public.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 102
+                        }
+                    },
+                    {
+                        "name": "allowNFS",
+                        "properties": {
+                            "description": "Allows NFS traffic inside the subnet",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRanges": [
+                                "111",
+                                "2049",
+                                "1110",
+                                "4045",
+                                "32764-32769"
+                            ],
+                            "sourceAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 200
+                        }
+                    },
+                    {
+                        "name": "allowHazelcast",
+                        "properties": {
+                            "description": "Allows Hazelcast traffic inside the subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRanges": [
+                                "[parameters('bbsHazelcastPort')]"
+                            ],
+                            "sourceAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "destinationAddressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "priority": 201
+                        }
+                    },
+                    "[variables('net').nsg.rules.denyInbound]"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2017-10-01",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[variables('net').nsg.public.name]",
+                "[variables('net').nsg.appgw.name]",
+                "[variables('net').nsg.bbs.name]"
+            ],
+            "name": "[variables('net').vnet.name]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('net').vnet.cidr]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('net').subnets.public.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('net').subnets.public.cidr]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.public.name)]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "[variables('net').subnets.appgw.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('net').subnets.appgw.cidr]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.appgw.name)]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "[variables('net').subnets.bbs.name]",
+                        "properties": {
+                            "addressPrefix": "[variables('net').subnets.bbs.cidr]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('net').nsg.bbs.name)]"
+                            },
+                            "serviceEndpoints": [
+                                {
+                                    "service": "Microsoft.Sql"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[variables('elasticsearch').name]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2017-05-10",
+            "dependsOn": [
+                "[variables('net').vnet.name]",
+                "[variables('vm').jumpbox.name]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[uri(parameters('_artifactsLocation'), concat('bitbucket/elasticsearch/elasticsearch.json', parameters('_artifactsLocationSasToken')))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "_artifactsLocationSasToken": {
+                      "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
+                    "adminUsername": {
+                        "value": "[parameters('adminUsername')]"
+                    },
+                    "dataNodeCount": {
+                        "value": "[variables('elasticsearch').dataNodeCount]"
+                    },
+                    "dataDiskSize": {
+                        "value": "[variables('elasticsearch').dataDiskSize]"
+                    },
+                    "esTemplateBaseUrl": {
+                        "value": "[variables('elasticsearch').templateBaseUrl]"
+                    },
+                    "jumpboxIp": {
+                        "value": "[reference(variables('net').nic.jumpbox.name).ipConfigurations[0].properties.privateIPAddress]"
+                    },
+                    "lbIp": {
+                        "value": "[variables('elasticsearch').lbIp]"
+                    },
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "namespace": {
+                        "value": "[variables('elasticsearch').name]"
+                    },
+                    "netCIDR": {
+                        "value": "[parameters('esNetCIDR')]"
+                    },
+                    "sshKey": {
+                        "value": "[parameters('sshKey')]"
+                    },
+                    "tags": {
+                        "value": "[variables('tags')]"
+                    },
+                    "version": {
+                        "value": "[variables('elasticsearch').version]"
+                    },
+                    "vmSizeDataNodes": {
+                        "value": "[variables('elasticsearch').dataVmSize]"
+                    },
+                    "vnetName": {
+                        "value": "[variables('net').vnet.name]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2017-10-01",
+            "name": "[variables('net').lb.names.publicIP]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "sku": {
+                "name": "Standard"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('net').lb.dns]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2017-10-01",
+            "name": "[variables('net').appGw.names.publicIP]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "sku": {
+                "name": "Basic"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic",
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('net').appGw.dns]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/loadBalancers",
+            "apiVersion": "2017-10-01",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[variables('net').vnet.name]"
+            ],
+            "name": "[variables('net').lb.name]",
+            "sku": {
+                "name": "Standard"
+            },
+            "properties": {
+                "frontendIPConfigurations": [
+                    {
+                        "name": "[variables('net').lb.names.fendIpConfig]",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('net').lb.names.publicIP)]"
+                            }
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "[variables('net').lb.names.bendGit]"
+                    },
+                    {
+                        "name": "[variables('net').lb.names.bendSsh]"
+                    }
+                ],
+                "loadBalancingRules": [
+                    {
+                        "name": "[variables('net').lb.names.ruleGit]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/frontendIPConfigurations/', variables('net').lb.names.fendIpConfig)]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendGit)]"
+                            },
+                            "frontendPort": 7999,
+                            "backendPort": 7999,
+                            "protocol": "Tcp"
+                        }
+                    },
+                    {
+                        "name": "[variables('net').lb.names.ruleSsh]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/frontendIPConfigurations/', variables('net').lb.names.fendIpConfig)]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendSsh)]"
+                            },
+                            "frontendPort": 22,
+                            "backendPort": 22,
+                            "protocol": "Tcp"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2017-10-01",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nic.jumpbox.name]",
+            "dependsOn": [
+                "[variables('net').vnet.name]",
+                "[variables('net').lb.name]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "[variables('net').nic.jumpbox.ipConfig.name]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.public.name)]"
+                            },
+                            "loadBalancerBackendAddressPools": [
+                                {
+                                    "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendSsh)]"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2017-10-01",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('net').nic.nfs.name]",
+            "dependsOn": [
+                "[variables('net').vnet.name]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "[variables('net').nic.nfs.ipConfig.name]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.bbs.name)]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers",
+            "apiVersion": "2015-05-01-preview",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "name": "[variables('sql').server.name]",
+            "properties": {
+                "administratorLogin": "[variables('sql').server.user]",
+                "administratorLoginPassword": "[variables('sql').server.password]"
+            },
+            "resources": [
+                {
+                    "type": "databases",
+                    "apiVersion": "2014-04-01",
+                    "name": "[variables('sql').database.name]",
+                    "location": "[parameters('location')]",
+                    "tags": "[variables('tags')]",
+                    "dependsOn": [
+                        "[variables('sql').server.name]"
+                    ],
+                    "properties": {
+                        "edition": "[variables('sql').database.edition]",
+                        "requestedServiceObjectiveName": "[parameters('azureSqlTier')]",
+                        "collation": "SQL_Latin1_General_CP1_CS_AS"
+                    }
+                },
+                {
+                    "type": "virtualNetworkRules",
+                    "apiVersion": "2015-05-01-preview",
+                    "name": "[variables('sql').endpoint.name]",
+                    "dependsOn": [
+                        "[variables('sql').server.name]"
+                    ],
+                    "properties": {
+                        "virtualNetworkSubnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.bbs.name)]",
+                        "ignoreMissingVnetServiceEndpoint": false
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Network/applicationGateways",
+            "location": "[parameters('location')]",
+            "apiVersion": "2017-10-01",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[variables('net').vnet.name]"
+            ],
+            "name": "[variables('net').appGw.name]",
+            "properties": {
+                "sku": {
+                    "name": "[variables('net').appGw.size]",
+                    "tier": "[variables('net').appGw.tier]",
+                    "capacity": "[variables('net').appGw.capacity]"
+                },
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "[variables('net').appGw.names.ipConfig]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('net').vnet.name, variables('net').subnets.appgw.name)]"
+                            }
+                        }
+                    }
+                ],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "[variables('net').appGw.names.fendIp]",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('net').appGw.names.publicIP)]"
+                            }
+                        }
+                    }
+                ],
+                "frontendPorts": [
+                    {
+                        "name": "[variables('net').appGw.names.fendPort]",
+                        "properties": {
+                            "port": 80
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "[variables('net').appGw.names.bend]"
+                    }
+                ],
+                "backendHttpSettingsCollection": [
+                    {
+                        "name": "[variables('net').appGw.names.bendHttpSettings]",
+                        "properties": {
+                            "port": "[parameters('bbsHttpPort')]",
+                            "protocol": "Http",
+                            "cookieBasedAffinity": "Enabled",
+                            "affinityCookieName": "AZURESESSIONID"
+                        }
+                    }
+                ],
+                "httpListeners": [
+                    {
+                        "name": "[variables('net').appGw.names.httpListener]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/frontendIPConfigurations/', variables('net').appGw.names.fendIp)]"
+                            },
+                            "frontendPort": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/frontendPorts/', variables('net').appGw.names.fendPort)]"
+                            },
+                            "protocol": "Http"
+                        }
+                    }
+                ],
+                "requestRoutingRules": [
+                    {
+                        "name": "[variables('net').appGw.names.routeRule]",
+                        "properties": {
+                            "ruleType": "Basic",
+                            "httpListener": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/httpListeners/', variables('net').appGw.names.httpListener)]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/backendAddressPools/', variables('net').appGw.names.bend)]"
+                            },
+                            "backendHttpSettings": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/backendHttpSettingsCollection/', variables('net').appGw.names.bendHttpSettings)]"
+                            }
+                        }
+                    }
+                ],
+                "probes": [
+                    {
+                        "name": "[variables('net').appGw.names.probe]",
+                        "properties": {
+                            "protocol": "Http",
+                            "path": "/status",
+                            "interval": "[variables('net').appGw.probe.interval]",
+                            "timeout": "[variables('net').appGw.probe.timeout]",
+                            "unhealthyThreshold": "[variables('net').appGw.probe.unhealthyThreshold]",
+                            "pickHostNameFromBackendHttpSettings": true
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2018-06-01",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[variables('net').nic.jumpbox.name]",
+                "[variables('net').lb.name]",
+                "[variables('net').appGw.name]"
+            ],
+            "name": "[variables('vm').jumpbox.name]",
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('httpGatewaySize')]"
+                },
+                "osProfile": {
+                    "computerName": "[variables('vm').jumpbox.name]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": true,
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                                    "keyData": "[parameters('sshKey')]"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": "[variables('image')]",
+                    "osDisk": {
+                        "createOption": "FromImage"
+                    },
+                    "dataDisks": []
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('net').nic.jumpbox.name)]",
+                            "properties": {
+                                "primary": true
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2018-06-01",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[variables('net').nic.nfs.name]"
+            ],
+            "name": "[variables('vm').nfs.name]",
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('vm').nfs.size]"
+                },
+                "osProfile": {
+                    "computerName": "[variables('vm').nfs.hostname]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": true,
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                                    "keyData": "[parameters('sshKey')]"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[variables('vm').nfs.image.publisher]",
+                        "offer": "[variables('vm').nfs.image.offer]",
+                        "sku": "[variables('vm').nfs.image.sku]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "FromImage"
+                    },
+                    "dataDisks": [
+                        {
+                            "lun": 0,
+                            "diskSizeGB": "[parameters('nfsDiskSize')]",
+                            "createOption": "Empty",
+                            "caching": "None",
+                            "managedDisk": {
+                                "storageAccountType": "Premium_LRS"
+                            }
+                        }
+                    ]
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('net').nic.nfs.name)]"
+                        }
+                    ]
+                }
+            },
+            "resources": [
+                {
+                    "type": "extensions",
+                    "apiVersion": "2018-06-01",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[variables('vm').nfs.name]"
+                    ],
+                    "name": "script",
+                    "properties": {
+                        "publisher": "Microsoft.Azure.Extensions",
+                        "type": "CustomScript",
+                        "typeHandlerVersion": "2.0",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {
+                            "fileUris": "[variables('vm').bbs.scripts]",
+                            "commandToExecute": "bash install.sh nfs"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "apiVersion": "2018-06-01",
+            "location": "[parameters('location')]",
+            "tags": "[union(variables('tags'),variables('vm').bbs.hazelcastTag)]",
+            "dependsOn": [
+                "[variables('net').vnet.name]",
+                "[variables('sql').database.name]",
+                "[variables('vm').nfs.name]",
+                "[variables('net').lb.name]",
+                "[variables('elasticsearch').name]"
+            ],
+            "name": "[variables('vm').bbs.name]",
+            "sku": {
+                "name": "[variables('vm').bbs.size]",
+                "capacity": "[variables('vm').bbs.count]"
+            },
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "upgradePolicy": {
+                    "mode": "Automatic"
+                },
+                "overprovision": false,
+                "virtualMachineProfile": {
+                    "osProfile": {
+                        "computerNamePrefix": "[variables('vm').bbs.hostname]",
+                        "adminUsername": "[parameters('adminUsername')]",
+                        "linuxConfiguration": {
+                            "disablePasswordAuthentication": true,
+                            "ssh": {
+                                "publicKeys": [
+                                    {
+                                        "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                                        "keyData": "[parameters('sshKey')]"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "storageProfile": {
+                        "imageReference": {
+                            "publisher": "[variables('vm').bbs.image.publisher]",
+                            "offer": "[variables('vm').bbs.image.offer]",
+                            "sku": "[variables('vm').bbs.image.sku]",
+                            "version": "latest"
+                        },
+                        "osDisk": {
+                            "createOption": "FromImage"
+                        },
+                        "dataDisks": [
+                            {
+                                "lun": 0,
+                                "diskSizeGB": "[variables('vm').bbs.storage.size]",
+                                "createOption": "Empty",
+                                "caching": "[variables('vm').bbs.storage.caching]",
+                                "managedDisk": {
+                                    "storageAccountType": "[variables('vm').bbs.storage.type]"
+                                }
+                            }
+                        ]
+                    },
+                    "networkProfile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "[concat(variables('namespace'), variables('vm').bbs.hostname, '-nic')]",
+                                "properties": {
+                                    "primary": true,
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "[concat(variables('namespace'), variables('vm').bbs.hostname, '-ipconfig')]",
+                                            "properties": {
+                                                "subnet": {
+                                                    "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('net').vnet.name), '/subnets/', variables('net').subnets.bbs.name)]"
+                                                },
+                                                "applicationGatewayBackendAddressPools": [
+                                                    {
+                                                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('net').appGw.name), '/backendAddressPools/', variables('net').appGw.names.bend)]"
+                                                    }
+                                                ],
+                                                "loadBalancerBackendAddressPools": [
+                                                    {
+                                                        "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('net').lb.name), '/backendAddressPools/', variables('net').lb.names.bendGit)]"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            "resources": [
+                {
+                    "name": "[concat(variables('vm').bbs.name, '-extension')]",
+                    "type": "extensions",
+                    "location": "[parameters('location')]",
+                    "apiVersion": "2018-06-01",
+                    "dependsOn": [
+                        "[variables('vm').bbs.name]",
+                        "[variables('vm').bbs.role.name]"
+                    ],
+                    "properties": {
+                        "publisher": "Microsoft.Azure.Extensions",
+                        "type": "CustomScript",
+                        "typeHandlerVersion": "2.0",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {
+                            "fileUris": "[variables('vm').bbs.scripts]",
+                            "commandToExecute": "[concat(variables('data').SQL, variables('data').BBS, ' SQL_HOST=\"', reference(variables('sql').server.name).fullyQualifiedDomainName, '\"', ' NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' BBS_URL=\"', 'http://', reference(variables('net').appGw.names.publicIP).dnsSettings.fqdn, '\"', ' BBS_SSH_URL=\"', 'ssh://', reference(variables('net').lb.names.publicIP).dnsSettings.fqdn, ':7999', '\"', ' bash install.sh bbs')]"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2017-05-01",
+            "dependsOn": [
+                "[variables('vm').bbs.name]"
+            ],
+            "name": "[guid(resourceGroup().id)]",
+            "properties": {
+                "roleDefinitionId": "[variables('reader-role')]",
+                "principalId": "[reference(concat(resourceId('Microsoft.Compute/virtualMachineScaleSets/', variables('vm').bbs.name),'/providers/Microsoft.ManagedIdentity/Identities/default'),'2015-08-31-PREVIEW').principalId]",
+                "scope": "[resourceGroup().id]"
+            }
+        }
+    ],
+    "outputs": {
+        "bitbucket": {
+            "type": "string",
+            "value": "[reference(variables('net').appGw.names.publicIP).dnsSettings.fqdn]"
+        },
+        "ssh": {
+            "type": "string",
+            "value": "[concat('ssh ', parameters('adminUsername'), '@', reference(variables('net').lb.names.publicIP).dnsSettings.fqdn)]"
+        },
+        "jumpbox": {
+            "type": "string",
+            "value": "[reference(variables('net').lb.names.publicIP).dnsSettings.fqdn]"
+        },
+        "nfs": {
+            "type": "string",
+            "value": "[reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress]"
+        },
+        "cmd": {
+            "type": "string",
+            "value": "[concat(variables('data').SQL, ' NFS_SERVER_IP=\"', reference(variables('net').nic.nfs.name).ipConfigurations[0].properties.privateIPAddress, '\"', ' bash install.sh bbs')]"
+        }
+    }
+}

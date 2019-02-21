@@ -1,0 +1,512 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/0.1.2-preview/CreateUIDefinition.MultiVm.json#",
+    "handler": "Microsoft.Compute.MultiVm",
+    "version": "0.1.2-preview",
+    "parameters": {
+        "basics": [],
+        "steps": [
+            {
+                "name": "administrator",
+                "bladeTitle": "Bitbucket Administration Account",
+                "label": "Create a Bitbucket administrator account. The Bitbucket instance will be setup with an evaluation license.",
+                "subLabel": {
+                    "preValidation": "Provide Bitbucket administrator account details",
+                    "postValidation": "Done"
+                },
+                "elements": [
+                    {
+                        "name": "email",
+                        "label": "Email",
+                        "type": "Microsoft.Common.TextBox",
+                        "constraints": {
+                            "required": true,
+                            "regex": "[^@]+@[^@]+\\.[A-z]+",
+                            "validationMessage": "You must specify an email address"
+                        }
+                    },
+                    {
+                        "name": "fullname",
+                        "label": "Full name",
+                        "type": "Microsoft.Common.TextBox",
+                        "constraints": {
+                            "required": true,
+                            "regex": ".+",
+                            "validationMessage": "You must specify a full name"
+                        }
+                    },
+                    {
+                        "name": "username",
+                        "label": "Username",
+                        "toolTip": "A Bitbucket administrator account with this username will be automatically created during deployment. Login using this username to continue customizing your Bitbucket instance.",
+                        "type": "Microsoft.Compute.UserNameTextBox",
+                        "constraints": {
+                            "required": true,
+                            "validationMessage": "You must specify a username"
+                        },
+                        "osPlatform": "Linux"
+                    },
+                    {
+                        "name": "password",
+                        "toolTip": "The password for the Bitbucket administrator account.",
+                        "label": {
+                            "password": "Password",
+                            "confirmPassword": "Confirm password"
+                        },
+                        "type": "Microsoft.Common.PasswordBox",
+                        "constraints": {
+                            "required": true,
+                            "validationMessage": "You must specify a password"
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "cluster",
+                "label": "Bitbucket cluster",
+                "bladeTitle": "Cluster configuration",
+                "subLabel": {
+                    "preValidation": "Provide cluster configuration",
+                    "postValidation": "Done"
+                },
+                "elements": [
+                    {
+                        "name": "nodeCount",
+                        "type": "Microsoft.Common.DropDown",
+                        "label": "Node count",
+                        "toolTip": "Pick how many Bitbucket nodes to run in the cluster.",
+                        "defaultValue": "2",
+                        "constraints": {
+                            "allowedValues": [
+                                {
+                                    "label": "1",
+                                    "value": "1"
+                                },
+                                {
+                                    "label": "2",
+                                    "value": "2"
+                                },
+                                {
+                                    "label": "3",
+                                    "value": "3"
+                                },
+                                {
+                                    "label": "4",
+                                    "value": "4"
+                                },
+                                {
+                                    "label": "5",
+                                    "value": "5"
+                                },
+                                {
+                                    "label": "6",
+                                    "value": "6"
+                                },
+                                {
+                                    "label": "7",
+                                    "value": "7"
+                                },
+                                {
+                                    "label": "8",
+                                    "value": "8"
+                                }
+                            ],
+                            "required": true
+                        },
+                        "visible": true
+                    },
+                    {
+                        "name": "nodeSize",
+                        "label": "Node size",
+                        "type": "Microsoft.Compute.SizeSelector",
+                        "toolTip": "Pick the virtual machine size to use for each node.",
+                        "recommendedSizes": [
+                            "Standard_E8-4s_v3"
+                        ],
+                        "constraints": {
+                            "excludedSizes": [
+                                "Standard_B1s",
+                                "Standard_B1ms"
+                            ]
+                        },
+                        "osPlatform": "Linux",
+                        "imageReference": {
+                            "publisher": "Canonical",
+                            "offer": "UbuntuServer",
+                            "sku": "16.04-LTS"
+                        },
+                        "count": "[steps('cluster').nodeCount]"
+                    }
+                ]
+            },
+            {
+                "name": "fileServer",
+                "label": "File server",
+                "bladeTitle": "File server configuration",
+                "subLabel": {
+                    "preValidation": "Provide NFS configuration",
+                    "postValidation": "Done"
+                },
+                "elements": [
+                    {
+                        "name": "nfsDiskSize",
+                        "type": "Microsoft.Common.DropDown",
+                        "label": "Disk size",
+                        "toolTip": "Pick size of Bitbucket home directory in GB.",
+                        "defaultValue": "128",
+                        "constraints": {
+                            "allowedValues": [
+                                {
+                                    "label": "128",
+                                    "value": "128"
+                                },
+                                {
+                                    "label": "256",
+                                    "value": "256"
+                                },
+                                {
+                                    "label": "512",
+                                    "value": "512"
+                                },
+                                {
+                                    "label": "1024",
+                                    "value": "1024"
+                                },
+                                {
+                                    "label": "2048",
+                                    "value": "2048"
+                                },
+                                {
+                                    "label": "4095",
+                                    "value": "4095"
+                                }
+                            ],
+                            "required": true
+                        },
+                        "visible": true
+                    },
+                    {
+                        "name": "nfsVMSize",
+                        "label": "File server size",
+                        "type": "Microsoft.Compute.SizeSelector",
+                        "toolTip": "Pick the virtual machine size to use for the file server.",
+                        "recommendedSizes": [
+                            "Standard_L4s",
+                            "Standard_L8s",
+                            "Standard_B1s",
+                            "Standard_D8s_v3",
+                            "Standard_DS4_v2",
+                            "Standard_E8-4s_v3"
+                        ],
+                        "constraints": {
+                            "allowedSizes": [
+                                "Standard_DS4_v2",
+                                "Standard_D8s_v3",
+                                "Standard_D16_v3",
+                                "Standard_L4s",
+                                "Standard_L8s",
+                                "Standard_L16s",
+                                "Standard_L32s",
+                                "Standard_E8-4s_v3",
+                                "Standard_E16s_v3"
+                            ]
+                        },
+                        "osPlatform": "Linux",
+                        "imageReference": {
+                            "publisher": "Canonical",
+                            "offer": "UbuntuServer",
+                            "sku": "16.04-LTS"
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "database",
+                "label": "Database",
+                "bladeTitle": "Database configuration",
+                "subLabel": {
+                    "preValidation": "Provide database configuration",
+                    "postValidation": "Done"
+                },
+                "elements": [
+                    {
+                        "name": "username",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Username",
+                        "constraints": {
+                            "required": true,
+                            "regex": "^(?!admin$|administrator$|sa$|root$|dbmanager$|loginmanager$|dbo$|guest$|information_schema$|sys$|db_accessadmin$|db_backupoperator$|db_datareader$|db_datawriter$|db_ddladmin$|db_denydatareader$|db_denydatawriter$|db_owner$|db_securityadmin$|public$)[a-zA-Z][a-zA-Z0-9]{1,9}$",
+                            "validationMessage": "This username needs to be a SQL Identifier - it can't be a typical username like admin, adminstrator, sa, root, dbmanager, loginmanager, dbo, guest, or public. It can't begin with numbers or symbols, and can't include whitespaces, unicode characters, or non-alphabetic characters."
+                        }
+                    },
+                    {
+                        "name": "password",
+                        "type": "Microsoft.Common.PasswordBox",
+                        "label": {
+                            "password": "Password",
+                            "confirmPassword": "Confirm password"
+                        },
+                        "constraints": {
+                            "required": true,
+                            "regex": "^(?=.*[A-Z])(?=.*[!@#$%^&*-])(?=.*[0-9])(?=.*[a-z]).{12,16}$",
+                            "validationMessage": "This password must be between 12 and 16 characters long, and must contain at least one uppercase letter, one lowercase letter, one number (0-9), and one non-alphanumeric character (!, $, #, %, ^, &, * or -)."
+                        }
+                    },
+                    {
+                        "name": "sqlTier",
+                        "type": "Microsoft.Common.DropDown",
+                        "label": "Azure SQL tier",
+                        "toolTip": "Pick the Azure SQL tier to run the database",
+                        "defaultValue": "P2",
+                        "constraints": {
+                            "allowedValues": [
+                                {
+                                    "label": "Basic",
+                                    "value": "Basic"
+                                },
+                                {
+                                    "label": "S0",
+                                    "value": "S0"
+                                },
+                                {
+                                    "label": "S1",
+                                    "value": "S1"
+                                },
+                                {
+                                    "label": "S2",
+                                    "value": "S2"
+                                },
+                                {
+                                    "label": "S3",
+                                    "value": "S3"
+                                },
+                                {
+                                    "label": "S4",
+                                    "value": "S4"
+                                },
+                                {
+                                    "label": "S6",
+                                    "value": "S6"
+                                },
+                                {
+                                    "label": "S7",
+                                    "value": "S7"
+                                },
+                                {
+                                    "label": "S9",
+                                    "value": "S9"
+                                },
+                                {
+                                    "label": "S12",
+                                    "value": "S12"
+                                },
+                                {
+                                    "label": "P1",
+                                    "value": "P1"
+                                },
+                                {
+                                    "label": "P2",
+                                    "value": "P2"
+                                },
+                                {
+                                    "label": "P4",
+                                    "value": "P4"
+                                },
+                                {
+                                    "label": "P6",
+                                    "value": "P6"
+                                },
+                                {
+                                    "label": "P11",
+                                    "value": "P11"
+                                },
+                                {
+                                    "label": "P15",
+                                    "value": "P15"
+                                }
+                            ],
+                            "required": true
+                        },
+                        "visible": true
+                    }
+                ]
+            },
+            {
+                "name": "elasticsearch",
+                "label": "Elasticsearch",
+                "bladeTitle": "Elasticsearch configuration",
+                "subLabel": {
+                    "preValidation": "Provide Elasticsearch configuration",
+                    "postValidation": "Done"
+                },
+                "elements": [
+                    {
+                        "name": "esDiskSize",
+                        "type": "Microsoft.Common.DropDown",
+                        "label": "Disk size",
+                        "toolTip": "Pick size for Elasticsearch data disk in GB.",
+                        "defaultValue": "128",
+                        "constraints": {
+                            "allowedValues": [
+                                {
+                                    "label": "128",
+                                    "value": "128"
+                                },
+                                {
+                                    "label": "256",
+                                    "value": "256"
+                                },
+                                {
+                                    "label": "512",
+                                    "value": "512"
+                                },
+                                {
+                                    "label": "1024",
+                                    "value": "1024"
+                                },
+                                {
+                                    "label": "2048",
+                                    "value": "2048"
+                                },
+                                {
+                                    "label": "4095",
+                                    "value": "4095"
+                                }
+                            ],
+                            "required": true
+                        },
+                        "visible": true
+                    },
+                    {
+                        "name": "esNodeCount",
+                        "type": "Microsoft.Common.DropDown",
+                        "label": "Node count",
+                        "toolTip": "Pick how many Elasticsearch data nodes to be deployed.",
+                        "defaultValue": "1",
+                        "constraints": {
+                            "allowedValues": [
+                                {
+                                    "label": "1",
+                                    "value": "1"
+                                },
+                                {
+                                    "label": "2",
+                                    "value": "2"
+                                },
+                                {
+                                    "label": "3",
+                                    "value": "3"
+                                },
+                                {
+                                    "label": "4",
+                                    "value": "4"
+                                },
+                                {
+                                    "label": "5",
+                                    "value": "5"
+                                },
+                                {
+                                    "label": "6",
+                                    "value": "6"
+                                },
+                                {
+                                    "label": "7",
+                                    "value": "7"
+                                },
+                                {
+                                    "label": "8",
+                                    "value": "8"
+                                }
+                            ],
+                            "required": true
+                        },
+                        "visible": true
+                    },
+                    {
+                        "name": "esVMSize",
+                        "label": "Elasticsearch instance size",
+                        "type": "Microsoft.Compute.SizeSelector",
+                        "toolTip": "Pick the virtual machine size to use for the Elasticsearch server.",
+                        "recommendedSizes": [
+                            "Standard_E8-4s_v3",
+                            "Standard_L4s",
+                            "Standard_L8s",
+                            "Standard_B1s",
+                            "Standard_D8s_v3",
+                            "Standard_DS4_v2"
+                        ],
+                        "osPlatform": "Linux",
+                        "imageReference": {
+                            "publisher": "Canonical",
+                            "offer": "UbuntuServer",
+                            "sku": "16.04-LTS"
+                        },
+                        "count": "[steps('elasticsearch').esNodeCount]"
+                    }
+                ]
+            },
+            {
+                "name": "jumpbox",
+                "bladeTitle": "Jumpbox access",
+                "label": "Set up jumpbox SSH access",
+                "subLabel": {
+                    "preValidation": "Provide the configuration for jumpbox SSH access",
+                    "postValidation": "Done"
+                },
+                "elements": [
+                    {
+                        "name": "username",
+                        "label": "Username",
+                        "type": "Microsoft.Compute.UserNameTextBox",
+                        "toolTip": "This will be the username used to SSH into the jumpbox from your own machine.",
+                        "constraints": {
+                            "required": true,
+                            "validationMessage": "You must specify an SSH username"
+                        },
+                        "osPlatform": "Linux"
+                    },
+                    {
+                        "name": "credentials",
+                        "type": "Microsoft.Compute.CredentialsCombo",
+                        "osPlatform": "Linux",
+                        "label": {
+                            "authenticationType": "",
+                            "password": "",
+                            "confirmPassword": "",
+                            "sshPublicKey": "Public key"
+                        },
+                        "toolTip": {
+                            "authenticationType": "",
+                            "password": "",
+                            "sshPublicKey": "This will be the public key used to SSH into the jumpbox from your own machine."
+                        },
+                        "options": {
+                            "hidePassword": true
+                        },
+                        "constraints": {
+                            "required": true
+                        }
+                    }
+                ]
+            }
+        ],
+        "outputs": {
+            "location": "[location()]",
+            "bitbucketAdminEmail": "[steps('administrator').email]",
+            "bitbucketAdminName": "[steps('administrator').fullname]",
+            "bitbucketAdminUsername": "[steps('administrator').username]",
+            "bitbucketAdminPassword": "[steps('administrator').password]",
+            "bbsNodeCount": "[int(steps('cluster').nodeCount)]",
+            "bbsSize": "[steps('cluster').nodeSize]",
+            "nfsDiskSize": "[int(steps('fileServer').nfsDiskSize)]",
+            "nfsVmSize": "[steps('fileServer').nfsVMSize]",
+            "azureSqlUsername": "[steps('database').username]",
+            "azureSqlPassword": "[steps('database').password]",
+            "azureSqlTier": "[steps('database').sqlTier]",
+            "esDataDiskSize": "[int(steps('elasticsearch').esDiskSize)]",
+            "esNodeSize": "[steps('elasticsearch').esVMSize]",
+            "esDataNodeCount": "[int(steps('elasticsearch').esNodeCount)]",
+            "adminUsername": "[steps('jumpbox').username]",
+            "sshKey": "[steps('jumpbox').credentials.sshPublicKey]"
+        }
+    }
+}
