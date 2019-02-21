@@ -102,7 +102,7 @@
         },
         "bbsSize": {
             "type": "string",
-            "defaultValue": "Standard_E8-2s_v3",
+            "defaultValue": "Standard_D1_v2",
             "metadata": {
                 "description": "The size of Bitbucket Server nodes vm"
             }
@@ -324,7 +324,7 @@
         },
         "esNodeSize": {
             "type": "string",
-            "defaultValue": "Standard_E8-2s_v3",
+            "defaultValue": "Standard_D1_v2",
             "metadata": {
                 "description": "The size of Elasticsearch nodes VM."
             }
