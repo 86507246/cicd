@@ -399,7 +399,7 @@ function bbs_prepare_properties {
 
     cat <<EOT >> "${file_temp}"
 jdbc.driver=com.microsoft.sqlserver.jdbc.SQLServerDriver
-jdbc.url=jdbc:sqlserver://${dbhost}:1433;database=bitbucket-db;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+jdbc.url=jdbc:sqlserver://${dbhost}:1433;database=bitbucket-db;encrypt=true;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
 jdbc.user=${dbuser}
 jdbc.password=${dbpass}
 
