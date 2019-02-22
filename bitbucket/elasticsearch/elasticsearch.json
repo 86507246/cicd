@@ -86,7 +86,7 @@
         },
         "vmSizeDataNodes": {
             "type": "string",
-            "defaultValue": "Standard_D1_v2",
+            "defaultValue": "Standard_D4s_v3",
             "metadata": {
                 "description": "Size of the Elasticsearch data nodes"
             }
@@ -174,7 +174,7 @@
             "vmDataNodeStorageAccountType": "Standard_LRS",
             "vmHostNamePrefix": "[parameters('namespace')]",
             "vmSizeDataNodes": "[parameters('vmSizeDataNodes')]",
-            "vmSizeKibana": "Standard_A1_v2",
+            "vmSizeKibana": "Standard_A6",
             "vNetLoadBalancerIp": ""
         },
         "networkSettings": {
