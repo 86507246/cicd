@@ -308,7 +308,7 @@
         },
         "clusterVmSize": {
             "type": "string",
-            "defaultValue": "Standard_DS3_v2",
+            "defaultValue": "Standard_D4s_v3",
             "allowedValues": [
                 "Standard_D4s_v3",
                 "Standard_D8s_v3",
@@ -433,7 +433,7 @@
         },
         "jumpboxVmSize": {
             "type": "string",
-            "defaultValue": "Standard_B1s",
+            "defaultValue": "Standard_A1",
             "metadata": {
                 "description": "The size of the virtual machine to use for the Jumpbox. Note that if the 'confClusterSize' parameter is used this value will be ignored."
             }
@@ -531,11 +531,11 @@
                 "enterprise": 1024000
             },
             "clusterVmSize": {
-                "trial": "Standard_DS2_v2",
-                "small": "Standard_DS3_v2",
-                "medium": "Standard_DS3_v2",
-                "large": "Standard_DS4_v2",
-                "enterprise": "Standard_DS5_v2"
+                "trial": "Standard_D4s_v3",
+                "small": "Standard_D4s_v3",
+                "medium": "Standard_D4s_v3",
+                "large": "Standard_D4s_v3",
+                "enterprise": "Standard_D8s_v3"
             },
             "clusterSize": {
                 "trial": 1,
@@ -545,11 +545,11 @@
                 "enterprise": 6
             },
             "jumpboxVmSize": {
-                "trial": "Standard_B1s",
-                "small": "Standard_B1s",
-                "medium": "Standard_B1s",
-                "large": "Standard_B1s",
-                "enterprise": "Standard_B1s"
+                "trial": "Standard_A1",
+                "small": "Standard_A1",
+                "medium": "Standard_A1",
+                "large": "Standard_A1",
+                "enterprise": "Standard_A1"
             },
             "workspaceSku": {
                 "trial": "Free",

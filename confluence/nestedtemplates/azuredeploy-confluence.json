@@ -311,7 +311,7 @@
         },
         "clusterVmSize": {
             "type": "string",
-            "defaultValue": "Standard_DS3_v2",
+            "defaultValue": "Standard_D4s_v3",
             "allowedValues" : [
                 "Standard_D4s_v3",
                 "Standard_D8s_v3",

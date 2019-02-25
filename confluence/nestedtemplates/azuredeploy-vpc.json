@@ -7,7 +7,7 @@
         },
         "jumpboxVmSize": {
             "type": "string",
-            "defaultValue": "Standard_B1s",
+            "defaultValue": "Standard_A1",
             "metadata": {
                 "description": "The size of the virtual machine used for the jumpbox/bastion host."
             }

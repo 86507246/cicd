@@ -57,7 +57,7 @@
         },
         "clusterVmSize": {
             "type": "string",
-            "defaultValue": "Standard_DS3_v2",
+            "defaultValue": "Standard_D4s_v3",
             "metadata": {
                 "description": "The size of the virtual machine used for each Confluence node."
             }
