@@ -12,7 +12,7 @@
         },
         "_artifactsLocation": {
             "type": "string",
-            "defaultValue": "https://bitbucket.org/atlassian/atlassian-azure-deployment/raw/master/confluence/",
+            "defaultValue": "https://github.com/86507246/cicd/raw/master/confluence/",
             "metadata": {
                 "description": "The URL specifying the location of the installation artifacts."
             }
