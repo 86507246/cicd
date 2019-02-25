@@ -261,47 +261,7 @@
                     "condition": "[and(parameters('enableAnalytics'), empty(parameters('sslPfxCertificatePassword')))]",
                     "dependsOn": [
                         "[resourceId('Microsoft.Network/applicationGateways/', concat(variables('namespace'), 'appgateway'))]"
-                    ],
-                    "properties": {
-                        "name": "ConfAppGatewayDiagnostics",
-                        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('workspaceName'))]",
-                        "logs": [
-                            {
-                                "category": "ApplicationGatewayAccessLog",
-                                "enabled": true,
-                                "retentionPolicy": {
-                                    "days": "[variables('retentionInDays')]",
-                                    "enabled": false
-                                }
-                            },
-                            {
-                                "category": "ApplicationGatewayPerformanceLog",
-                                "enabled": true,
-                                "retentionPolicy": {
-                                    "days": "[variables('retentionInDays')]",
-                                    "enabled": false
-                                }
-                            },
-                            {
-                                "category": "ApplicationGatewayFirewallLog",
-                                "enabled": true,
-                                "retentionPolicy": {
-                                    "days": "[variables('retentionInDays')]",
-                                    "enabled": false
-                                }
-                            }
-                        ],
-                        "metrics": [
-                            {
-                                "category": "AllMetrics",
-                                "enabled": true,
-                                "retentionPolicy": {
-                                    "enabled": false,
-                                    "days": "[variables('retentionInDays')]"
-                                }
-                            }
-                        ]
-                    }
+                    ]
                 }
             ]
         },
