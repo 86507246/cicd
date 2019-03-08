@@ -1,0 +1,359 @@
+---
+# Create network securit group
+  - name: Create bitbucket app nsg 
+    azure_rm_securitygroup:
+      name: "{{ app_nsg_name }}"
+      resource_group: "{{ resource_group_name }}"
+      rules:
+        - name: ssh
+          protocol: Tcp
+          source_port_range: "*"
+          destination_port_range: 22
+          source_address_prefix: "{{ jumpbox_ip }}"
+          destination_address_prefix: "{{ app_subnet.address_prefix }}"
+          access: Allow
+          priority: 100
+          direction: Inbound
+        - name: allowAppGateway
+          protocol: Tcp
+          source_port_range: "*"
+          destination_port_range: 7990
+          source_address_prefix: "{{ appgw_ip }}"
+          destination_address_prefix: "{{ app_subnet.address_prefix }}"
+          access: Allow
+          priority: 101
+          direction: Inbound
+        - name: allowGitSSH
+          protocol: Tcp
+          source_port_range: "*"
+          destination_port_range: 7999
+          source_address_prefix: Internet
+          destination_address_prefix: "{{ app_subnet.address_prefix }}"
+          access: Allow
+          priority: 101
+          direction: Inbound
+        - name: allowNFS
+          protocol: "*"
+          source_port_range: "*"
+          destination_port_range: 111
+          source_address_prefix: "{{ nfs_subnet.address_prefix }}"
+          destination_address_prefix: "{{ app_subnet.address_prefix }}"
+          access: Allow
+          priority: 200
+          direction: Inbound
+        - name: allowHazelcast
+          protocol: Tcp
+          source_port_range: "*"
+          destination_port_range: 5701
+          source_address_prefix: "{{ app_subnet.address_prefix }}"
+          destination_address_prefix: "{{ app_subnet.address_prefix }}"
+          access: Allow
+          priority: 201
+          direction: Inbound
+        - name: denyall
+          protocol: "*"
+          source_port_range: "*"
+          destination_port_range: "*"
+          source_address_prefix: "*"
+          destination_address_prefix: "*"
+          access: Deny
+          priority: 1001
+          direction: Inbound  
+
+  - name: Create bitbucket nfs nsg 
+    azure_rm_securitygroup:
+      name: "{{ nfs_nsg_name }}"
+      resource_group: "{{ resource_group_name }}"
+      rules:
+        - name: ssh
+          protocol: Tcp
+          source_port_range: "*"
+          destination_port_range: 22
+          source_address_prefix: "{{ jumpbox_ip }}"
+          destination_address_prefix: "{{ nfs_subnet.address_prefix }}"
+          access: Allow
+          priority: 100
+          direction: Inbound
+        - name: allowNFS
+          protocol: "*"
+          source_port_range: "*"
+          destination_port_range: 
+            - 111
+            - 2049
+            - 50001-50004
+          source_address_prefix: "{{ app_subnet.address_prefix }}"
+          destination_address_prefix: "{{ nfs_subnet.address_prefix }}"
+          access: Allow
+          priority: 200
+          direction: Inbound
+        - name: denyall
+          protocol: "*"
+          source_port_range: "*"
+          destination_port_range: "*"
+          source_address_prefix: "*"
+          destination_address_prefix: "*"
+          access: Deny
+          priority: 1001
+          direction: Inbound
+    
+  - name: Create bitbucket db nsg 
+    azure_rm_securitygroup:
+      name: "{{ db_nsg_name }}"
+      resource_group: "{{ resource_group_name }}"
+      rules:
+        - name: ssh
+          protocol: Tcp
+          source_port_range: "*"
+          destination_port_range: 22
+          source_address_prefix: "{{ jumpbox_ip }}"
+          destination_address_prefix: "{{ db_subnet.address_prefix }}"
+          access: Allow
+          priority: 100
+          direction: Inbound
+        - name: allowDB
+          protocol: "*"
+          source_port_range: "*"
+          destination_port_range: 5432
+          source_address_prefix: "{{ app_subnet.address_prefix }}"
+          destination_address_prefix: "{{ db_subnet.address_prefix }}"
+          access: Allow
+          priority: 200
+          direction: Inbound
+        - name: denyall
+          protocol: "*"
+          source_port_range: "*"
+          destination_port_range: "*"
+          source_address_prefix: "*"
+          destination_address_prefix: "*"
+          access: Deny
+          priority: 1001
+          direction: Inbound
+  
+  - name: Create bitbucket elastic nsg 
+    azure_rm_securitygroup:
+      name: "{{ elastic_nsg_name }}"
+      resource_group: "{{ resource_group_name }}"
+      rules:
+        - name: ssh
+          protocol: Tcp
+          source_port_range: "*"
+          destination_port_range: 22
+          source_address_prefix: "{{ jumpbox_ip }}"
+          destination_address_prefix: "{{ elastic_subnet.address_prefix }}"
+          access: Allow
+          priority: 100
+          direction: Inbound
+        - name: allowElastic
+          protocol: "*"
+          source_port_range: "*"
+          destination_port_range: 9200
+          source_address_prefix: "{{ app_subnet.address_prefix }}"
+          destination_address_prefix: "{{ elastic_subnet.address_prefix }}"
+          access: Allow
+          priority: 200
+          direction: Inbound
+        - name: denyall
+          protocol: "*"
+          source_port_range: "*"
+          destination_port_range: "*"
+          source_address_prefix: "*"
+          destination_address_prefix: "*"
+          access: Deny
+          priority: 1001
+          direction: Inbound
+    
+# Create app subnet
+  - name: Create bitbucket app subnet
+    azure_rm_subnet:
+      name: "{{ app_subnet.name }}"
+      resource_group: "{{ resource_group_name }}"
+      address_prefix_cidr: "{{ app_subnet.address_prefix }}"
+      virtual_network_name: "{{ vnet_name }}"
+      security_group: "{{ app_nsg_name }}"
+  
+  - name: Create bitbucket nfs subnet
+    azure_rm_subnet:
+      name: "{{ nfs_subnet.name }}"
+      resource_group: "{{ resource_group_name }}"
+      address_prefix_cidr: "{{ nfs_subnet.address_prefix }}"
+      virtual_network_name: "{{ vnet_name }}"
+      security_group: "{{ nfs_nsg_name }}"
+      
+  - name: Create bitbucket db subnet
+    azure_rm_subnet:
+      name: "{{ db_subnet.name }}"
+      resource_group: "{{ resource_group_name }}"
+      address_prefix_cidr: "{{ db_subnet.address_prefix }}"
+      virtual_network_name: "{{ vnet_name }}"
+      security_group: "{{ nfs_nsg_name }}"
+      
+  - name: Create bitbucket elastic subnet
+    azure_rm_subnet:
+      name: "{{ elastic_subnet.name }}"
+      resource_group: "{{ resource_group_name }}"
+      address_prefix_cidr: "{{ elastic_subnet.address_prefix }}"
+      virtual_network_name: "{{ vnet_name }}"
+      security_group: "{{ nfs_nsg_name }}"
+
+#Create network interface card
+  - name: Create bitbucket app NIC
+    azure_rm_networkinterface:
+      name: "{{ item.value.app_nic }}"
+      resource_group: "{{ resource_group_name }}"
+      virtual_network: "{{ vnet_name }}"
+      subnet: "{{ app_subnet.name }}"
+      ip_configurations: 
+        - name: bitbucket_ipconfig
+          private_ip_address: "{{ item.value.app_ipaddress }}"
+          private_ip_allocation_method: Static
+          primary: yes
+          load_balancer_backend_address_pools: 
+            - name: "{{ loadbalancer_name }}"
+              load_balancer: "{{ loadbalancer_bend_pool }}"
+      create_with_security_group: no
+    with_dict: "{{ apps }}"
+  
+  - name: Create bitbucket nfs NIC
+    azure_rm_networkinterface:
+      name: "{{ nfs_nic }}"
+      resource_group: "{{ resource_group_name }}"
+      virtual_network: "{{ vnet_name }}"
+      subnet: "{{ nfs_subnet.name }}"
+      ip_configurations: 
+        - name: bitbucket_ipconfig
+          private_ip_address: "{{ nfs_ipaddress }}"
+          private_ip_allocation_method: Static
+          primary: yes
+      create_with_security_group: no
+      
+  - name: Create bitbucket db NIC
+    azure_rm_networkinterface:
+      name: "{{ db_nic }}"
+      resource_group: "{{ resource_group_name }}"
+      virtual_network: "{{ vnet_name }}"
+      subnet: "{{ nfs_subnet.name }}"
+      ip_configurations: 
+        - name: bitbucket_ipconfig
+          private_ip_address: "{{ db_ipaddress }}"
+          private_ip_allocation_method: Static
+          primary: yes
+      create_with_security_group: no
+  
+  - name: Create bitbucket elastic NIC
+    azure_rm_networkinterface:
+      name: "{{ elastic_nic }}"
+      resource_group: "{{ resource_group_name }}"
+      virtual_network: "{{ vnet_name }}"
+      subnet: "{{ nfs_subnet.name }}"
+      ip_configurations: 
+        - name: bitbucket_ipconfig
+          private_ip_address: "{{ elastic_ipaddress }}"
+          private_ip_allocation_method: Static
+          primary: yes
+      create_with_security_group: no
+  
+#Create VM
+  - name: Create bitbucket app VM
+    azure_rm_virtualmachine:
+      name: "{{ item.value.app_vm_name }}"
+      resource_group: "{{ resource_group_name }}"
+      admin_username: "{{ app_vm_admin_user }}"
+      ssh_password_enabled: false
+      ssh_public_keys:
+        - path: "{{ vm_sshkey_path }}"
+          key_data: "{{ vm_sshkey_date }}"
+      network_interfaces: "{{ item.value.app_nic }}"
+      image:
+        offer: "{{ vm_image_offer }}"
+        publisher: "{{ vm_image_publisher }}"
+        sku: "{{ vm_image_sku }}"
+        version: latest
+      vm_size: "{{ app_vm_size }}"
+      managed_disk_type: Standard_LRS
+    with_dict: "{{ apps }}"
+  
+  - name: Create bitbucket nfs VM
+    azure_rm_virtualmachine:
+      name: "{{ nfs_vm_name }}"
+      resource_group: "{{ resource_group_name }}"
+      admin_username: "{{ nfs_vm_admin_user }}"
+      ssh_password_enabled: false
+      ssh_public_keys:
+        - path: "{{ vm_sshkey_path }}"
+          key_data: "{{ vm_sshkey_date }}"
+      network_interfaces: "{{ nfs_nic }}"
+      image:
+        offer: "{{ vm_image_offer }}"
+        publisher: "{{ vm_image_publisher }}"
+        sku: "{{ vm_image_sku }}"
+        version: latest
+      vm_size: "{{ nfs_vm_size }}"
+      managed_disk_type: Standard_LRS
+      data_disks:
+        - lun: 0
+          disk_size_gb: 160
+          managed_disk_type: Premium_LRS
+          caching: ReadWrite
+
+  - name: Create bitbucket db VM
+    azure_rm_virtualmachine:
+      name: "{{ db_vm_name }}"
+      resource_group: "{{ resource_group_name }}"
+      admin_username: "{{ db_vm_admin_user }}"
+      ssh_password_enabled: false
+      ssh_public_keys:
+        - path: "{{ vm_sshkey_path }}"
+          key_data: "{{ vm_sshkey_date }}"
+      network_interfaces: "{{ db_nic }}"
+      image:
+        offer: "{{ vm_image_offer }}"
+        publisher: "{{ vm_image_publisher }}"
+        sku: "{{ vm_image_sku }}"
+        version: latest
+      vm_size: "{{ db_vm_size }}"
+      managed_disk_type: Standard_LRS
+      data_disks:
+        - lun: 0
+          disk_size_gb: 160
+          managed_disk_type: Premium_LRS
+          caching: ReadWrite
+  
+  - name: Create bitbucket elastic VM
+    azure_rm_virtualmachine:
+      name: "{{ elastic_vm_name }}"
+      resource_group: "{{ resource_group_name }}"
+      admin_username: "{{ elastic_vm_admin_user }}"
+      ssh_password_enabled: false
+      ssh_public_keys:
+        - path: "{{ vm_sshkey_path }}"
+          key_data: "{{ vm_sshkey_date }}"
+      network_interfaces: "{{ elastic_nic }}"
+      image:
+        offer: "{{ vm_image_offer }}"
+        publisher: "{{ vm_image_publisher }}"
+        sku: "{{ vm_image_sku }}"
+        version: latest
+      vm_size: "{{ elastic_vm_size }}"
+      managed_disk_type: Standard_LRS
+      data_disks:
+        - lun: 0
+          disk_size_gb: 160
+          managed_disk_type: Premium_LRS
+          caching: ReadWrite
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

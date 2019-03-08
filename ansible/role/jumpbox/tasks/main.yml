@@ -1,0 +1,191 @@
+---
+# Create resource group
+  - name: Create resource group
+    azure_rm_resourcegroup:
+      name: "{{ resource_group_name }}"
+      location: "{{ location }}"
+      
+# Create virtual network
+  - name: Create virtual network
+    azure_rm_virtualnetwork:
+      name: "{{ vnet_name }}"
+      resource_group: "{{ resource_group_name }}"
+      address_prefixes_cidr: "{{ address }}"
+
+# Create network securit group
+  - name: Create jumpbox nsg 
+    azure_rm_securitygroup:
+      name: "{{ jumpbox_nsg_name }}"
+      resource_group: "{{ resource_group_name }}"
+      rules:
+        - name: ssh
+          protocol: Tcp
+          source_port_range: "*"
+          destination_port_range: 22
+          source_address_prefix: Internet
+          destination_address_prefix: "{{ jumpbox_subnet.address_prefix }}"
+          access: Allow
+          priority: 100
+          direction: Inbound
+        - name: denyall
+          protocol: "*"
+          source_port_range: "*"
+          destination_port_range: "*"
+          source_address_prefix: "*"
+          destination_address_prefix: "*"
+          access: Deny
+          priority: 1001
+          direction: Inbound  
+
+# Create subnet
+  - name: Create jumpbox subnet
+    azure_rm_subnet:
+      name: "{{ jumpbox_subnet.name }}"
+      resource_group: "{{ resource_group_name }}"
+      address_prefix_cidr: "{{ jumpbox_subnet.address_prefix }}"
+      virtual_network_name: "{{ vnet_name }}"
+      security_group: "{{ jumpbox_nsg_name }}"
+
+#Create public ip
+  - name: Create jump box public ip
+    azure_rm_publicipaddress:
+      name: "{{ jumpbox_public_ip }}"
+      resource_group: "{{ resource_group_name }}"
+      sku: Standard
+      allocation_method: Static
+    register: output_ip_address
+  - name: Dump public IP for VM which will be created
+    debug:
+      msg: "The lb public IP is {{ output_ip_address.state.ip_address }}."
+
+#Create load balancer for jumpbox and bitbucket SSH
+- name: Create load balancer
+    azure_rm_loadbalancer:
+      name: "{{ loadbalancer_name }}"
+      resource_group: "{{ resource_group_name }}"
+      sku: Standard
+      public_ip_address_name: "{{ jumpbox_public_ip }}"
+      protocol: Tcp
+      frontend_ip_configurations:
+        - name: lb_fend_ipconfig
+          public_ip_address: "{{ jumpbox_public_ip }}"
+      backend_address_pools:
+        - name: lb_bend_git
+        - name: lb_bend_ssh
+      probes:
+      - name: lb_probe_git_ssh
+        protocol: Tcp
+        interval: 30
+        port: 7999
+      - name: lb_probe_internal_ssh
+        protocol: Tcp
+        interval: 30
+        port: 22
+      load_balancing_rules:
+        - name: lb_rule_git
+          frontend_ip_configuration: lb_fend_ipconfig
+          backend_address_pool: lb_bend_git
+          protocol: Tcp
+          frontend_port: 7999
+          backend_port: 7999
+          probe: lb_probe_git_ssh
+        - name: lb_rule_ssh
+          frontend_ip_configuration: lb_fend_ipconfig
+          backend_address_pool: lb_bend_ssh
+          protocol: Tcp
+          frontend_port: 22
+          backend_port: 22
+          probe: lb_probe_internal_ssh
+    register: output_lb
+
+#Create network interface card
+  - name: Create jumpbox NIC
+    azure_rm_networkinterface:
+      name: "{{ jumpbox_nic }}"
+      resource_group: "{{ resource_group_name }}"
+      virtual_network: "{{ vnet_name }}"
+      subnet: "{{ jumpbox_subnet.name }}"
+      ip_configurations: 
+        - name: jumpbox_ipconfig
+          private_ip_address: "{{ jumpbox_ipaddress }}"
+          private_ip_allocation_method: Static
+          primary: yes
+          load_balancer_backend_address_pools: 
+            - "{{ output_lb.state.backend_address_pools[1].id }}"
+      create_with_security_group: no
+
+#Create VM
+  - name: Create jumpbox VM
+    azure_rm_virtualmachine:
+      name: "{{ jumpbox_vm_name }}"
+      resource_group: "{{ resource_group_name }}"
+      admin_username: "{{ jumpbox_vm_admin_user }}"
+      ssh_password_enabled: false
+      ssh_public_keys:
+        - path: "{{ jumpbox_vm_sshkey_path }}"
+          key_data: "{{ jumpbox_vm_sshkey_date }}"
+      network_interfaces: "{{ jumpbox_nic }}"
+      image:
+        offer: "{{ jumpbox_vm_image_offer }}"
+        publisher: "{{ jumpbox_vm_image_publisher }}"
+        sku: "{{ jumpbox_vm_image_sku }}"
+        version: latest
+      vm_size: "{{ jumpbox_vm_size }}"
+      managed_disk_type: Standard_LRS
+
+
+#Create app gateway
+  - name: Create app GW
+    azure_rm_appgateway:
+      name: app_gw
+      resource_group: "{{ resource_group_name }}"
+      sku:
+        name: standard_medium
+        tier: standard
+        capacity: 2
+      gateway_ip_configurations:
+        - subnet:
+            id: "{{ subnet_id }}"
+          name: app_gateway_ip_config
+      frontend_ip_configurations:
+        name: appgw_frontend_ip_config
+        public_ip_address: "{{ output_ip_address.state.ip_address }}"
+      frontend_ports:
+        - port: 80
+          name: ag_frontend_port
+      backend_address_pools:
+        - backend_addresses:
+            - ip_address: 10.0.2.4
+            - ip_address: 10.0.2.5
+          name: bitbucket_backend_address_pool
+      backend_http_settings_collection:
+        - port: 7990
+          protocol: http
+          cookie_based_affinity: enabled
+          name: bitbucket_appgateway_http_settings
+      http_listeners:
+        - frontend_ip_configuration: appgw_frontend_ip_config
+          frontend_port: ag_frontend_port
+          name: http_listener
+      request_routing_rules:
+        - rule_type: path_based_routing
+          backend_address_pool: bitbucket_backend_address_pool
+          backend_http_settings: bitbucket_appgateway_http_settings
+          http_listener: http_listener
+          name: bitbucket
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
