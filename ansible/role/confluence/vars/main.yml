@@ -44,13 +44,13 @@ apps:
 
 
 nfs_nic: conflunce_nfs_nic
-nfs_ipaddress: "10.0.3.4"
+nfs_ipaddress: "10.0.7.4"
 nfs_vm_name: conflunce_nfs
 nfs_vm_size: Standard_D2s_v3
 nfs_vm_admin_user: nfs
 
 db_nic: conflunce_db_nic
-db_ipaddress: "10.0.4.4"
+db_ipaddress: "10.0.8.4"
 db_vm_name: conflunce_db
 db_vm_size: Standard_E4s_v3
 db_vm_admin_user: postgre

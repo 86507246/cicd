@@ -1,0 +1,5 @@
+---
+resource_group_name: cicd-stage
+location: chinanorth2
+vnet_name: cicd-vnet
+address: "10.0.0.0/16"

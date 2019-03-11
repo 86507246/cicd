@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  author: XP
+  description: Azure
+  company: VW
+  license: Unknown
+  min_ansible_version: 2.7
+  galaxy_tags:
+    - azure
+

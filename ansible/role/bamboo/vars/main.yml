@@ -1,0 +1,79 @@
+---
+jumpbox_ip: "10.0.1.0/24"
+appgw_ip: "10.0.0.0/24"
+
+app_nsg_name: bamboo_nsg
+agent_nsg_name: bambooagent_nsg
+db_nsg_name: bamboodb_nsg
+
+app_subnet:
+  name: bamboosub_net
+  address_prefix: "10.0.18.0/24"
+
+agent_subnet:
+  name: bambooagent_subnet
+  address_prefix: "10.0.19.0/24"
+  
+db_subnet:
+  name: bamboodb_subnet
+  address_prefix: "10.0.20.0/24"
+
+loadbalancer_name: ssh_lb
+loadbalancer_bend_pool: lb_bend_git
+
+app_vm_size: Standard_D2s_v3
+app_vm_admin_user: bamboo
+
+agents:
+  node1:
+    agent_nic: bamboo1_nic
+    agent_ipaddress: "10.0.19.4"
+    agent_vm_name: bambooagent1
+  node2:
+    agent_nic: bamboo2_nic
+    agent_ipaddress: "10.0.19.5"
+    agent_vm_name: bambooagent2
+  node3:
+    agent_nic: bamboo3_nic
+    agent_ipaddress: "10.0.19.6"
+    agent_vm_name: bambooagent3
+  node4:
+    agent_nic: bamboo4_nic
+    agent_ipaddress: "10.0.19.7"
+    agent_vm_name: bambooagent4
+
+
+app_nic: bamboonfs_nic
+app_ipaddress: "10.0.18.4"
+app_vm_name: bamboonfs
+app_vm_size: Standard_D2s_v3
+app_vm_admin_user: bamboo
+
+db_nic: bamboodb_nic
+db_ipaddress: "10.0.20.4"
+db_vm_name: bamboodb
+db_vm_size: Standard_E4s_v3
+db_vm_admin_user: postgre
+
+vm_sshkey_path: /home/"{{ vm_admin_user }}"/.ssh/authorized_keys
+vm_sshkey_date: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDCd8YZtCdoalPwKn7TxffAJ2h9D1XtfZwevRsGqg9mkx7O0rJOb3RpxMJ3+Sfw7DU7q/B7AbZ5X0EasAHyBpRoVTsYH8mK+/AmIL8F5E7ycQ2U6L2oP8AVAAeXyfZqyoLeTh2BNhQxziXm0sy3kB9ao1WddaouWnrb+rnNJgIJN+z8w6cyGEDUlJXlNbekxYl6k83amDfCdlzet5sXWhyac21uX1gxQE3J402iDINMZ3xtr3NyhdUkhYxxkK4mj55DmyihH+o8JdMwFLH1EXgbhXeihx7ac+7898gfPRwll/kKfDaIDq/stbNiWjYgdHMKcXwv3IIUDJ7CdMlFyjcH TN1K4UC@VWAPBJLVI0622
+vm_image_offer: CentOS
+vm_image_publisher: OpenLogic
+vm_image_sku: '7.5'
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+

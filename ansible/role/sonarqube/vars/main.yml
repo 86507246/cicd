@@ -1,0 +1,54 @@
+---
+jumpbox_ip: "10.0.1.0/24"
+appgw_ip: "10.0.0.0/24"
+
+app_nsg_name: sonarqube_nsg
+db_nsg_name: sonarqube_db_nsg
+
+app_subnet:
+  name: sonarqube_subnet
+  address_prefix: "10.0.21.0/24"
+  
+db_subnet:
+  name: sonarqube_db_subnet
+  address_prefix: "10.0.22.0/24"
+
+loadbalancer_name: ssh_lb
+loadbalancer_bend_pool: lb_bend_git
+
+app_vm_size: Standard_D2s_v3
+app_vm_admin_user: sonarqube
+app_nic: sonarqube_1_nic
+app_ipaddress: "10.0.21.4"
+app_vm_name: sonarqube1
+ 
+
+
+db_nic: sonarqube_db_nic
+db_ipaddress: "10.0.22.4"
+db_vm_name: sonarqube_db
+db_vm_size: Standard_E4s_v3
+db_vm_admin_user: postgre
+
+vm_sshkey_path: /home/"{{ vm_admin_user }}"/.ssh/authorized_keys
+vm_sshkey_date: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDCd8YZtCdoalPwKn7TxffAJ2h9D1XtfZwevRsGqg9mkx7O0rJOb3RpxMJ3+Sfw7DU7q/B7AbZ5X0EasAHyBpRoVTsYH8mK+/AmIL8F5E7ycQ2U6L2oP8AVAAeXyfZqyoLeTh2BNhQxziXm0sy3kB9ao1WddaouWnrb+rnNJgIJN+z8w6cyGEDUlJXlNbekxYl6k83amDfCdlzet5sXWhyac21uX1gxQE3J402iDINMZ3xtr3NyhdUkhYxxkK4mj55DmyihH+o8JdMwFLH1EXgbhXeihx7ac+7898gfPRwll/kKfDaIDq/stbNiWjYgdHMKcXwv3IIUDJ7CdMlFyjcH TN1K4UC@VWAPBJLVI0622
+vm_image_offer: CentOS
+vm_image_publisher: OpenLogic
+vm_image_sku: '7.5'
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -134,7 +134,7 @@
       resource_group: "{{ resource_group_name }}"
       address_prefix_cidr: "{{ db_subnet.address_prefix }}"
       virtual_network_name: "{{ vnet_name }}"
-      security_group: "{{ nfs_nsg_name }}"
+      security_group: "{{ db_nsg_name }}"
 
 #Create network interface card
   - name: Create crowd app NIC
@@ -172,7 +172,7 @@
       name: "{{ db_nic }}"
       resource_group: "{{ resource_group_name }}"
       virtual_network: "{{ vnet_name }}"
-      subnet: "{{ nfs_subnet.name }}"
+      subnet: "{{ db_subnet.name }}"
       ip_configurations: 
         - name: crowd_ipconfig
           private_ip_address: "{{ db_ipaddress }}"
